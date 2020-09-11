@@ -102,7 +102,7 @@ unsigned long long int GetDirSize(int fd, bool Recursive, bool Count)
                 else
                 {
                     fstatat(fd,dir->d_name,&ST,AT_SYMLINK_NOFOLLOW);
-                    if ((ST.st_mode & __S_IFMT) == __S_IFREG)
+                    if ((ST.st_mode & S_IFMT) == S_IFREG)
                         size += ST.st_size;
                 }
             }

@@ -81,14 +81,14 @@ void* LoadDir(void *arg)
 
             if (this->El[this->El_t].Type != 7)
             {
-                switch (sFile.st_mode & __S_IFMT)
+                switch (sFile.st_mode & S_IFMT)
                 {
-                    case __S_IFBLK:  this->El[this->El_t].Type = T_BDEV+typeOFF;     break;
-                    case __S_IFCHR:  this->El[this->El_t].Type = T_DEV+typeOFF;      break;
-                    case __S_IFDIR:  this->El[this->El_t].Type = T_DIR+typeOFF;      break;
-                    case __S_IFIFO:  this->El[this->El_t].Type = T_FIFO+typeOFF;     break;
-                    case __S_IFREG:  this->El[this->El_t].Type = T_REG+typeOFF;      break;
-                    case __S_IFSOCK: this->El[this->El_t].Type = T_SOCK+typeOFF;     break;
+                    case S_IFBLK:  this->El[this->El_t].Type = T_BDEV+typeOFF;     break;
+                    case S_IFCHR:  this->El[this->El_t].Type = T_DEV+typeOFF;      break;
+                    case S_IFDIR:  this->El[this->El_t].Type = T_DIR+typeOFF;      break;
+                    case S_IFIFO:  this->El[this->El_t].Type = T_FIFO+typeOFF;     break;
+                    case S_IFREG:  this->El[this->El_t].Type = T_REG+typeOFF;      break;
+                    case S_IFSOCK: this->El[this->El_t].Type = T_SOCK+typeOFF;     break;
                     default:         this->El[this->El_t].Type = T_OTHER;            break;
                 }
 
@@ -108,7 +108,7 @@ void* LoadDir(void *arg)
             this->El[this->El_t].flags = sFile.st_mode;
 
             #ifdef __GET_DIR_SIZE_ENABLE__
-            if (!DirSizeMethod[0] && (sFile.st_mode & __S_IFMT) == __S_IFDIR)
+            if (!DirSizeMethod[0] && (sFile.st_mode & S_IFMT) == S_IFDIR)
             {
                 if ((tfd = openat(fd,dir->d_name,__O_DIRECTORY)) != -1)
                 {
