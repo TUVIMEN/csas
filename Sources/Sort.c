@@ -333,10 +333,11 @@ static int compUid(const void *El1, const void *El2)
 }
 #endif
 
-static int FindBorder(struct Element* El, size_t begin, size_t end)
+/*static int FindBorder(struct Element* El, size_t begin, size_t end)
 {
     int j;
     bool g1 = 0, g2 = 0;
+    int ret = 1;
     for (j = 0; BetterFiles[j] != 0; j++)
     {
         if (El[((begin+end)/2)-1].Type == BetterFiles[j])
@@ -355,11 +356,37 @@ static int FindBorder(struct Element* El, size_t begin, size_t end)
     }
 
     if (g1 == 1 && g2 == 0)
-        return (begin+end)/2;
+        ret = (begin+end)/2;
     if (g1 == 1 && g2 == 1)
-        return FindBorder(El,begin+end/2,end);
-    //if (g1 == 0 && g2 == 0)
-        return FindBorder(El,begin,end/2);
+        ret = FindBorder(El,begin+end/2,end);
+    if (g1 == 0 && g2 == 0)
+        ret = FindBorder(El,begin,end/2);
+
+    return ret;
+}*/
+
+static int FindBorder(struct Element* El, size_t end)
+{
+    int j, i;
+    bool g = 0;
+    
+    for (i = 0; i < end; i++)
+    {
+        for (j = 0; BetterFiles[j] != 0; j++)
+        {
+            if (El[i].Type == BetterFiles[j])
+            {
+                g = 1;
+                break;
+            }
+        }
+
+        if (g == 0)
+            return i;
+        g = 0;
+    }
+
+    return 1;
 }
 
 void SortEl(struct Element* El, size_t El_t, unsigned char Method)
@@ -404,22 +431,26 @@ void SortEl(struct Element* El, size_t El_t, unsigned char Method)
         }
         else
         {
-            int border = FindBorder(El,0,El_t);
+            //int border = FindBorder(El,0,El_t-1);
+            int border = FindBorder(El,El_t);
 
-            for (int i = 0, j = border-1; i < j; i++, j--)
+            if (border > 0)
             {
-                Temp = El[i];
-                El[i] = El[j];
-                El[j] = Temp;
-            }
-
-            if (border != El_t)
-            {
-                for (int i = border, j = El_t-1; i < j; i++, j--)
+                for (int i = 0, j = border-1; i < j; i++, j--)
                 {
                     Temp = El[i];
                     El[i] = El[j];
                     El[j] = Temp;
+                }
+
+                if (border != El_t)
+                {
+                    for (int i = border, j = El_t-1; i < j; i++, j--)
+                    {
+                        Temp = El[i];
+                        El[i] = El[j];
+                        El[j] = Temp;
+                    }
                 }
             }
         }

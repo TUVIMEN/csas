@@ -14,7 +14,7 @@ extern unsigned char SortMethod;
 #endif
 
 #ifdef __GET_DIR_SIZE_ENABLE__
-extern bool DirSizeMethod[];
+extern char DirSizeMethod;
 #endif
 
 
@@ -70,17 +70,17 @@ void* LoadDir(void *arg)
             this->El[this->El_t].name = (char*)malloc(NAME_MAX);
 
             strcpy(this->El[this->El_t].name, dir->d_name);
-            fstatat(fd,dir->d_name,&sFile,0);
-
-            if (dir->d_type == 10)
+            if (fstatat(fd,dir->d_name,&sFile,0) != 0)
             {
-                if (faccessat(fd,dir->d_name,F_OK,0) == -1)
-                    this->El[this->El_t].Type = 7;
-                typeOFF = T_BLINK;
+                fstatat(fd,dir->d_name,&sFile,AT_SYMLINK_NOFOLLOW);
+                this->El[this->El_t].Type = 7;
             }
-
+            
             if (this->El[this->El_t].Type != 7)
             {
+                if (dir->d_type == 10)
+                    typeOFF = T_BLINK;
+
                 switch (sFile.st_mode & S_IFMT)
                 {
                     case S_IFBLK:  this->El[this->El_t].Type = T_BDEV+typeOFF;     break;
@@ -89,7 +89,7 @@ void* LoadDir(void *arg)
                     case S_IFIFO:  this->El[this->El_t].Type = T_FIFO+typeOFF;     break;
                     case S_IFREG:  this->El[this->El_t].Type = T_REG+typeOFF;      break;
                     case S_IFSOCK: this->El[this->El_t].Type = T_SOCK+typeOFF;     break;
-                    default:         this->El[this->El_t].Type = T_OTHER;            break;
+                    default:       this->El[this->El_t].Type = T_OTHER;            break;
                 }
 
                 typeOFF = 0;
@@ -108,23 +108,29 @@ void* LoadDir(void *arg)
             this->El[this->El_t].flags = sFile.st_mode;
 
             #ifdef __GET_DIR_SIZE_ENABLE__
-            if (!DirSizeMethod[0] && (sFile.st_mode & S_IFMT) == S_IFDIR)
+            if ((DirSizeMethod&D_F) != D_F && (sFile.st_mode & S_IFMT) == S_IFDIR)
             {
-                if ((tfd = openat(fd,dir->d_name,__O_DIRECTORY)) != -1)
+                if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
                 {
-                    this->El[this->El_t].size = GetDirSize(tfd,DirSizeMethod[1],DirSizeMethod[2]);
+                    this->El[this->El_t].size = GetDirSize(tfd,(DirSizeMethod&D_R) == D_R,(DirSizeMethod&D_C) == D_C);
                     close(tfd);
                 }
+                else
+                    this->El[this->El_t].size = -1;
             }
             else
             #endif
             #ifdef __FILE_SIZE_ENABLE__
-                this->El[this->El_t].size = sFile.st_size;
+                this->El[this->El_t].size = sFile.st_size*(this->El[this->El_t].Type != 7);
             #endif
 
             #ifdef __COLOR_FILES_BY_EXTENSION__
             this->El[this->El_t].FType = 1;
             #endif
+
+            for (int i = 0; i < WORKSPACE_N; i++)
+                this->El[this->El_t].List[i] = 0;
+            this->El[this->El_t].List[0] = 0x1;
 
             #ifdef __FILE_OWNERS_ENABLE__
             this->El[this->El_t].pw = sFile.st_uid;
@@ -150,10 +156,15 @@ void* LoadDir(void *arg)
     if (buffer_size != this->El_t)
         this->El = (struct Element*)realloc(this->El,(this->El_t)*sizeof(struct Element));
 
-    #ifdef __SORT_ELEMENTS_ENABLE__
     if (this->El_t > 0)
-        SortEl(this->El,this->El_t,SortMethod);
-    #endif
+    {
+        #ifdef __SORT_ELEMENTS_ENABLE__
+        SortEl(this->El,this->El_t,this->sort_m);
+        #endif
+        #ifdef __COLOR_FILES_BY_EXTENSION__
+        CheckFileTypeN(this->El,0,this->El_t);
+        #endif
+    }
 
     this->enable = false;
     #ifdef __THREADS_ENABLE__
@@ -192,8 +203,13 @@ void GetDir(char* path, Basic* this, int Which, bool threaded)
                 this->Base[i].El_t = 0;
                 this->Base[i].enable = false;
                 this->Base[i].path = NULL;
-                this->Base[i].Ltop = 0;
-                this->Base[i].selected = 0;
+                this->Base[i].Ltop = (size_t*)malloc(WORKSPACE_N*sizeof(size_t));
+                this->Base[i].selected = (size_t*)malloc(WORKSPACE_N*sizeof(size_t));
+                for (int j = 0; j < WORKSPACE_N; j++)
+                {
+                    this->Base[i].Ltop[j] = 0;
+                    this->Base[i].selected[j] = 0;
+                }
                 this->Base[i].fd = -1;
                 this->Base[i].wd = -1;
             }
@@ -229,6 +245,7 @@ void GetDir(char* path, Basic* this, int Which, bool threaded)
 
     if (IsChangeInDir)
     {
+        this->Base[found].sort_m = SortMethod;
         if (this->Base[found].enable)
             pthread_join(this->Base[found].thread,NULL);
         this->Base[found].enable = true;

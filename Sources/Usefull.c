@@ -46,7 +46,7 @@ void MakeHumanReadAble(char* pointer, unsigned long long int rvalue, bool isDir)
         pointer[MAX_END_READABLE+2] = Values[Too];
         pointer[MAX_END_READABLE+3] = '\0';
     }
-    
+
 
 }
 #endif
@@ -62,7 +62,7 @@ unsigned long long int GetDirSize(int fd, bool Recursive, bool Count)
 
     int tfd;
 
-   if (d)
+    if (d)
     {
         if (Count)
         {
@@ -72,7 +72,7 @@ unsigned long long int GetDirSize(int fd, bool Recursive, bool Count)
                     continue;
                 if (Recursive && dir->d_type == 4)
                 {
-                    if ((tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
+                    if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
                     {
                         size += GetDirSize(tfd,Recursive,Count);
                         close(tfd);
@@ -92,7 +92,7 @@ unsigned long long int GetDirSize(int fd, bool Recursive, bool Count)
                 {
                     if (Recursive)
                     {
-                        if ((tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
+                        if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
                         {
                             size += GetDirSize(tfd,Recursive,Count);
                             close(tfd);
@@ -106,7 +106,7 @@ unsigned long long int GetDirSize(int fd, bool Recursive, bool Count)
                         size += ST.st_size;
                 }
             }
-            
+
         }
         closedir(d);
     }
@@ -118,10 +118,9 @@ unsigned long long int GetDirSize(int fd, bool Recursive, bool Count)
 #ifdef __COLOR_FILES_BY_EXTENSION__
 void CheckFileTypeN(struct Element* List, size_t begin, size_t end)
 {
-    char* nes = (char*)calloc(16,sizeof(char));
+    static char stemp[NAME_MAX];
     size_t tse, nse;
     bool found;
-    char temp;
 
     for (int i = begin;  List[i].FType == 1 && i < end; i++)
     {
@@ -129,41 +128,33 @@ void CheckFileTypeN(struct Element* List, size_t begin, size_t end)
         tse = strlen(List[i].name);
         nse = 0;
 
-        for (int j = 0, h = tse-1; j < h; j++, h--)
+        for (int j = tse-1; j; j--)
         {
-            if (j == 16)
-                break;
-            nes[j] = List[i].name[h];
-            nes[j] ^= 32*(nes[j] > 96 && nes[j] < 123);
-            if (nes[j] == '.')
+            if (List[i].name[j] == '.' && j < tse-1)
             {
-                nes[j] = 0;
-                nse = j-1;
                 found = true;
+                tse = j;
                 break;
             }
         }
 
         if (found)
         {
-            for (int j = 0, h = nse; j < h; j++, h--)
-            {
-                temp = nes[j];
-                nes[j] = nes[h];
-                nes[h] = temp;
+            strcpy(stemp,List[i].name+tse+1);
+            nse = strlen(stemp);
 
-            }
+            for (int j = 0; j < nse; j++)
+                stemp[j] ^= 32*(stemp[j] > 96 && stemp[j] < 123);
+
             for (int j = 0; extensions[j].group != 0; j++)
-                if (strcmp(nes,extensions[j].Name) == 0)
+                if (strcmp(stemp,extensions[j].Name) == 0)
                     List[i].FType = extensions[j].group;
         }
         else
             List[i].FType = 0;
 
-        bzero(nes,nse);
     }
 
-    free(nes);
 }
 #endif
 
@@ -223,16 +214,18 @@ void RunFile(const char* path)
     struct stat sFile;
     if (stat(path,&sFile) == -1)
         return;
+    if (!(sFile.st_mode&S_IRUSR))
+        return;
 
     if (sFile.st_size == 0)
     {
         if (fork() == 0)
             execlp(editor,editor,path,NULL);
         wait(NULL);
-    }   
+    }
 
     int fd = open(path,O_RDONLY);
-    
+
     size_t buf_t = 2048;
 
     if (buf_t > sFile.st_size)
@@ -250,7 +243,7 @@ void RunFile(const char* path)
             ++bina;
 
     binary = (bina > 32);
-    
+
     free(buf);
     char* nest = (char*)malloc(32);
 
@@ -286,7 +279,7 @@ void RunFile(const char* path)
                     wait(NULL);
                     initscr();
                 }
-                
+
                 close(fd);
                 free(nest);
                 return;
@@ -311,7 +304,7 @@ void RunFile(const char* path)
 
 int MoveFile(struct ShortDir* f)
 {
-    
+
 }
 
 void TimeToStr(time_t *time, char* result)
@@ -343,11 +336,3 @@ void MakePathShorter(char* path, int max_size)
     }
 
 }
-
-
-
-
-
-
-
-

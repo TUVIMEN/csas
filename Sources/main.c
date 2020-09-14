@@ -14,7 +14,8 @@
 
 int main(int argc, char** argv, char** envp)
 {
-    //signal(SIGINT,SIG_IGN);
+    setlocale(LC_ALL, "");
+    signal(SIGINT,SIG_IGN);
 
     Win1Display = Win1Enable;
     Win3Display = Win3Enable;
@@ -97,7 +98,7 @@ int main(int argc, char** argv, char** envp)
     // from other directory causes Segmentation fault
     // So i load the main directory, because he's in most cases small
     //CD("/",Armor);
-    CD("/home/hexderm",Armor);
+    CD(argv[1],Armor);
     int score = 0;
 
     do {
@@ -133,9 +134,19 @@ int main(int argc, char** argv, char** envp)
                 UpdateSizeBasic(Armor);
         }*/
 
+        //score++;
 
         if (ActualTime != PastTime)
+        {
             PastTime = ActualTime;
+            GetDir(".",Armor,1,false);
+            if (Win1Display)
+                GetDir("..",Armor,0,false);
+            /*endwin();
+            printf("%d\n",score);
+            initscr();
+            score = 0;*/
+        }
     } while (!ExitTime);
 
     endwin();

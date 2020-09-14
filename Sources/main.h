@@ -87,6 +87,11 @@
 
 #endif
 
+#define D_F 0x1 //like file
+#define D_R 0x2 //recursive
+#define D_C 0x4 //count
+#define D_H 0x8 //human readable
+
 #define DP_SIZE         0x1
 #define DP_LSPERMS      0x2
 #define DP_BLOCKS       0x4
@@ -203,11 +208,11 @@ struct Dir
     struct Element* El;
     pthread_t thread;
     bool enable;
-    size_t selected;
-    size_t Ltop;
+    size_t *selected;
+    size_t *Ltop;
     int fd;
     int wd;
-    char sort_m;
+    unsigned char sort_m;
 };
 
 typedef struct
@@ -224,7 +229,7 @@ typedef struct
     size_t AllocatedSize;
     struct Dir* Base;
     int inW;
-    WorkSpace Work[10];
+    WorkSpace Work[WORKSPACE_N];
     char* NameHost;
     #ifdef __FILESYSTEM_INFORMATION_ENABLE__
     struct statfs fs;

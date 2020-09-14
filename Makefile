@@ -1,13 +1,9 @@
-CC=cc
+CC=gcc -std=gnu17
 CXX=g++ -std=c++17
-LINK=-lpthread -lncurses #-lrt
+LINK=-lpthread -lncurses
 CFLAGS=-Wall -O2 -march=native #-fsanitize=address
 CXXFLAGS=-Wall -O2 -pipe -march=native
 TARGET=main
-
-#SRC=Sources/main.c Sources/Bulk.c Sources/Usefull.c Sources/Load.c Sources/Sort.c \
-	Sources/Functions.c
-#OBJ=main.o Bulk.o Usefull.o Load.o Sort.o Functions.o
 
 main: main.o Chars.o Bulk.o Usefull.o Load.o Sort.o Functions.o FastRun.o
 	${CC} ${LINK} ${CFLAGS} Bulk.o Usefull.o Load.o Sort.o Functions.o Chars.o FastRun.o main.o -o ${TARGET}

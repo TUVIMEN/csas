@@ -1,4 +1,4 @@
-//#define __THREADS_ENABLE__
+#define __THREADS_ENABLE__
 
 //#define __FILE_GROUPS_ENABLE__
 
@@ -12,7 +12,7 @@
 #ifdef __FILE_SIZE_ENABLE__
     #define __BLOCK_SIZE_ELEMENTS_ENABLE__
     #define __HUMAN_READABLE_SIZE_ENABLE__
-    //#define __GET_DIR_SIZE_ENABLE__ // new despair
+    #define __GET_DIR_SIZE_ENABLE__ // new despair
 #endif
 
 #define __SORT_ELEMENTS_ENABLE__

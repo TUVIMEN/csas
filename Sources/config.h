@@ -13,14 +13,18 @@ bool UserRHost = 0;
 
 uint32_t INOTIFY_MASK = IN_DELETE | IN_DELETE_SELF | IN_CREATE | IN_MOVE;
 
-bool StatusBarOnTop = false;
+int MoveOffSet = 8;
+bool WrapScroll = false;
+bool JumpScroll = false;
+    int JumpScrollValue = 16;
 
+bool StatusBarOnTop = false;
 bool Win1Enable = true;
 bool Win1Display;
 bool Win3Enable = true;
 bool Win3Display;
-bool Bar1Enable = false;
-bool Bar2Enable = false;
+bool Bar1Enable = true;
+bool Bar2Enable = true;
 float WinSizeMod[2] = {0.132,0.368};
 
 bool Borders = false;
@@ -28,7 +32,7 @@ bool FillBlankSpace = true;
 int WindowBorder[8] = {0,0,0,0,0,0,0,0};
 
 bool EnableColor = true;
-int DelayBetweenFrames = 8;
+int DelayBetweenFrames = 1;
 
 bool NumberLines = false;
     bool NumberLinesOff = false;
@@ -42,7 +46,7 @@ bool ShowHiddenFiles = true;
 
 #ifdef __SORT_ELEMENTS_ENABLE__
     /*               Method     Reverse*/
-unsigned char SortMethod = SORT_LNAME;
+unsigned char SortMethod = SORT_NAME;
 int BetterFiles[] = {T_DIR,T_LDIR,0}; //Must be zero at the end
 #endif
 
@@ -50,11 +54,8 @@ int BetterFiles[] = {T_DIR,T_LDIR,0}; //Must be zero at the end
 size_t BlockSize = 1024;
 #endif
 
-#ifdef __GET_DIR_SIZE_ENABLE__
-
 /*                       Like File   Recursive   Count*/
-bool DirSizeMethod[3] = {0          ,0          ,1};
-#endif
+char DirSizeMethod = D_C;
 
 int C_Error = COLOR_PAIR(4) | A_BOLD | A_REVERSE;
 #ifdef __COLOR_FILES_BY_EXTENSION__
@@ -185,6 +186,48 @@ Key keys[] = {
     {"gv",27,0,"/var"},
     {"gg",5,NULL,NULL},
     {"G",6,NULL,NULL},
+    {"z1",8,0,NULL},
+    {"z2",8,1,NULL},
+    {"z3",8,2,NULL},
+    {"z4",8,3,NULL},
+    {"z5",8,4,NULL},
+    {"z6",8,5,NULL},
+    {"z7",8,6,NULL},
+    {"z8",8,7,NULL},
+    {"z9",8,8,NULL},
+    {"z0",8,9,NULL},
+    {"oe",9,SORT_NONE,NULL},
+    {"oE",9,SORT_NONE|SORT_REVERSE,NULL},
+    {"or",9,SORT_TYPE,NULL},
+    {"oR",9,SORT_TYPE|SORT_REVERSE,NULL},
+    {"ob",9,SORT_CHIR,NULL},
+    {"oB",9,SORT_CHIR|SORT_REVERSE,NULL},
+    {"os",9,SORT_SIZE,NULL},
+    {"oS",9,SORT_SIZE|SORT_REVERSE,NULL},
+    {"otm",9,SORT_MTIME,NULL},
+    {"otM",9,SORT_MTIME|SORT_REVERSE,NULL},
+    {"otc",9,SORT_CTIME,NULL},
+    {"otC",9,SORT_CTIME|SORT_REVERSE,NULL},
+    {"ota",9,SORT_ATIME,NULL},
+    {"otA",9,SORT_ATIME|SORT_REVERSE,NULL},
+    {"og",9,SORT_GID,NULL},
+    {"oG",9,SORT_GID|SORT_REVERSE,NULL},
+    {"ou",9,SORT_UID,NULL},
+    {"oU",9,SORT_UID|SORT_REVERSE,NULL},
+    {"om",9,SORT_LNAME,NULL},
+    {"oM",9,SORT_LNAME|SORT_REVERSE,NULL},
+    {"on",9,SORT_NAME,NULL},
+    {"oN",9,SORT_NAME|SORT_REVERSE,NULL},
+    {"dch",10,D_C,NULL},
+    {"dcH",10,D_C|D_H,NULL},
+    {"dCh",10,D_C|D_R,NULL},
+    {"dCH",10,D_C|D_R|D_H,NULL},
+    {"dsh",10,0,NULL},
+    {"dsH",10,D_H,NULL},
+    {"dSh",10,D_R,NULL},
+    {"dSH",10,D_R|D_H,NULL},
+    {"dfh",10,D_F,NULL},
+    {"dfH",10,D_F|D_H,NULL},
     {NULL,0,NULL,NULL}
 };
 

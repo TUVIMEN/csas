@@ -1,6 +1,7 @@
 #include "main.h"
 #include "Functions.h"
 #include "Usefull.h"
+#include "Sort.h"
 
 extern bool Win1Enable;
     extern bool Win1Display;
@@ -13,6 +14,8 @@ extern bool Borders;
 extern int WindowBorder[];
 extern bool UserRHost;
 extern char* UserHostPattern;
+extern char DirSizeMethod;
+extern unsigned char SortMethod;
 
 Basic* InitBasic()
 {
@@ -30,7 +33,6 @@ Basic* InitBasic()
 
     this->WinMiddle = 0;
 
-    this->inW = 0;
     this->ActualSize = 0;
     this->AllocatedSize = 0;
     this->Base = NULL;
@@ -56,6 +58,8 @@ Basic* InitBasic()
             this->Work[i].win[j] = NULL;
         }
     }
+
+    this->inW = 0;
 
     this->Work[this->inW].exists = 1;
 
@@ -233,11 +237,9 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
     static char temp[96];
     #ifdef __FILE_GROUPS_ENABLE__
     struct group  *gr;
-    bool inGroup = false;
     #endif
     #ifdef __FILE_OWNERS_ENABLE__
     struct passwd *pw;
-    bool inPasswd = false;
     #endif
 
     if ((Settings&DP_LSPERMS) == DP_LSPERMS)
@@ -257,9 +259,9 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
     {
         if (this->SizErrToDisplay == NULL)
         {
-            this->SizErrToDisplay = (char*)malloc(6);
+            this->SizErrToDisplay = (char*)malloc(16);
             MakeHumanReadAble(this->SizErrToDisplay,this->size,
-            (this->Type == T_DIR || this->Type == T_LDIR) ? true : false);
+            ((DirSizeMethod&D_H) != D_H)*(this->Type == T_DIR || this->Type == T_LDIR) ? true : false);
         }
         strcat(result,this->SizErrToDisplay);
         strcat(result," ");
@@ -278,7 +280,7 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
         strcat(result,temp);
     }
     #ifdef __COLOR_FILES_BY_EXTENSION__
-    if ((Settings&DP_FTYPE) == DP_FTYPE)
+    if ((Settings&DP_FTYPE) == DP_FTYPE && this->FType > 32)
     {
         sprintf(temp,"%c ",this->FType);
         strcat(result,temp);
@@ -286,118 +288,68 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
     #endif
 
     #ifdef __FILE_OWNERS_ENABLE__
-    inPasswd = false;
-
-    if ((Settings&DP_PWDIR) == DP_PWDIR)
+    if (this->pw != 1001)
     {
-        if (!inPasswd)
+        pw = getpwuid(this->pw);
+        if ((Settings&DP_PWDIR) == DP_PWDIR)
         {
-            pw = getpwuid(this->pw);
-            inPasswd = true;
+            sprintf(temp,"%s ",pw->pw_dir);
+            strcat(result,temp);
         }
-        sprintf(temp,"%s ",pw->pw_dir);
-        strcat(result,temp);
-    }
-    if ((Settings&DP_PWGECOS) == DP_PWGECOS)
-    {
-        if (!inPasswd)
+        if ((Settings&DP_PWGECOS) == DP_PWGECOS)
         {
-            pw = getpwuid(this->pw);
-            inPasswd = true;
+            sprintf(temp,"%s ",pw->pw_gecos);
+            strcat(result,temp);
         }
-        sprintf(temp,"%s ",pw->pw_gecos);
-        strcat(result,temp);
-    }
-    if ((Settings&DP_PWGID) == DP_PWGID)
-    {
-        if (!inPasswd)
+        if ((Settings&DP_PWGID) == DP_PWGID)
         {
-            pw = getpwuid(this->pw);
-            inPasswd = true;
+            sprintf(temp,"%d ",pw->pw_gid);
+            strcat(result,temp);
         }
-        sprintf(temp,"%d ",pw->pw_gid);
-        strcat(result,temp);
-    }
-    if ((Settings&DP_PWNAME) == DP_PWNAME)
-    {
-        if (!inPasswd)
+        if ((Settings&DP_PWNAME) == DP_PWNAME)
         {
-            pw = getpwuid(this->pw);
-            inPasswd = true;
+            sprintf(temp,"%s ",pw->pw_name);
+            strcat(result,temp);
         }
-        sprintf(temp,"%s ",pw->pw_name);
-        strcat(result,temp);
-    }
-    if ((Settings&DP_PWPASSWD) == DP_PWPASSWD)
-    {
-        if (!inPasswd)
+        if ((Settings&DP_PWPASSWD) == DP_PWPASSWD)
         {
-            pw = getpwuid(this->pw);
-            inPasswd = true;
+            sprintf(temp,"%s ",pw->pw_passwd);
+            strcat(result,temp);
         }
-        sprintf(temp,"%s ",pw->pw_passwd);
-        strcat(result,temp);
-    }
-    if ((Settings&DP_PWSHELL) == DP_PWSHELL)
-    {
-        if (!inPasswd)
+        if ((Settings&DP_PWSHELL) == DP_PWSHELL)
         {
-            pw = getpwuid(this->pw);
-            inPasswd = true;
+            sprintf(temp,"%s ",pw->pw_shell);
+            strcat(result,temp);
         }
-        sprintf(temp,"%s ",pw->pw_shell);
-        strcat(result,temp);
-    }
-    if ((Settings&DP_PWUID) == DP_PWUID)
-    {
-        if (!inPasswd)
+        if ((Settings&DP_PWUID) == DP_PWUID)
         {
-            pw = getpwuid(this->pw);
-            inPasswd = true;
+            sprintf(temp,"%d ",pw->pw_uid);
+            strcat(result,temp);
         }
-        sprintf(temp,"%d ",pw->pw_uid);
-        strcat(result,temp);
     }
-
-    inPasswd = false;
     #endif
 
     #ifdef __FILE_GROUPS_ENABLE__
-
-    inGroup = false;
-
-    if ((Settings&DP_GRGID) == DP_GRGID)
+    if (this->gr != 1001)
     {
-        if (!inGroup)
-        {
-            gr = getgrgid(this->gr);
-            inGroup = true;
-        }
-        sprintf(temp,"%d ",gr->gr_gid);
-        strcat(result,temp);
-    }
-    if ((Settings&DP_GRNAME) == DP_GRNAME)
-    {
-        if (!inGroup)
-        {
-            gr = getgrgid(this->gr);
-            inGroup = true;
-        }
-        sprintf(temp,"%s ",gr->gr_name);
-        strcat(result,temp);
-    }
-    if ((Settings&DP_GRPASSWD) == DP_GRPASSWD)
-    {
-        if (!inGroup)
-        {
-            gr = getgrgid(this->gr);
-            inGroup = true;
-        }
-        sprintf(temp,"%s ",gr->gr_passwd);
-        strcat(result,temp);
-    }
+        gr = getgrgid(this->gr);
 
-    inGroup = false;
+        if ((Settings&DP_GRGID) == DP_GRGID)
+        {
+            sprintf(temp,"%d ",gr->gr_gid);
+            strcat(result,temp);
+        }
+        if ((Settings&DP_GRNAME) == DP_GRNAME)
+        {
+            sprintf(temp,"%s ",gr->gr_name);
+            strcat(result,temp);
+        }
+        if ((Settings&DP_GRPASSWD) == DP_GRPASSWD)
+        {
+            sprintf(temp,"%s ",gr->gr_passwd);
+            strcat(result,temp);
+        }
+    }
     #endif
 
     #ifdef __ATIME_ENABLE__
@@ -496,20 +448,23 @@ void DrawBasic(Basic* this, int which)
         }
         wattroff(this->win[i],C_Error);
 
-        #ifdef __COLOR_FILES_BY_EXTENSION__
-        CheckFileTypeN(this->Work[this->inW].win[i]->El,this->Work[this->inW].win[i]->Ltop,this->Work[this->inW].win[i]->Ltop+this->win[i]->_maxy+1);
-        #endif
-
         line_off1 = 0;
 
-        for (int j = this->Work[this->inW].win[i]->Ltop; j < this->Work[this->inW].win[i]->El_t && j-this->Work[this->inW].win[i]->Ltop < this->win[i]->_maxy-(Borders*2)+1; j++)
+        for (int j = this->Work[this->inW].win[i]->Ltop[this->inW]; j < this->Work[this->inW].win[i]->El_t && j-this->Work[this->inW].win[i]->Ltop[this->inW] < this->win[i]->_maxy-(Borders*2)+1; j++)
         {
-            color = ColorEl(&this->Work[this->inW].win[i]->El[j],(j == this->Work[this->inW].win[i]->selected));
+            color = ColorEl(&this->Work[this->inW].win[i]->El[j],(j == this->Work[this->inW].win[i]->selected[this->inW]));
+
+            if (this->Work[this->inW].win[i]->sort_m != SortMethod)
+            {
+                this->Work[this->inW].win[i]->sort_m = SortMethod;
+                if (this->Work[this->inW].win[i]->El_t > 0)
+                    SortEl(this->Work[this->inW].win[i]->El,this->Work[this->inW].win[i]->El_t,SortMethod);
+            }
 
             if (FillBlankSpace)
                 wattron(this->win[i],color);
             for (int g = Borders+1; g < this->win[i]->_maxx-Borders-1+((i == 2)*2)*!Borders+(((i == 1)*2)*!Win3Enable)*!Borders; g++)
-                mvwaddch(this->win[i],Borders+j-this->Work[this->inW].win[i]->Ltop,g+Borders,' ');
+                mvwaddch(this->win[i],Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],g+Borders,' ');
 
             wattron(this->win[i],color);
 
@@ -524,7 +479,7 @@ void DrawBasic(Basic* this, int which)
 
                 cont_s[0] += strlen(temp[1]);
 
-                mvwaddstr(this->win[i],Borders+j-this->Work[this->inW].win[i]->Ltop,this->win[i]->_maxx-cont_s[0]-1+(((i == 1)*2)*!Win3Enable)*!Borders,temp[1]);
+                mvwaddstr(this->win[i],Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],this->win[i]->_maxx-cont_s[0]-1+(((i == 1)*2)*!Win3Enable)*!Borders,temp[1]);
 
                 if (NumberLinesOff)
                 {
@@ -547,7 +502,7 @@ void DrawBasic(Basic* this, int which)
             strcat(temp[0],this->Work[this->inW].win[i]->El[j].name);
             cont_s[1] = strlen(temp[0]);
 
-            /*if (this->win[i]->_maxx < 4+cont_s[0]+Borders+1)
+            if (this->win[i]->_maxx < 4+cont_s[0]+Borders+1)
             {
                 temp[0][0] = '\0';
             }
@@ -560,11 +515,17 @@ void DrawBasic(Basic* this, int which)
                     temp[0][this->win[i]->_maxx-cont_s[0]-2-((Borders+1)+1)-Borders] = '~';
                     temp[0][this->win[i]->_maxx-cont_s[0]-1-((Borders+1)+1)-Borders] = '\0';
                 }
-            }*/
+            }
 
-            mvwaddstr(this->win[i],Borders+j-this->Work[this->inW].win[i]->Ltop,(Borders*2)+2+(line_off1-line_off2),temp[0]);
+            mvwaddstr(this->win[i],Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],(Borders*2)+2+(line_off1-line_off2),temp[0]);
 
             wattroff(this->win[i],color);
+
+            if ((this->Work[this->inW].win[i]->El[j].List[this->inW]&0x1) == 0x1)
+                wattron(this->win[i],COLOR_PAIR(2)|A_REVERSE);
+            mvwaddch(this->win[i],Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],(Borders*2),' ');
+            if ((this->Work[this->inW].win[i]->El[j].List[this->inW]&0x1) == 0x1)
+                wattroff(this->win[i],COLOR_PAIR(2)|A_REVERSE);
 
 
         }
@@ -606,7 +567,7 @@ void DrawBasic(Basic* this, int which)
                     if (!(this->Work[this->inW].win[1]->path[0] == '/' && this->Work[this->inW].win[1]->path[1] == '\0'))
                     {
                         strcat(temp[1],"/");
-                        MakePathShorter(temp[1],this->win[3]->_maxx-(cont_s[3]+1+cont_s[2]+strlen(this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected].name)));
+                        MakePathShorter(temp[1],this->win[3]->_maxx-(cont_s[3]+1+cont_s[2]+strlen(this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].name)));
                     }
 
                     wattron(this->win[3],C_Bar_Dir);
@@ -618,7 +579,7 @@ void DrawBasic(Basic* this, int which)
                 if ((BarsSettings & B_NAME) == B_NAME)
                 {
                     wattron(this->win[3],C_Bar_Name);
-                    mvwaddstr(this->win[3],0,cont_s[3],this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected].name);
+                    mvwaddstr(this->win[3],0,cont_s[3],this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].name);
                     wattroff(this->win[3],C_Bar_Name);
                 }
             }
@@ -666,7 +627,7 @@ void DrawBasic(Basic* this, int which)
 
                 if (!this->Work[this->inW].win[1]->enable && this->Work[this->inW].win[1]->El_t > 0)
                 {
-                    ByIntToStr(BarsSettings,temp[1],&this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected]);
+                    ByIntToStr(BarsSettings,temp[1],&this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]]);
                     mvwaddstr(this->win[4],0,0,temp[1]);
 
                     bzero(temp[1],PATH_MAX);
@@ -848,7 +809,7 @@ void DrawBasic(Basic* this, int which)
                 {
                     if ((BarsSettings & B_POSITION) == B_POSITION)
                     {
-                        sprintf(temp[2]," %ld/%ld",this->Work[this->inW].win[1]->selected+1,this->Work[this->inW].win[1]->El_t);
+                        sprintf(temp[2]," %ld/%ld",this->Work[this->inW].win[1]->selected[this->inW]+1,this->Work[this->inW].win[1]->El_t);
                         strcat(temp[1],temp[2]);
                     }
                 }
@@ -872,18 +833,20 @@ void freeBasic(Basic* this)
 {
     for (int i = 0; i < this->ActualSize; i++)
         if (this->Base[i].enable)
-            pthread_join(this->Base[i].thread,NULL);
+            pthread_cancel(this->Base[i].thread);
 
     for (int i = 0; i < 4; i++)
         delwin(this->win[i]);
 
-    for (int i = 0; i < this->ActualSize; i++)
+    /*for (int i = 0; i < this->ActualSize; i++)
     {
         if (this->Base[i].El_t != -1)
         {
             inotify_rm_watch(this->Base[i].fd,this->Base[i].wd);
             close(this->Base[i].fd);
             free(this->Base[i].path);
+            free(this->Base[i].selected);
+            free(this->Base[i].Ltop);
 
             for (int j = 0; j < this->Base[i].El_t; j++)
             {
@@ -896,7 +859,7 @@ void freeBasic(Basic* this)
         free(this->Base[i].El);
     }
 
-    free(this->Base);
+    free(this->Base);*/
     free(this->NameHost);
     free(this);
 }
