@@ -5,7 +5,7 @@ char Values[] = {'B','K','M','G','T','P','E','Z','Y'};
 char* editor = "/usr/bin/nvim";
 
 long long int BarsSettings = B_UHNAME | B_DIR | B_NAME | B_WORKSPACES | DP_LSPERMS | DP_SMTIME | DP_PWNAME | DP_GRNAME
-                    | B_POSITION | B_FHBFREE;
+                    | B_POSITION | B_FHBFREE | B_FGROUP | B_MODES;
 
 char* UserHostPattern = "%s@%s";
 //0 - User Host 1 - Host User
@@ -85,6 +85,14 @@ int C_Bar_Dir = COLOR_PAIR(1) | A_BOLD;
 int C_Bar_Name = A_NORMAL | A_BOLD;
 int C_Bar_WorkSpace = A_NORMAL | A_BOLD;
 int C_Bar_WorkSpace_Selected = COLOR_PAIR(6) | A_REVERSE | A_BOLD;
+int C_Group_0 = COLOR_PAIR(2);
+int C_Group_1 = COLOR_PAIR(1);
+int C_Group_2 = COLOR_PAIR(0);
+int C_Group_3 = COLOR_PAIR(4);
+int C_Group_4 = COLOR_PAIR(5);
+int C_Group_5 = COLOR_PAIR(6);
+int C_Group_6 = COLOR_PAIR(9);
+int C_Group_7 = COLOR_PAIR(10);
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
 Extensions extensions[] = {
@@ -164,6 +172,7 @@ FileSignatures signatures[] = {
     { 0,     0,     0,      0,              NULL,0,NULL}
 };
 
+    //First char in string can't be number!
 Key keys[] = {
     {"q",0,NULL,NULL},
     {"j",1,NULL,NULL},
@@ -228,6 +237,22 @@ Key keys[] = {
     {"dSH",10,D_R|D_H,NULL},
     {"dfh",10,D_F,NULL},
     {"dfH",10,D_F|D_H,NULL},
+    {"x1",11,GROUP_0,NULL},
+    {"x2",11,GROUP_1,NULL},
+    {"x3",11,GROUP_2,NULL},
+    {"x4",11,GROUP_3,NULL},
+    {"x5",11,GROUP_4,NULL},
+    {"x6",11,GROUP_5,NULL},
+    {"x7",11,GROUP_6,NULL},
+    {"x8",11,GROUP_7,NULL},
+    {" ",12,NULL,NULL},
+    {"V",13,NULL,NULL},
+    {"vta",14,-1,0},
+    {"vtn",14,-1,1},
+    {"vda",14,0,0},
+    {"vdn",14,0,1},
+    {"vea",14,1,0},
+    {"ven",14,1,1},
     {NULL,0,NULL,NULL}
 };
 

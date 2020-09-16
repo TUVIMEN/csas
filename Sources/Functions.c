@@ -53,6 +53,8 @@ Basic* InitBasic()
     for (int i = 0; i < WORKSPACE_N; i++)
     {
         this->Work[i].exists = 0;
+        this->Work[i].SelectedGroup = GROUP_0;
+        this->Work[i].Visual = 0;
         for (int j = 0; j < 3; j++)
         {
             this->Work[i].win[j] = NULL;
@@ -242,20 +244,20 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
     struct passwd *pw;
     #endif
 
-    if ((Settings&DP_LSPERMS) == DP_LSPERMS)
+    if (Settings&DP_LSPERMS)
     {
         strcat(result,lsperms(this->flags,this->Type));
         strcat(result," ");
     }
     #ifdef __FILE_SIZE_ENABLE__
-    if ((Settings&DP_SIZE) == DP_SIZE)
+    if (Settings&DP_SIZE)
     {
         sprintf(temp,"%lld ",this->size);
         strcat(result,temp);
     }
     #endif
     #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-    if ((Settings&DP_HSIZE) == DP_HSIZE)
+    if (Settings&DP_HSIZE)
     {
         if (this->SizErrToDisplay == NULL)
         {
@@ -268,19 +270,19 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
     }
     #endif
     #ifdef __FILE_SIZE_ENABLE__
-    if ((Settings&DP_BLOCKS) == DP_BLOCKS)
+    if (Settings&DP_BLOCKS)
     {
         sprintf(temp,"%lld ",this->size/BlockSize);
         strcat(result,temp);
     }
     #endif
-    if ((Settings&DP_TYPE) == DP_TYPE)
+    if (Settings&DP_TYPE)
     {
         sprintf(temp,"%d ",this->Type);
         strcat(result,temp);
     }
     #ifdef __COLOR_FILES_BY_EXTENSION__
-    if ((Settings&DP_FTYPE) == DP_FTYPE && this->FType > 32)
+    if (Settings&DP_FTYPE && this->FType > 32)
     {
         sprintf(temp,"%c ",this->FType);
         strcat(result,temp);
@@ -291,37 +293,37 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
     if (this->pw != 1001)
     {
         pw = getpwuid(this->pw);
-        if ((Settings&DP_PWDIR) == DP_PWDIR)
+        if (Settings&DP_PWDIR)
         {
             sprintf(temp,"%s ",pw->pw_dir);
             strcat(result,temp);
         }
-        if ((Settings&DP_PWGECOS) == DP_PWGECOS)
+        if (Settings&DP_PWGECOS)
         {
             sprintf(temp,"%s ",pw->pw_gecos);
             strcat(result,temp);
         }
-        if ((Settings&DP_PWGID) == DP_PWGID)
+        if (Settings&DP_PWGID)
         {
             sprintf(temp,"%d ",pw->pw_gid);
             strcat(result,temp);
         }
-        if ((Settings&DP_PWNAME) == DP_PWNAME)
+        if (Settings&DP_PWNAME)
         {
             sprintf(temp,"%s ",pw->pw_name);
             strcat(result,temp);
         }
-        if ((Settings&DP_PWPASSWD) == DP_PWPASSWD)
+        if (Settings&DP_PWPASSWD)
         {
             sprintf(temp,"%s ",pw->pw_passwd);
             strcat(result,temp);
         }
-        if ((Settings&DP_PWSHELL) == DP_PWSHELL)
+        if (Settings&DP_PWSHELL)
         {
             sprintf(temp,"%s ",pw->pw_shell);
             strcat(result,temp);
         }
-        if ((Settings&DP_PWUID) == DP_PWUID)
+        if (Settings&DP_PWUID)
         {
             sprintf(temp,"%d ",pw->pw_uid);
             strcat(result,temp);
@@ -334,17 +336,17 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
     {
         gr = getgrgid(this->gr);
 
-        if ((Settings&DP_GRGID) == DP_GRGID)
+        if (Settings&DP_GRGID)
         {
             sprintf(temp,"%d ",gr->gr_gid);
             strcat(result,temp);
         }
-        if ((Settings&DP_GRNAME) == DP_GRNAME)
+        if (Settings&DP_GRNAME)
         {
             sprintf(temp,"%s ",gr->gr_name);
             strcat(result,temp);
         }
-        if ((Settings&DP_GRPASSWD) == DP_GRPASSWD)
+        if (Settings&DP_GRPASSWD)
         {
             sprintf(temp,"%s ",gr->gr_passwd);
             strcat(result,temp);
@@ -353,36 +355,36 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
     #endif
 
     #ifdef __ATIME_ENABLE__
-    if ((Settings&DP_ATIME) == DP_ATIME)
+    if (Settings&DP_ATIME)
     {
         sprintf(temp,"%ld ",this->atime);
         strcat(result,temp);
     }
-    if ((Settings&DP_SATIME) == DP_SATIME)
+    if (Settings&DP_SATIME)
     {
         TimeToStr(&this->atime,temp);
         strcat(result,temp);
     }
     #endif
     #ifdef __MTIME_ENABLE__
-    if ((Settings&DP_MTIME) == DP_MTIME)
+    if (Settings&DP_MTIME)
     {
         sprintf(temp,"%ld ",this->mtime);
         strcat(result,temp);
     }
-    if ((Settings&DP_SMTIME) == DP_SMTIME)
+    if (Settings&DP_SMTIME)
     {
         TimeToStr(&this->mtime,temp);
         strcat(result,temp);
     }
     #endif
     #ifdef __CTIME_ENABLE__
-    if ((Settings&DP_CTIME) == DP_CTIME)
+    if (Settings&DP_CTIME)
     {
         sprintf(temp,"%ld ",this->ctime);
         strcat(result,temp);
     }
-    if ((Settings&DP_SCTIME) == DP_SCTIME)
+    if (Settings&DP_SCTIME)
     {
         TimeToStr(&this->ctime,temp);
         strcat(result,temp);
@@ -390,6 +392,15 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
     #endif
 
 }
+
+extern int C_Group_0;
+extern int C_Group_1;
+extern int C_Group_2;
+extern int C_Group_3;
+extern int C_Group_4;
+extern int C_Group_5;
+extern int C_Group_6;
+extern int C_Group_7;
 
 void DrawBasic(Basic* this, int which)
 {
@@ -521,11 +532,28 @@ void DrawBasic(Basic* this, int which)
 
             wattroff(this->win[i],color);
 
-            if ((this->Work[this->inW].win[i]->El[j].List[this->inW]&0x1) == 0x1)
-                wattron(this->win[i],COLOR_PAIR(2)|A_REVERSE);
+            if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_0)
+                color = C_Group_0;
+            else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_1)
+                color = C_Group_1;
+            else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_2)
+                color = C_Group_2;
+            else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_3)
+                color = C_Group_3;
+            else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_4)
+                color = C_Group_4;
+            else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_5)
+                color = C_Group_5;
+            else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_6)
+                color = C_Group_6;
+            else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_7)
+                color = C_Group_7;
+            else
+                color = 0;
+
+            wattron(this->win[i],(color|A_REVERSE)*(color > 0));
             mvwaddch(this->win[i],Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],(Borders*2),' ');
-            if ((this->Work[this->inW].win[i]->El[j].List[this->inW]&0x1) == 0x1)
-                wattroff(this->win[i],COLOR_PAIR(2)|A_REVERSE);
+            wattroff(this->win[i],(color|A_REVERSE)*(color > 0));
 
 
         }
@@ -543,8 +571,7 @@ void DrawBasic(Basic* this, int which)
             if ((BarsSettings & B_WORKSPACES) == B_WORKSPACES)
             {
                 for (int i = 0; i < WORKSPACE_N; i++)
-                    if (this->Work[i].exists)
-                        cont_s[2]++;
+                        cont_s[2] += this->Work[i].exists;
 
                 cont_s[2] *= 3;
             }
@@ -633,14 +660,26 @@ void DrawBasic(Basic* this, int which)
                     bzero(temp[1],PATH_MAX);
                 }
 
+                if (BarsSettings & B_MODES)
+                {
+                    if (this->Work[this->inW].Visual)
+                        strcat(temp[1]," VISUAL");
+                }
+
+                if (BarsSettings & B_FGROUP)
+                {
+                    sprintf(temp[2]," %dW",this->Work[this->inW].SelectedGroup);
+                    strcat(temp[1],temp[2]);
+                }
+
                 #ifdef __FILESYSTEM_INFORMATION_ENABLE__
-                if ((BarsSettings & B_FTYPE) == B_FTYPE)
+                if (BarsSettings & B_FTYPE)
                 {
                     sprintf(temp[2]," %p",this->fs.f_type);
                     strcpy(temp[1],temp[2]);
                 }
 
-                if ((BarsSettings & B_SFTYPE) == B_SFTYPE)
+                if (BarsSettings & B_SFTYPE)
                 {
                     switch (this->fs.f_type)
                     {
@@ -724,81 +763,81 @@ void DrawBasic(Basic* this, int which)
                     }
                 }
 
-                if ((BarsSettings & B_FBSIZE) == B_FBSIZE)
+                if (BarsSettings & B_FBSIZE)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_bsize);
                     strcat(temp[1],temp[2]);
                 }
 
-                if ((BarsSettings & B_FBLOCKS) == B_FBLOCKS)
+                if (BarsSettings & B_FBLOCKS)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_blocks);
                     strcat(temp[1],temp[2]);
                 }
 
                 #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-                if ((BarsSettings & B_FHBLOCKS) == B_FHBLOCKS)
+                if (BarsSettings & B_FHBLOCKS)
                 {
                     MakeHumanReadAble(temp[2],this->fs.f_blocks*this->fs.f_bsize,false);
                     strcat(temp[1],temp[2]);
                 }
 
-                if ((BarsSettings & B_FHBFREE) == B_FHBFREE)
+                if (BarsSettings & B_FHBFREE)
                 {
                     MakeHumanReadAble(temp[2],this->fs.f_bfree*this->fs.f_bsize,false);
                     strcat(temp[1],temp[2]);
                 }
 
-                if ((BarsSettings & B_FHBAVAIL) == B_FHBAVAIL)
+                if (BarsSettings & B_FHBAVAIL)
                 {
                     MakeHumanReadAble(temp[2],this->fs.f_bavail*this->fs.f_bsize,false);
                     strcat(temp[1],temp[2]);
                 }
                 #endif
 
-                if ((BarsSettings & B_FBFREE) == B_FBFREE)
+                if (BarsSettings & B_FBFREE)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_bfree);
                     strcat(temp[1],temp[2]);
                 }
 
-                if ((BarsSettings & B_FBAVAIL) == B_FBAVAIL)
+                if (BarsSettings & B_FBAVAIL)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_bavail);
                     strcat(temp[1],temp[2]);
                 }
 
-                if ((BarsSettings & B_FFILES) == B_FFILES)
+                if (BarsSettings & B_FFILES)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_files);
                     strcat(temp[1],temp[2]);
                 }
 
-                if ((BarsSettings & B_FFFREE) == B_FFFREE)
+                if (BarsSettings & B_FFFREE)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_ffree);
                     strcat(temp[1],temp[2]);
                 }
 
-                if ((BarsSettings & B_FFSID) == B_FFSID)
+                if (BarsSettings & B_FFSID)
                 {
                     sprintf(temp[2]," %d %d",this->fs.f_fsid.__val[0],this->fs.f_fsid.__val[1]);
                     strcat(temp[1],temp[2]);
                 }
 
-                if ((BarsSettings & B_FNAMELEN) == B_FNAMELEN)
+                if (BarsSettings & B_FNAMELEN)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_namelen);
                     strcat(temp[1],temp[2]);
                 }
 
-                if ((BarsSettings & B_FFRSIZE) == B_FFRSIZE)
+                if (BarsSettings & B_FFRSIZE)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_frsize);
                     strcat(temp[1],temp[2]);
                 }
 
-                if ((BarsSettings & B_FFLAGS) == B_FFLAGS)
+                if (BarsSettings & B_FFLAGS)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_flags);
                     strcat(temp[1],temp[2]);
@@ -807,7 +846,7 @@ void DrawBasic(Basic* this, int which)
 
                 if (!this->Work[this->inW].win[1]->enable && this->Work[this->inW].win[1]->El_t > 0)
                 {
-                    if ((BarsSettings & B_POSITION) == B_POSITION)
+                    if (BarsSettings & B_POSITION)
                     {
                         sprintf(temp[2]," %ld/%ld",this->Work[this->inW].win[1]->selected[this->inW]+1,this->Work[this->inW].win[1]->El_t);
                         strcat(temp[1],temp[2]);

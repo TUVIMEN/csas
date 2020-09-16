@@ -233,16 +233,15 @@ void RunFile(const char* path)
 
     char* buf = (char*)malloc(buf_t);
 
-    buf_t = read(fd,buf,buf_t);
+    buf_t = read(fd,buf,buf_t-1);
 
     int bina = 0;
     bool binary = false;
 
     for (int i = 0; i < buf_t; i++)
-        if (buf[i] != 10 && (buf[i] < 32 || buf[i] > 126))
-            ++bina;
+            bina += 1*(buf[i] != 10 && (buf[i] < 32 || buf[i] > 126));
 
-    binary = (bina > 32);
+    binary = bina > 32;
 
     free(buf);
     char* nest = (char*)malloc(32);

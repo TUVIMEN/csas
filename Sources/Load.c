@@ -17,7 +17,6 @@ extern unsigned char SortMethod;
 extern char DirSizeMethod;
 #endif
 
-
 void* LoadDir(void *arg)
 {
     struct Dir* this = (struct Dir*)arg;
@@ -128,9 +127,7 @@ void* LoadDir(void *arg)
             this->El[this->El_t].FType = 1;
             #endif
 
-            for (int i = 0; i < WORKSPACE_N; i++)
-                this->El[this->El_t].List[i] = 0;
-            this->El[this->El_t].List[0] = 0x1;
+            memset(this->El[this->El_t].List,0,WORKSPACE_N);
 
             #ifdef __FILE_OWNERS_ENABLE__
             this->El[this->El_t].pw = sFile.st_uid;

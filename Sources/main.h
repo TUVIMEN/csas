@@ -135,6 +135,17 @@
 #define B_FNAMELEN      0x8000000000
 #define B_FFRSIZE       0x10000000000
 #define B_FFLAGS        0x20000000000
+#define B_FGROUP        0x40000000000
+#define B_MODES         0x80000000000
+
+#define GROUP_0 0x1
+#define GROUP_1 0x2
+#define GROUP_2 0x4
+#define GROUP_3 0x8
+#define GROUP_4 0x10
+#define GROUP_5 0x20
+#define GROUP_6 0x40
+#define GROUP_7 0x80
 
 struct ShortDir
 {
@@ -217,6 +228,8 @@ struct Dir
 
 typedef struct
 {
+    bool Visual;
+    unsigned char SelectedGroup;
     bool exists;
     struct Dir* win[3];
 } WorkSpace;

@@ -109,7 +109,7 @@ int main(int argc, char** argv, char** envp)
 
         UpdateEvent(&si,cSF,Armor);
         if (si != -1)
-            RunEvent(si,&ExitTime,Armor);
+            RunEvent(si,&ExitTime,Armor,cSF);
         /*else if (ActualTime != PastTime)
         {
             for (int i = 0; i < 2; i++)

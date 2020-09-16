@@ -3,6 +3,6 @@
 
 void CD(char*, Basic*);
 void UpdateEvent(int*, char*, Basic*);
-void RunEvent(int, bool* ,Basic*);
+void RunEvent(int, bool* ,Basic*, char*);
 
 #endif
