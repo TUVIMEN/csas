@@ -87,7 +87,7 @@ int C_Bar_WorkSpace = A_NORMAL | A_BOLD;
 int C_Bar_WorkSpace_Selected = COLOR_PAIR(6) | A_REVERSE | A_BOLD;
 int C_Group_0 = COLOR_PAIR(2);
 int C_Group_1 = COLOR_PAIR(1);
-int C_Group_2 = COLOR_PAIR(0);
+int C_Group_2 = COLOR_PAIR(7);
 int C_Group_3 = COLOR_PAIR(4);
 int C_Group_4 = COLOR_PAIR(5);
 int C_Group_5 = COLOR_PAIR(6);
@@ -248,11 +248,11 @@ Key keys[] = {
     {" ",12,NULL,NULL},
     {"V",13,NULL,NULL},
     {"vta",14,-1,0},
-    {"vtn",14,-1,1},
+    {"vth",14,-1,1},
     {"vda",14,0,0},
-    {"vdn",14,0,1},
+    {"vdh",14,0,1},
     {"vea",14,1,0},
-    {"ven",14,1,1},
+    {"veh",14,1,1},
     {NULL,0,NULL,NULL}
 };
 

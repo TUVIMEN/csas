@@ -139,7 +139,10 @@ void GoDown(Basic* this)
         for (int i = this->Work[this->inW].win[1]->selected[this->inW]; i < this->Work[this->inW].win[1]->El_t; i++)
             this->Work[this->inW].win[1]->El[i].List[this->inW] |= this->Work[this->inW].SelectedGroup;
     }
-    this->Work[this->inW].win[1]->Ltop[this->inW] = this->Work[this->inW].win[1]->El_t-this->win[1]->_maxy-!Borders+Borders;
+    if (this->Work[this->inW].win[1]->El_t > this->win[1]->_maxy-!Borders+Borders)
+        this->Work[this->inW].win[1]->Ltop[this->inW] = this->Work[this->inW].win[1]->El_t-this->win[1]->_maxy-!Borders+Borders;
+    else
+        this->Work[this->inW].win[1]->Ltop[this->inW] = 0;
     this->Work[this->inW].win[1]->selected[this->inW] = this->Work[this->inW].win[1]->El_t-1;
 }
 
@@ -369,7 +372,7 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
                 {
                     for (int i = 0; i < this->ActualSize; i++)
                         for (int j = 0; j < this->Base[i].El_t; j++)
-                            this->Base[i].El[j].List[this->inW] ^= this->Work[this->inW].SelectedGroup*((this->Base[i].El[j].List[this->inW]&this->Work[this->inW].SelectedGroup));
+                            this->Base[i].El[j].List[this->inW] ^= this->Work[this->inW].SelectedGroup*((this->Base[i].El[j].List[this->inW]&this->Work[this->inW].SelectedGroup) == this->Work[this->inW].SelectedGroup);
                 }
                 else
                 {
@@ -388,7 +391,7 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
                 else if ((int)keys[si].slc1 == 0)
                 {
                     for (int i = 0; i < this->Work[this->inW].win[1]->El_t; i++)
-                        this->Work[this->inW].win[1]->El[i].List[this->inW] ^= this->Work[this->inW].SelectedGroup*((this->Work[this->inW].win[1]->El[i].List[this->inW]&this->Work[this->inW].SelectedGroup));
+                        this->Work[this->inW].win[1]->El[i].List[this->inW] ^= this->Work[this->inW].SelectedGroup*((this->Work[this->inW].win[1]->El[i].List[this->inW]&this->Work[this->inW].SelectedGroup) == this->Work[this->inW].SelectedGroup);
                 }
                 else
                 {
