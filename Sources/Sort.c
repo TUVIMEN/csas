@@ -367,10 +367,10 @@ static int compUid(const void *El1, const void *El2)
 
 static int FindBorder(struct Element* El, size_t end)
 {
-    int j, i;
+    int j;
     bool g = 0;
     
-    for (i = 0; i < end; i++)
+    for (int i = 0; i < end; i++)
     {
         for (j = 0; BetterFiles[j] != 0; j++)
         {

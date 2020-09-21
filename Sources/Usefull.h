@@ -21,4 +21,8 @@ void TimeToStr(time_t *, char*);
 void RunFile(const char*);
 void MakePathShorter(char*, int);
 
+void DeleteGroup(Basic*, bool);
+void MoveGroup(Basic*, const char*, mode_t);
+void CopyGroup(Basic*, const char*, mode_t);
+
 #endif

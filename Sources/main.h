@@ -147,6 +147,11 @@
 #define GROUP_6 0x40
 #define GROUP_7 0x80
 
+#define M_REPLACE 0x1 //replace file
+#define M_MERGE   0x2 //merge directory
+#define M_DCPY    0x4 //don't copy if file exists
+#define M_CHNAME  0x8 //if file exists change name
+
 struct ShortDir
 {
     char* cwd;
@@ -159,7 +164,8 @@ struct Element
     char* name;
     unsigned char Type;
     unsigned int flags;
-    unsigned char List[WORKSPACE_N];
+    unsigned char *List;
+    ino_t inode;
 
     #ifdef __FILE_SIZE_ENABLE__
     unsigned long long int size;

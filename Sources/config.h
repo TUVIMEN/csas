@@ -11,7 +11,9 @@ char* UserHostPattern = "%s@%s";
 //0 - User Host 1 - Host User
 bool UserRHost = 0;
 
-uint32_t INOTIFY_MASK = IN_DELETE | IN_DELETE_SELF | IN_CREATE | IN_MOVE;
+int CopyBufferSize = 2<<16;
+
+uint32_t INOTIFY_MASK = IN_DELETE | IN_DELETE_SELF | IN_CREATE | IN_MOVE | IN_MOVE_SELF;
 
 int MoveOffSet = 8;
 bool WrapScroll = false;
@@ -45,7 +47,6 @@ bool ShowHiddenFiles = true;
 #endif
 
 #ifdef __SORT_ELEMENTS_ENABLE__
-    /*               Method     Reverse*/
 unsigned char SortMethod = SORT_NAME;
 int BetterFiles[] = {T_DIR,T_LDIR,0}; //Must be zero at the end
 #endif
@@ -175,8 +176,10 @@ FileSignatures signatures[] = {
     //First char in string can't be number!
 Key keys[] = {
     {"q",0,NULL,NULL},
-    {"j",1,NULL,NULL},
-    {"k",2,NULL,NULL},
+    {"j",1,1,NULL},
+    {"J",1,16,NULL},
+    {"k",2,1,NULL},
+    {"K",2,16,NULL},
     {"h",3,NULL,NULL},
     {"l",4,NULL,NULL},
     {"gff",27,0,"/run/media/kpp/fil"}, //0 - is env ; 1 - path/env
@@ -253,6 +256,10 @@ Key keys[] = {
     {"vdh",14,0,1},
     {"vea",14,1,0},
     {"veh",14,1,1},
+    {"pm",15,NULL,NULL},
+    {"pp",16,NULL,NULL},
+    {"dd",17,1,NULL},
+    {"dD",17,0,NULL},
     {NULL,0,NULL,NULL}
 };
 

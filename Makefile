@@ -1,7 +1,7 @@
 CC=gcc -std=gnu17
 CXX=g++ -std=c++17
 LINK=-lpthread -lncurses
-CFLAGS=-Wall -O2 -march=native #-fsanitize=address
+CFLAGS=-Wall -O2 -march=native
 CXXFLAGS=-Wall -O2 -pipe -march=native
 TARGET=main
 

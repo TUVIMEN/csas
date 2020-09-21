@@ -1,5 +1,6 @@
 #include "main.h"
 #include "Usefull.h"
+#include "Functions.h"
 
 extern char Values[];
 #ifdef __COLOR_FILES_BY_EXTENSION__
@@ -191,9 +192,7 @@ char* lsperms(int mode, int type)
     else if (type > 6 && type < 14)
         bits[0] = 'l';
     else
-    {
        bits[0] = '?';
-    }
 
 	xstrsncpy(&bits[1], rwx[(mode >> 6) & 7], 4);
 	xstrsncpy(&bits[4], rwx[(mode >> 3) & 7], 4);
@@ -301,9 +300,341 @@ void RunFile(const char* path)
     close(fd);
 }
 
-int MoveFile(struct ShortDir* f)
-{
+extern bool Bar2Enable;
 
+void DeleteFile(int fd, char* name)
+{
+    struct stat sFile;
+    fstatat(fd,name,&sFile,0);
+    
+    if ((sFile.st_mode& S_IFMT) == S_IFDIR)
+    {
+        int temp;
+        if ((temp = openat(fd,name,O_DIRECTORY)) != -1)
+        {
+            DIR* d = fdopendir(temp);
+            struct dirent *dir;
+            if (d)
+            {
+                while (dir = readdir(d))
+                    if (!(dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0'))))
+                        DeleteFile(temp,dir->d_name);
+                closedir(d);
+            }
+            close(temp);
+        }
+        unlinkat(fd,name,AT_REMOVEDIR);
+    }
+    else
+    {
+        unlinkat(fd,name,0);
+    }
+}
+
+void DeleteGroup(Basic* this, bool here)
+{
+    int count = 0;
+
+    if (here)
+    {
+        for (int i = 0; i < this->Work[this->inW].win[1]->El_t; i++)
+            if ((this->Work[this->inW].win[1]->El[i].List[this->inW]&this->Work[this->inW].SelectedGroup) == this->Work[this->inW].SelectedGroup)
+                count++;
+    }
+    else
+    {
+        for (int i = 0; i < this->ActualSize; i++)
+            for (int j = 0; j < this->Base[i].El_t; j++)
+                if ((this->Base[i].El[j].List[this->inW]&this->Work[this->inW].SelectedGroup) == this->Work[this->inW].SelectedGroup)
+                    count++;
+    }
+
+    int Event = -1;
+
+    do {
+        if (Event == 410)
+        {
+            DrawBasic(this,-1);
+            UpdateSizeBasic(this);
+        }
+
+        if (Bar2Enable)
+        {
+            for (int i = 0; i < this->win[4]->_maxx; i++)
+                mvwaddch(this->win[4],0,i,' ');
+            if (count > 0)
+                mvwprintw(this->win[4],0,0,"Confirm deletion of %d files (y/N)",count);
+            else if (!this->Work[this->inW].win[1]->enable && this->Work[this->inW].win[1]->El_t > 0)
+                mvwprintw(this->win[4],0,0,"Confirm deletion of %s (y/N)",this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].name);
+            wrefresh(this->win[4]);
+        }
+        Event = getch();
+    } while (Event == -1 || Event == 410);
+
+    if (Event == 'y' || Event == 'Y')
+    {
+        int fd;
+        if (count == 0 && !this->Work[this->inW].win[1]->enable && this->Work[this->inW].win[1]->El_t > 0)
+        {
+            if ((fd = open(this->Work[this->inW].win[1]->path,O_DIRECTORY)) != -1)
+            {
+                DeleteFile(fd,this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].name);
+                close(fd);
+            }
+        }
+        else if (here)
+        {
+            if ((fd = open(this->Work[this->inW].win[1]->path,O_DIRECTORY)) != -1)
+            {
+                for (int i = 0; i < this->Work[this->inW].win[1]->El_t; i++)
+                    if ((this->Work[this->inW].win[1]->El[i].List[this->inW]&this->Work[this->inW].SelectedGroup) == this->Work[this->inW].SelectedGroup)
+                        DeleteFile(fd,this->Work[this->inW].win[1]->El[i].name);
+                close(fd);
+            }
+            
+        }
+        else
+        {
+            for (int i = 0; i < this->ActualSize; i++)
+            {
+                if ((fd = open(this->Base[i].path,O_DIRECTORY)) != -1)
+                {
+                    for (int j = 0; j < this->Base[i].El_t; j++)
+                        if ((this->Base[i].El[j].List[this->inW]&this->Work[this->inW].SelectedGroup) == this->Work[this->inW].SelectedGroup)
+                            DeleteFile(fd,this->Base[i].El[j].name);
+                    close(fd);
+                }
+            }
+        }
+    }
+}
+
+extern int CopyBufferSize;
+
+void CopyFile(int fd1, int fd2, char* name, char* buffer, mode_t arg)
+{
+    struct stat sFile;
+    int fd3, fd4;
+    fstatat(fd2,name,&sFile,0);
+
+    char* temp = (char*)malloc(NAME_MAX);
+    strcpy(temp,name);
+    unsigned long long int num = 0;
+
+    while (faccessat(fd1,temp,F_OK,0) != -1)
+    {
+        if (snprintf(temp,NAME_MAX-1,"%s_%lld",name,num) == NAME_MAX-1)
+        {
+            free(temp);
+            return;
+        }
+        num++;
+    }
+
+    if ((sFile.st_mode& S_IFMT) == S_IFDIR)
+    {
+        if ((fd3 = openat(fd2,name,O_DIRECTORY)) != -1)
+        {
+            DIR* d = fdopendir(fd3);
+            struct dirent *dir;
+            
+            if (d)
+            {
+                mkdirat(fd1,temp,sFile.st_mode);
+                if ((fd4 = openat(fd1,temp,O_DIRECTORY)) != -1)
+                {
+                    while (dir = readdir(d))
+                        if (!(dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0'))))
+                            CopyFile(fd4,fd3,dir->d_name,buffer,arg);
+                    close(fd4);
+                }
+                closedir(d);
+            }
+            
+            close(fd3);
+        }
+    }
+    else
+    {
+        if ((fd3 = openat(fd2,name,O_RDONLY)) != -1)
+        {
+            if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sFile.st_mode)) != -1)
+            {
+                int bytesread;
+                while ((bytesread = read(fd3,buffer,CopyBufferSize)) > 0)
+                    write(fd4,buffer,bytesread);
+
+                close(fd4);
+            }
+            
+            close(fd3);
+        }
+    }
+
+    free(temp);
+}
+
+void CopyGroup(Basic* this, const char* target, mode_t arg)
+{
+    int fd1, fd2;
+    struct stat sFile1, sFile2;
+    char* buffer = (char*)malloc(CopyBufferSize);
+
+    if ((fd1 = open(target,O_DIRECTORY)) != -1)
+    {
+        if (fstat(fd1,&sFile1) == -1)
+        {
+            close(fd1);
+            free(buffer);
+            return;
+        }
+
+        for (int i = 0; i < this->ActualSize; i++)
+        {
+            if ((fd2 = open(this->Base[i].path,O_DIRECTORY)) != -1)
+            {
+                if (fstat(fd2,&sFile2) == -1)
+                {
+                    close(fd2);
+                    continue;
+                }
+
+                for (int j = 0; j < this->Base[i].El_t; j++)
+                {
+                    if ((this->Base[i].El[j].List[this->inW]&this->Work[this->inW].SelectedGroup) == this->Work[this->inW].SelectedGroup)
+                    {
+                        CopyFile(fd1,fd2,this->Base[i].El[j].name,buffer,arg);
+                    }
+                }
+                close(fd2);
+            }
+        }
+        close(fd1);
+    }
+    free(buffer);
+}
+
+void MoveFile(int fd1, int fd2, char* name, char* buffer, mode_t arg)
+{
+    struct stat sFile;
+    int fd3, fd4;
+    fstatat(fd2,name,&sFile,0);
+
+    char* temp = (char*)malloc(NAME_MAX);
+    strcpy(temp,name);
+    unsigned long long int num = 0;
+
+    while (faccessat(fd1,temp,F_OK,0) != -1)
+    {
+        if (snprintf(temp,NAME_MAX-1,"%s_%lld",name,num) == NAME_MAX-1)
+        {
+            free(temp);
+            return;
+        }
+        num++;
+    }
+
+    if ((sFile.st_mode& S_IFMT) == S_IFDIR)
+    {
+        if ((fd3 = openat(fd2,name,O_DIRECTORY)) != -1)
+        {
+            DIR* d = fdopendir(fd3);
+            struct dirent *dir;
+            
+            if (d)
+            {
+                mkdirat(fd1,temp,sFile.st_mode);
+                if ((fd4 = openat(fd1,temp,O_DIRECTORY)) != -1)
+                {
+                    while (dir = readdir(d))
+                        if (!(dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0'))))
+                            MoveFile(fd4,fd3,dir->d_name,buffer,arg);
+                    close(fd4);
+                }
+                closedir(d);
+            }
+            
+            close(fd3);
+            unlinkat(fd2,name,AT_REMOVEDIR);
+        }
+    }
+    else
+    {
+        if ((fd3 = openat(fd2,name,O_RDONLY)) != -1)
+        {
+            if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sFile.st_mode)) != -1)
+            {
+                int bytesread;
+                while ((bytesread = read(fd3,buffer,CopyBufferSize)) > 0)
+                    write(fd4,buffer,bytesread);
+
+                close(fd4);
+                unlinkat(fd2,name,0);
+            }
+            
+            close(fd3);
+        }
+    }
+
+    free(temp);
+}
+
+void MoveGroup(Basic* this, const char* target, mode_t arg)
+{
+    int fd1, fd2;
+    struct stat sFile1, sFile2;
+    char* buffer = (char*)malloc(CopyBufferSize);
+
+    if ((fd1 = open(target,O_DIRECTORY)) != -1)
+    {
+        if (fstat(fd1,&sFile1) == -1)
+        {
+            close(fd1);
+            free(buffer);
+            return;
+        }
+
+        for (int i = 0; i < this->ActualSize; i++)
+        {
+            if ((fd2 = open(this->Base[i].path,O_DIRECTORY)) != -1)
+            {
+                if (fstat(fd2,&sFile2) == -1)
+                {
+                    close(fd2);
+                    continue;
+                }
+
+                for (int j = 0; j < this->Base[i].El_t; j++)
+                {
+                    if ((this->Base[i].El[j].List[this->inW]&this->Work[this->inW].SelectedGroup) == this->Work[this->inW].SelectedGroup)
+                    {
+                        if (sFile1.st_dev == sFile2.st_dev)
+                        {
+                            char* temp = (char*)malloc(NAME_MAX);
+                            strcpy(temp,this->Base[i].El[j].name);
+                            unsigned long long int num = 0;
+
+                            while (faccessat(fd1,temp,F_OK,0) != -1)
+                            {
+                                if (snprintf(temp,NAME_MAX-1,"%s_%lld",this->Base[i].El[j].name,num) == NAME_MAX-1)
+                                {
+                                    free(temp);
+                                    return;
+                                }
+                                num++;
+                            }
+                            renameat(fd2,this->Base[i].El[j].name,fd1,temp);
+                        }
+                        else
+                            MoveFile(fd1,fd2,this->Base[i].El[j].name,buffer,arg);
+                    }
+                }
+                close(fd2);
+            }
+        }
+        close(fd1);
+    }
+    free(buffer);
 }
 
 void TimeToStr(time_t *time, char* result)
