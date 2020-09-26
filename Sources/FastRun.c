@@ -3,25 +3,23 @@
 #include "Load.h"
 #include "Functions.h"
 
-extern bool Borders;
-extern bool Win3Enable;
-extern bool Win3Display;
+extern Settings* settings;
 
 void FastRun(Basic* this)
 {
-    for (int i = Borders; i < this->win[2]->_maxy-Borders+1; i++)
-        for (int j = Borders; j < this->win[2]->_maxx+1-Borders; j++)
+    for (int i = settings->Borders; i < this->win[2]->_maxy-settings->Borders+1; i++)
+        for (int j = settings->Borders; j < this->win[2]->_maxx+1-settings->Borders; j++)
             mvwaddch(this->win[2],i,j,' ');
 
     if (this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].Type == T_DIR ||
         this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].Type == T_LDIR)
     {
-        Win3Display = true;
-        GetDir(this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].name,this,2,1);
+        settings->Win3Display = true;
+        GetDir(this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].name,this,2,settings->Threads);
         return;
     }
 
-    Win3Display = false;
+    settings->Win3Display = false;
 
     /*if (this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].Type == T_REG ||
         this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].Type == T_LREG)

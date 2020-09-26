@@ -1,4 +1,4 @@
-#define __THREADS_ENABLE__
+#define __LOAD_CONFIG_ENABLE__
 
 //#define __FILE_GROUPS_ENABLE__
 

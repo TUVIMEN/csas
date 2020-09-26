@@ -3,11 +3,11 @@
 
 char* MakeCharRunAble(char* temp)
 {
-    for (int i = 0; i < strlen(temp); i++)
+    for (size_t i = 0; i < strlen(temp); i++)
     {
         if(temp[i] == '\\' || temp[i] == '\"' || temp[i] == '\'' || temp[i] == ' ' || temp[i] == '(' || temp[i] == ')' || temp[i] == '[' || temp[i] == ']' || temp[i] == '{' || temp[i] == '}')
         {
-            for (int j = strlen(temp); j > i; j--)
+            for (size_t j = strlen(temp); j > i; j--)
                 temp[j] = temp[j-1];
             temp[i] = '\\';
             i++;
@@ -41,7 +41,7 @@ void bulk(struct ShortDir* vector, char* set0, char* set1, char* set2, char* set
     for (struct ShortDir* i = vector; i->names_t; i++)
     {
         fprintf(file1,"//\t%s\n",i->cwd);
-        for (int j = 0; j < i->names_t; j++)
+        for (size_t j = 0; j < i->names_t; j++)
             fprintf(file1,"%s\n",i->names[j]);
     }
 
@@ -62,7 +62,7 @@ void bulk(struct ShortDir* vector, char* set0, char* set1, char* set2, char* set
 
     for (struct ShortDir* i = vector; i->names_t; i++)
     {
-        for (int j = 0; j < i->names_t; j++)
+        for (size_t j = 0; j < i->names_t; j++)
         {
             if (singleLine[0] != '\0' && singleLine[0] != '/' && singleLine[0] != '\n')
             {

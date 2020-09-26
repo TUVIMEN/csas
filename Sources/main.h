@@ -242,6 +242,87 @@ typedef struct
 
 typedef struct
 {
+    bool Threads;
+    char* shell;
+    char* Values;
+    char* editor;
+    long long int BarSettings;
+    char* UserHostPattern;
+    int CopyBufferSize;
+    uint32_t INOTIFY_MASK;
+    int MoveOffSet;
+    bool WrapScroll;
+    bool JumpScroll;
+    int JumpScrollValue;
+    bool UserRHost;
+    bool StatusBarOnTop;
+    bool Win1Enable;
+    bool Win1Display;
+    bool Win3Enable;
+    bool Win3Display;
+    bool Bar1Enable;
+    bool Bar2Enable;
+    float* WinSizeMod;
+    bool Borders;
+    bool FillBlankSpace;
+    int* WindowBorder;
+    bool EnableColor;
+    int DelayBetweenFrames;
+    bool NumberLines;
+    bool NumberLinesOff;
+    bool NumberLinesFromOne;
+    int DisplayingC;
+    #ifdef __SHOW_HIDDEN_FILES_ENABLE__
+    bool ShowHiddenFiles;
+    #endif
+    #ifdef __SORT_ELEMENTS_ENABLE__
+    unsigned char SortMethod;
+    int* BetterFiles;
+    #endif
+    #ifdef __BLOCK_SIZE_ELEMENTS_ENABLE__
+    size_t BlockSize;
+    #endif
+    char DirSizeMethod;
+    int C_Error;
+    #ifdef __COLOR_FILES_BY_EXTENSION__
+    int C_FType_A;
+    int C_FType_I;
+    int C_FType_V;
+    #endif
+    int C_Selected;
+    int C_Exec_set;
+    int C_Exec;
+    int C_BLink;
+    int C_Dir;
+    int C_Reg;
+    int C_Fifo;
+    int C_Sock;
+    int C_Dev;
+    int C_BDev;
+    int C_LDir;
+    int C_LReg;
+    int C_LFifo;
+    int C_LSock;
+    int C_LDev;
+    int C_LBDev;
+    int C_Other;
+    int C_User_S_D;
+    int C_Bar_Dir;
+    int C_Bar_Name;
+    int C_Bar_WorkSpace;
+    int C_Bar_WorkSpace_Selected;
+    int C_Group_0;
+    int C_Group_1;
+    int C_Group_2;
+    int C_Group_3;
+    int C_Group_4;
+    int C_Group_5;
+    int C_Group_6;
+    int C_Group_7;
+} Settings;
+
+typedef struct
+{
     int wx, wy, WinMiddle;
     WINDOW *win[5];
     size_t ActualSize;
@@ -258,6 +339,20 @@ typedef struct
 typedef struct {
     char* keys;
     int act;
-    void* slc1;
-    void* slc2;
+    union {
+        void* v;
+        double d;
+        long long int ll;
+    } slc1, slc2;
 } Key;
+
+struct SetEntry {
+    char* name;
+    char type;
+    void* value;
+};
+
+struct AliasesT {
+    char* name;
+    long long int v;
+};

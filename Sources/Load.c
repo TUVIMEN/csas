@@ -5,17 +5,9 @@
 #include "Sort.h"
 #endif
 
-#ifdef __SHOW_HIDDEN_FILES_ENABLE__
-extern bool ShowHiddenFiles;
-#endif
-#ifdef __SORT_ELEMENTS_ENABLE__
 #include "Usefull.h"
-extern unsigned char SortMethod;
-#endif
 
-#ifdef __GET_DIR_SIZE_ENABLE__
-extern char DirSizeMethod;
-#endif
+extern Settings* settings;
 
 void* LoadDir(void *arg)
 {
@@ -33,7 +25,7 @@ void* LoadDir(void *arg)
     {
         int tfd;
         fd = dirfd(d);
-        
+
         if (this->El_t > 0)
         {
             struct Element* newEl = NULL;
@@ -41,7 +33,7 @@ void* LoadDir(void *arg)
             buffer_size = 0;
             size_t begin = 0, end = this->El_t;
 
-            for (int i = 0;dir = readdir(d); i++)
+            for (int i = 0; (dir = readdir(d)); i++)
             {
                 #ifdef __SHOW_HIDDEN_FILES_ENABLE__
                 if(!ShowHiddenFiles)
@@ -65,7 +57,7 @@ void* LoadDir(void *arg)
                     fstatat(fd,dir->d_name,&sFile,AT_SYMLINK_NOFOLLOW);
                     newEl[newEl_t].Type = 7;
                 }
-                
+
                 if (newEl[newEl_t].Type != 7)
                 {
                     if (dir->d_type == 10)
@@ -84,7 +76,7 @@ void* LoadDir(void *arg)
 
                     typeOFF = 0;
                 }
-            
+
                 newEl[newEl_t].inode = dir->d_ino;
 
                 #ifdef __MTIME_ENABLE__
@@ -100,11 +92,11 @@ void* LoadDir(void *arg)
                 newEl[newEl_t].flags = sFile.st_mode;
 
                 #ifdef __GET_DIR_SIZE_ENABLE__
-                if ((DirSizeMethod&D_F) != D_F && (sFile.st_mode & S_IFMT) == S_IFDIR)
+                if ((settings->DirSizeMethod&D_F) != D_F && (sFile.st_mode & S_IFMT) == S_IFDIR)
                 {
                     if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
                     {
-                        newEl[newEl_t].size = GetDirSize(tfd,(DirSizeMethod&D_R) == D_R,(DirSizeMethod&D_C) == D_C);
+                        newEl[newEl_t].size = GetDirSize(tfd,(settings->DirSizeMethod&D_R) == D_R,(settings->DirSizeMethod&D_C) == D_C);
                         close(tfd);
                     }
                     else
@@ -121,13 +113,13 @@ void* LoadDir(void *arg)
                 #endif
 
                 newEl[newEl_t].List = calloc(WORKSPACE_N,1);
-                for (int i = begin; i < end; i++) //killer
+                for (size_t i = begin; i < end; i++) //killer
                 {
                     if (this->El[i].inode == dir->d_ino)
                     {
                         //if (strcmp(this->El[i].name,dir->d_name) == 0)
                         //{
-                            begin += (i == begin);
+                            begin += 1*(i == begin);
                             end -= (i == end);
                             memcpy(newEl[newEl_t].List,this->El[i].List,WORKSPACE_N);
                             break;
@@ -144,7 +136,7 @@ void* LoadDir(void *arg)
 
                 ++(newEl_t);
             }
-            for (int i = 0; i < this->El_t; i++)
+            for (size_t i = 0; i < this->El_t; i++)
             {
                 free(this->El[i].List);
                 free(this->El[i].name);
@@ -180,7 +172,7 @@ void* LoadDir(void *arg)
                     fstatat(fd,dir->d_name,&sFile,AT_SYMLINK_NOFOLLOW);
                     this->El[this->El_t].Type = 7;
                 }
-                
+
                 if (this->El[this->El_t].Type != 7)
                 {
                     if (dir->d_type == 10)
@@ -199,7 +191,7 @@ void* LoadDir(void *arg)
 
                     typeOFF = 0;
                 }
-            
+
                 this->El[this->El_t].inode = dir->d_ino;
                 //printf("%s %ld %ld %ld\n",dir->d_name,dir->d_ino,dir->d_off,dir->d_reclen);
 
@@ -216,11 +208,11 @@ void* LoadDir(void *arg)
                 this->El[this->El_t].flags = sFile.st_mode;
 
                 #ifdef __GET_DIR_SIZE_ENABLE__
-                if ((DirSizeMethod&D_F) != D_F && (sFile.st_mode & S_IFMT) == S_IFDIR)
+                if ((settings->DirSizeMethod&D_F) != D_F && (sFile.st_mode & S_IFMT) == S_IFDIR)
                 {
                     if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
                     {
-                        this->El[this->El_t].size = GetDirSize(tfd,(DirSizeMethod&D_R) == D_R,(DirSizeMethod&D_C) == D_C);
+                        this->El[this->El_t].size = GetDirSize(tfd,(settings->DirSizeMethod&D_R) == D_R,(settings->DirSizeMethod&D_C) == D_C);
                         close(tfd);
                     }
                     else
@@ -254,9 +246,7 @@ void* LoadDir(void *arg)
     {
         this->El_t = -1;
         this->enable = false;
-        #ifdef __THREADS_ENABLE__
         pthread_detach(this->thread);
-        #endif
         pthread_exit(NULL);
     }
 
@@ -274,13 +264,9 @@ void* LoadDir(void *arg)
     }
 
     this->enable = false;
-    #ifdef __THREADS_ENABLE__
     pthread_detach(this->thread);
-    #endif
     pthread_exit(NULL);
 }
-
-extern int32_t INOTIFY_MASK;
 
 // The despair
 void GetDir(char* path, Basic* this, int Which, bool threaded)
@@ -290,7 +276,7 @@ void GetDir(char* path, Basic* this, int Which, bool threaded)
     realpath(path,temp);
 
     int found = -1;
-    for (int i = 0; i < this->ActualSize; i++)
+    for (size_t i = 0; i < this->ActualSize; i++)
     {
         if (strcmp(this->Base[i].path,temp) == 0)
         {
@@ -304,7 +290,7 @@ void GetDir(char* path, Basic* this, int Which, bool threaded)
         if (this->ActualSize == this->AllocatedSize)
         {
             this->Base = (struct Dir*)realloc(this->Base,(this->AllocatedSize+=DIR_BASE_STABLE_RATE)*sizeof(struct Dir));
-            for (int i = this->AllocatedSize-DIR_BASE_STABLE_RATE; i < this->AllocatedSize; i++)
+            for (size_t i = this->AllocatedSize-DIR_BASE_STABLE_RATE; i < this->AllocatedSize; i++)
             {
                 this->Base[i].El = NULL;
                 this->Base[i].El_t = 0;
@@ -336,7 +322,7 @@ void GetDir(char* path, Basic* this, int Which, bool threaded)
     if (this->Base[found].fd == -1)
     {
         this->Base[found].fd = inotify_init1(IN_NONBLOCK);
-        this->Base[found].wd = inotify_add_watch(this->Base[found].fd,this->Base[found].path,INOTIFY_MASK);
+        this->Base[found].wd = inotify_add_watch(this->Base[found].fd,this->Base[found].path,settings->INOTIFY_MASK);
         IsChangeInDir = true;
     }
     else
@@ -350,19 +336,15 @@ void GetDir(char* path, Basic* this, int Which, bool threaded)
     {
         memset(this->Base[found].selected,0,WORKSPACE_N);
         memset(this->Base[found].Ltop,0,WORKSPACE_N);
-        this->Base[found].sort_m = SortMethod;
+        this->Base[found].sort_m = settings->SortMethod;
         if (this->Base[found].enable)
             pthread_join(this->Base[found].thread,NULL);
         this->Base[found].enable = true;
 
         pthread_create(&this->Base[found].thread,NULL,LoadDir,&this->Base[found]);
-        #ifdef __THREADS_ENABLE__
-            if (!threaded)
-                pthread_join(this->Base[found].thread,NULL);
-        #else
+        if (!threaded)
             pthread_join(this->Base[found].thread,NULL);
-        #endif
-
+    
         //endwin();
         //printf("%s %ld %ld %ld\n",this->Base[found].path,this->Base[found].El_t, this->ActualSize, this->AllocatedSize);
         //initscr();

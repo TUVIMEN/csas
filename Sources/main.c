@@ -12,13 +12,11 @@
 #include "Chars.h"
 #include "FastRun.h"
 
-int main(int argc, char** argv, char** envp)
+int main(int argc, char** argv)
 {
+    printf("%d\n",argc);
     setlocale(LC_ALL, "");
     signal(SIGINT,SIG_IGN);
-
-    Win1Display = Win1Enable;
-    Win3Display = Win3Enable;
 
     /*struct ShortDir* sda1 = (struct ShortDir*)malloc(sizeof(struct ShortDir)*4);
     for (int i = 0; i < 4; i++)
@@ -55,20 +53,18 @@ int main(int argc, char** argv, char** envp)
         printf("%f\n",ActualTime);
     }*/
 
-    initscr();
+    Basic* Armor = InitBasic();
 
     noecho();
 
-    //cbreak();
-    //raw();
     curs_set(0);
     keypad(stdscr,TRUE);
-    if (DelayBetweenFrames > -1)
-        halfdelay(DelayBetweenFrames);
+    if (settings->DelayBetweenFrames > -1)
+        halfdelay(settings->DelayBetweenFrames);
     else
         nodelay(stdscr,true);
 
-    if (has_colors && EnableColor)
+    if (has_colors() && settings->EnableColor)
     {
         start_color();
         use_default_colors();
@@ -79,7 +75,7 @@ int main(int argc, char** argv, char** envp)
 
     bool ExitTime = false;
 
-    Basic* Armor = InitBasic();
+
     int si;
     char* cSF = (char*)calloc(64,sizeof(char));
 
@@ -99,7 +95,7 @@ int main(int argc, char** argv, char** envp)
     // So i load the main directory, because he's in most cases small
     //CD("/",Armor);
     CD(argv[1],Armor);
-    int score = 0;
+    //int score = 0;
 
     do {
         clock_gettime(1,&MainTimer);
@@ -140,7 +136,7 @@ int main(int argc, char** argv, char** envp)
         {
             PastTime = ActualTime;
             GetDir(".",Armor,1,false);
-            if (Win1Display)
+            if (settings->Win1Display)
                 GetDir("..",Armor,0,false);
             /*endwin();
             printf("%d\n",score);

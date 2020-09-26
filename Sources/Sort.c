@@ -4,24 +4,24 @@
 
 #include "Sort.h"
 
-extern int BetterFiles[];
+extern Settings* settings;
 
 static int compBet(const void* El1, const void* El2)
 {
     bool g1 = 0, g2 = 0;
     int j;
 
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El1)->Type == BetterFiles[j])
+        if (((struct Element*)El1)->Type == settings->BetterFiles[j])
         {
             g1 = 1;
             break;
         }
     }
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El2)->Type == BetterFiles[j])
+        if (((struct Element*)El2)->Type == settings->BetterFiles[j])
         {
             g2 = 1;
             break;
@@ -50,17 +50,17 @@ static int compSize(const void *El1, const void *El2)
     bool g1 = 0, g2 = 0;
     int j;
 
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El1)->Type == BetterFiles[j])
+        if (((struct Element*)El1)->Type == settings->BetterFiles[j])
         {
             g1 = 1;
             break;
         }
     }
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El2)->Type == BetterFiles[j])
+        if (((struct Element*)El2)->Type == settings->BetterFiles[j])
         {
             g2 = 1;
             break;
@@ -84,17 +84,17 @@ static int compSName(const void *El1, const void *El2)
     bool g1 = 0, g2 = 0;
     register int j;
 
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El1)->Type == BetterFiles[j])
+        if (((struct Element*)El1)->Type == settings->BetterFiles[j])
         {
             g1 = 1;
             break;
         }
     }
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El2)->Type == BetterFiles[j])
+        if (((struct Element*)El2)->Type == settings->BetterFiles[j])
         {
             g2 = 1;
             break;
@@ -129,17 +129,17 @@ static int compLName(const void *El1, const void *El2)
     bool g1 = 0, g2 = 0;
     register int j;
 
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El1)->Type == BetterFiles[j])
+        if (((struct Element*)El1)->Type == settings->BetterFiles[j])
         {
             g1 = 1;
             break;
         }
     }
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El2)->Type == BetterFiles[j])
+        if (((struct Element*)El2)->Type == settings->BetterFiles[j])
         {
             g2 = 1;
             break;
@@ -166,17 +166,17 @@ static int compMTime(const void *El1, const void *El2)
     bool g1 = 0, g2 = 0;
     int j;
 
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El1)->Type == BetterFiles[j])
+        if (((struct Element*)El1)->Type == settings->BetterFiles[j])
         {
             g1 = 1;
             break;
         }
     }
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El2)->Type == BetterFiles[j])
+        if (((struct Element*)El2)->Type == settings->BetterFiles[j])
         {
             g2 = 1;
             break;
@@ -200,17 +200,17 @@ static int compATime(const void *El1, const void *El2)
     bool g1 = 0, g2 = 0;
     int j;
 
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El1)->Type == BetterFiles[j])
+        if (((struct Element*)El1)->Type == settings->BetterFiles[j])
         {
             g1 = 1;
             break;
         }
     }
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El2)->Type == BetterFiles[j])
+        if (((struct Element*)El2)->Type == settings->BetterFiles[j])
         {
             g2 = 1;
             break;
@@ -234,17 +234,17 @@ static int compCTime(const void *El1, const void *El2)
     bool g1 = 0, g2 = 0;
     int j;
 
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El1)->Type == BetterFiles[j])
+        if (((struct Element*)El1)->Type == settings->BetterFiles[j])
         {
             g1 = 1;
             break;
         }
     }
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El2)->Type == BetterFiles[j])
+        if (((struct Element*)El2)->Type == settings->BetterFiles[j])
         {
             g2 = 1;
             break;
@@ -269,17 +269,17 @@ static int compGid(const void *El1, const void *El2)
     bool g1 = 0, g2 = 0;
     int j;
 
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El1)->Type == BetterFiles[j])
+        if (((struct Element*)El1)->Type == settings->BetterFiles[j])
         {
             g1 = 1;
             break;
         }
     }
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El2)->Type == BetterFiles[j])
+        if (((struct Element*)El2)->Type == settings->BetterFiles[j])
         {
             g2 = 1;
             break;
@@ -304,17 +304,17 @@ static int compUid(const void *El1, const void *El2)
     bool g1 = 0, g2 = 0;
     int j;
 
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El1)->Type == BetterFiles[j])
+        if (((struct Element*)El1)->Type == settings->BetterFiles[j])
         {
             g1 = 1;
             break;
         }
     }
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (((struct Element*)El2)->Type == BetterFiles[j])
+        if (((struct Element*)El2)->Type == settings->BetterFiles[j])
         {
             g2 = 1;
             break;
@@ -338,17 +338,17 @@ static int compUid(const void *El1, const void *El2)
     int j;
     bool g1 = 0, g2 = 0;
     int ret = 1;
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (El[((begin+end)/2)-1].Type == BetterFiles[j])
+        if (El[((begin+end)/2)-1].Type == settings->BetterFiles[j])
         {
             g1 = 1;
             break;
         }
     }
-    for (j = 0; BetterFiles[j] != 0; j++)
+    for (j = 0; settings->BetterFiles[j] != 0; j++)
     {
-        if (El[((begin+end)/2)].Type == BetterFiles[j])
+        if (El[((begin+end)/2)].Type == settings->BetterFiles[j])
         {
             g2 = 1;
             break;
@@ -367,14 +367,14 @@ static int compUid(const void *El1, const void *El2)
 
 static int FindBorder(struct Element* El, size_t end)
 {
-    int j;
+    size_t j;
     bool g = 0;
-    
-    for (int i = 0; i < end; i++)
+
+    for (size_t i = 0; i < end; i++)
     {
-        for (j = 0; BetterFiles[j] != 0; j++)
+        for (j = 0; settings->BetterFiles[j] != 0; j++)
         {
-            if (El[i].Type == BetterFiles[j])
+            if (El[i].Type == settings->BetterFiles[j])
             {
                 g = 1;
                 break;
@@ -432,11 +432,11 @@ void SortEl(struct Element* El, size_t El_t, unsigned char Method)
         else
         {
             //int border = FindBorder(El,0,El_t-1);
-            int border = FindBorder(El,El_t);
+            size_t border = FindBorder(El,El_t);
 
             if (border > 0)
             {
-                for (int i = 0, j = border-1; i < j; i++, j--)
+                for (size_t i = 0, j = border-1; i < j; i++, j--)
                 {
                     Temp = El[i];
                     El[i] = El[j];
@@ -445,7 +445,7 @@ void SortEl(struct Element* El, size_t El_t, unsigned char Method)
 
                 if (border != El_t)
                 {
-                    for (int i = border, j = El_t-1; i < j; i++, j--)
+                    for (size_t i = border, j = El_t-1; i < j; i++, j--)
                     {
                         Temp = El[i];
                         El[i] = El[j];

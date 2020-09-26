@@ -4,51 +4,47 @@
 #include "FastRun.h"
 #include "Usefull.h"
 
-extern Key keys[];
-
-extern bool Win3Enable;
-extern bool Win1Enable;
-extern bool Win1Display;
-extern bool Borders;
-extern unsigned char SortMethod;
+extern Key* keys;
+extern size_t keys_t;
+extern Settings* settings;
 
 void CD(char* path, Basic* this)
 {
     if (chdir(path) != 0)
         return;
-    
+
     #ifdef __FILESYSTEM_INFORMATION_ENABLE__
     statfs(".",&this->fs);
     #endif
 
-    for (int i = Borders; i < this->win[1]->_maxy-Borders+1; i++)
-            for (int j = Borders; j < this->win[1]->_maxx; j++)
+    for (int i = settings->Borders; i < this->win[1]->_maxy-settings->Borders+1; i++)
+            for (int j = settings->Borders; j < this->win[1]->_maxx; j++)
                 mvwaddch(this->win[1],i,j,' ');
     wrefresh(this->win[1]);
-    GetDir(".",this,1,0);
+    GetDir(".",this,1,settings->Threads);
 
-    if (Win1Enable)
+    if (settings->Win1Enable)
     {
-        for (int i = Borders; i < this->win[0]->_maxy-Borders+1; i++)
-            for (int j = Borders; j < this->win[0]->_maxx; j++)
+        for (int i = settings->Borders; i < this->win[0]->_maxy-settings->Borders+1; i++)
+            for (int j = settings->Borders; j < this->win[0]->_maxx; j++)
                 mvwaddch(this->win[0],i,j,' ');
         wrefresh(this->win[0]);
-    
+
         if (this->Work[this->inW].win[1]->path[0] == '/' && this->Work[this->inW].win[1]->path[1] == '\0')
-            Win1Display = false;
+            settings->Win1Display = false;
         else
         {
-            GetDir("..",this,0,1);
-            Win1Display = true;
+            GetDir("..",this,0,settings->Threads);
+            settings->Win1Display = true;
         }
     }
 
-    if (Win3Enable)
+    if (settings->Win3Enable)
     {
         if (this->Work[this->inW].win[1]->El_t == 0)
         {
-            for (int i = Borders; i < this->win[2]->_maxy-Borders+1; i++)
-                for (int j = Borders; j < this->win[2]->_maxx; j++)
+            for (int i = settings->Borders; i < this->win[2]->_maxy-settings->Borders+1; i++)
+                for (int j = settings->Borders; j < this->win[2]->_maxx; j++)
                     mvwaddch(this->win[2],i,j,' ');
             wrefresh(this->win[2]);
         }
@@ -90,7 +86,7 @@ void UpdateEvent(int* result, char* cSF, Basic* this)
     if ((int)Event == 27) { *result = -1; return; }
     cSF[strlen(cSF)] = Event;
 
-    for (int i = 0; keys[i].keys != NULL; i++)
+    for (size_t i = 0; i < keys_t; i++)
     {
         if (Event == keys[i].keys[0])
         {
@@ -99,6 +95,7 @@ void UpdateEvent(int* result, char* cSF, Basic* this)
             theyPass[theyPass_t-1] = i;
         }
     }
+    
 
     bool StartsTheString = 0;
 
@@ -116,7 +113,7 @@ void UpdateEvent(int* result, char* cSF, Basic* this)
         int* abcs = NULL;
         size_t abcs_t = 0;
 
-        for (int j = 0; j < theyPass_t; j++)
+        for (size_t j = 0; j < theyPass_t; j++)
         {
             if (Event == keys[theyPass[j]].keys[i])
             {
@@ -138,11 +135,11 @@ void GoDown(Basic* this)
 {
     if (this->Work[this->inW].Visual)
     {
-        for (int i = this->Work[this->inW].win[1]->selected[this->inW]; i < this->Work[this->inW].win[1]->El_t; i++)
+        for (size_t i = this->Work[this->inW].win[1]->selected[this->inW]; i < this->Work[this->inW].win[1]->El_t; i++)
             this->Work[this->inW].win[1]->El[i].List[this->inW] |= this->Work[this->inW].SelectedGroup;
     }
-    if (this->Work[this->inW].win[1]->El_t > this->win[1]->_maxy-!Borders+Borders)
-        this->Work[this->inW].win[1]->Ltop[this->inW] = this->Work[this->inW].win[1]->El_t-this->win[1]->_maxy-!Borders+Borders;
+    if (this->Work[this->inW].win[1]->El_t > (size_t)this->win[1]->_maxy-!settings->Borders+settings->Borders)
+        this->Work[this->inW].win[1]->Ltop[this->inW] = this->Work[this->inW].win[1]->El_t-this->win[1]->_maxy-!settings->Borders+settings->Borders;
     else
         this->Work[this->inW].win[1]->Ltop[this->inW] = 0;
     this->Work[this->inW].win[1]->selected[this->inW] = this->Work[this->inW].win[1]->El_t-1;
@@ -159,16 +156,11 @@ static void GoTop(Basic* this)
     this->Work[this->inW].win[1]->Ltop[this->inW] = 0;
 }
 
-extern int MoveOffSet;
-extern bool WrapScroll;
-extern bool JumpScroll;
-extern bool JumpScrollValue;
-
 static void MoveD(int how, Basic* this)
 {
     if (how == 1) //down
     {
-        if (WrapScroll)
+        if (settings->WrapScroll)
         {
             if (this->Work[this->inW].win[1]->selected[this->inW] == this->Work[this->inW].win[1]->El_t-1)
             {
@@ -178,14 +170,14 @@ static void MoveD(int how, Basic* this)
         }
         if (this->Work[this->inW].win[1]->El_t-1 > this->Work[this->inW].win[1]->selected[this->inW])
             this->Work[this->inW].win[1]->selected[this->inW]++;
-        if (this->win[1]->_maxy+this->Work[this->inW].win[1]->Ltop[this->inW]-(Borders*2) != this->Work[this->inW].win[1]->El_t-1 && this->win[1]->_maxy+this->Work[this->inW].win[1]->Ltop[this->inW]-(Borders*2) < this->Work[this->inW].win[1]->selected[this->inW]+MoveOffSet)
+        if (this->win[1]->_maxy+this->Work[this->inW].win[1]->Ltop[this->inW]-(settings->Borders*2) != this->Work[this->inW].win[1]->El_t-1 && this->win[1]->_maxy+this->Work[this->inW].win[1]->Ltop[this->inW]-(settings->Borders*2) < this->Work[this->inW].win[1]->selected[this->inW]+settings->MoveOffSet)
         {
-            if (JumpScroll)
+            if (settings->JumpScroll)
             {
-                if (this->win[1]->_maxy+this->Work[this->inW].win[1]->Ltop[this->inW]-(Borders*2)+JumpScrollValue > this->Work[this->inW].win[1]->El_t-1)
-                    this->Work[this->inW].win[1]->Ltop[this->inW] = this->Work[this->inW].win[1]->El_t-this->win[1]->_maxy-!Borders+Borders;
+                if (this->win[1]->_maxy+this->Work[this->inW].win[1]->Ltop[this->inW]-(settings->Borders*2)+settings->JumpScrollValue > this->Work[this->inW].win[1]->El_t-1)
+                    this->Work[this->inW].win[1]->Ltop[this->inW] = this->Work[this->inW].win[1]->El_t-this->win[1]->_maxy-!settings->Borders+settings->Borders;
                 else
-                    this->Work[this->inW].win[1]->Ltop[this->inW] += JumpScrollValue;
+                    this->Work[this->inW].win[1]->Ltop[this->inW] += settings->JumpScrollValue;
             }
             else
                 this->Work[this->inW].win[1]->Ltop[this->inW]++;
@@ -193,7 +185,7 @@ static void MoveD(int how, Basic* this)
     }
     if (how == 2) //up
     {
-        if (WrapScroll)
+        if (settings->WrapScroll)
         {
             if (this->Work[this->inW].win[1]->selected[this->inW] == 0)
             {
@@ -203,14 +195,14 @@ static void MoveD(int how, Basic* this)
         }
         if (0 < this->Work[this->inW].win[1]->selected[this->inW])
             this->Work[this->inW].win[1]->selected[this->inW]--;
-        if (this->win[1]->_maxy+this->Work[this->inW].win[1]->Ltop[this->inW]-(Borders*2) != 0 && this->Work[this->inW].win[1]->Ltop[this->inW] > this->Work[this->inW].win[1]->selected[this->inW]-MoveOffSet)
+        if (this->win[1]->_maxy+this->Work[this->inW].win[1]->Ltop[this->inW]-(settings->Borders*2) != 0 && this->Work[this->inW].win[1]->Ltop[this->inW] > this->Work[this->inW].win[1]->selected[this->inW]-settings->MoveOffSet)
         {
-            if (JumpScroll)
+            if (settings->JumpScroll)
             {
-                if (this->win[1]->_maxy+this->Work[this->inW].win[1]->Ltop[this->inW]-(Borders*2)-JumpScrollValue < JumpScrollValue)
+                if (this->win[1]->_maxy+this->Work[this->inW].win[1]->Ltop[this->inW]-(settings->Borders*2)-settings->JumpScrollValue < (size_t)settings->JumpScrollValue)
                     this->Work[this->inW].win[1]->Ltop[this->inW] = 0;
                 else
-                    this->Work[this->inW].win[1]->Ltop[this->inW] -= JumpScrollValue;
+                    this->Work[this->inW].win[1]->Ltop[this->inW] -= settings->JumpScrollValue;
             }
             else
                 this->Work[this->inW].win[1]->Ltop[this->inW]--;
@@ -225,7 +217,7 @@ void ExitBasic(bool* ExitTime, Basic* this)
     int count = 0;
     for (int i = 0; i < WORKSPACE_N; i++)
         count += this->Work[i].exists;
-    
+
     this->Work[this->inW].exists = 0;
 
     if (count > 1)
@@ -259,11 +251,11 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
             if (!this->Work[this->inW].win[1]->enable && this->Work[this->inW].win[1]->El_t > 0)
             {
                 temp = atoi(cSF);
-                for (int i = 0; i < temp+(int)keys[si].slc1; i++)
+                for (int i = 0; i < (temp+(temp == 0))*(keys[si].slc1.ll+(keys[si].slc1.ll == 0)); i++)
                 {
                     MoveD(1,this);
                 }
-                if (Win3Enable)
+                if (settings->Win3Enable)
                     FastRun(this);
             }
             break;
@@ -271,11 +263,11 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
             if (!this->Work[this->inW].win[1]->enable && this->Work[this->inW].win[1]->El_t > 0)
             {
                 temp = atoi(cSF);
-                for (int i = 0; i < temp+(int)keys[si].slc1; i++)
+                for (int i = 0; i < (temp+(temp == 0))*(keys[si].slc1.ll+(keys[si].slc1.ll == 0)); i++)
                 {
                     MoveD(2,this);
                 }
-                if (Win3Enable)
+                if (settings->Win3Enable)
                     FastRun(this);
             }
             break;
@@ -306,17 +298,17 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
                 temp = atoi(cSF);
                 if (temp == 0)
                     GoTop(this);
-                else if (temp > this->Work[this->inW].win[1]->selected[this->inW])
+                else if ((size_t)temp > this->Work[this->inW].win[1]->selected[this->inW])
                 {
                     for (int i = this->Work[this->inW].win[1]->selected[this->inW]; i < temp-1; i++)
                         MoveD(1,this);
                 }
-                else if (temp < this->Work[this->inW].win[1]->selected[this->inW])
+                else if ((size_t)temp < this->Work[this->inW].win[1]->selected[this->inW])
                 {
                     for (int i = this->Work[this->inW].win[1]->selected[this->inW]; i > temp-1; i--)
                         MoveD(2,this);
                 }
-                if (Win3Enable)
+                if (settings->Win3Enable)
                     FastRun(this);
             }
             break;
@@ -326,25 +318,25 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
                 temp = atoi(cSF);
                 if (temp == 0)
                     GoDown(this);
-                else if (temp > this->Work[this->inW].win[1]->selected[this->inW])
+                else if ((size_t)temp > this->Work[this->inW].win[1]->selected[this->inW])
                 {
                     for (int i = this->Work[this->inW].win[1]->selected[this->inW]; i < temp-1; i++)
                         MoveD(1,this);
                 }
-                else if (temp < this->Work[this->inW].win[1]->selected[this->inW])
+                else if ((size_t)temp < this->Work[this->inW].win[1]->selected[this->inW])
                 {
                     for (int i = this->Work[this->inW].win[1]->selected[this->inW]; i > temp-1; i--)
                         MoveD(2,this);
                 }
-                if (Win3Enable)
+                if (settings->Win3Enable)
                     FastRun(this);
             }
             break;
         case 8:
-            ChangeWorkSpace(this,keys[si].slc1);
+            ChangeWorkSpace(this,keys[si].slc1.ll);
             break;
         case 9:
-            SortMethod = keys[si].slc1;
+            settings->SortMethod = keys[si].slc1.ll;
             break;
         case 10:
             if (!this->Work[this->inW].win[1]->enable && this->Work[this->inW].win[1]->El_t > 0 && (temp = open(this->Work[this->inW].win[1]->path,O_DIRECTORY)) != -1)
@@ -352,7 +344,7 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
                 int tfd;
                 int counter = 0;
 
-                for (int i = 0; i < this->Work[this->inW].win[1]->El_t; i++)
+                for (size_t i = 0; i < this->Work[this->inW].win[1]->El_t; i++)
                 {
                     if ((this->Work[this->inW].win[1]->El[i].List[this->inW]&this->Work[this->inW].SelectedGroup) == this->Work[this->inW].SelectedGroup)
                     {
@@ -365,8 +357,8 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
                                 if ((tfd = openat(temp,this->Work[this->inW].win[1]->El[i].name,O_DIRECTORY)) != -1)
                                 {
                                     #ifdef __GET_DIR_SIZE_ENABLE__
-                                    if (((int)keys[si].slc1&D_F) != D_F)
-                                        this->Work[this->inW].win[1]->El[i].size = GetDirSize(tfd,((int)keys[si].slc1&D_R) == D_R,((int)keys[si].slc1&D_C) == D_C);
+                                    if ((keys[si].slc1.ll&D_F) != D_F)
+                                        this->Work[this->inW].win[1]->El[i].size = GetDirSize(tfd,(keys[si].slc1.ll&D_R) == D_R,(keys[si].slc1.ll&D_C) == D_C);
                                     else
                                     #endif
                                     {
@@ -378,7 +370,7 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
                                     if (this->Work[this->inW].win[1]->El[i].SizErrToDisplay == NULL)
                                         this->Work[this->inW].win[1]->El[i].SizErrToDisplay = (char*)malloc(16);
                                     MakeHumanReadAble(this->Work[this->inW].win[1]->El[i].SizErrToDisplay
-                                        ,this->Work[this->inW].win[1]->El[i].size,((int)keys[si].slc1&D_H) != D_H);
+                                        ,this->Work[this->inW].win[1]->El[i].size,(keys[si].slc1.ll&D_H) != D_H);
                                     #endif
                                     close(tfd);
                                 }
@@ -395,8 +387,8 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
                         if ((tfd = openat(temp,this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].name,O_DIRECTORY)) != -1)
                         {
                             #ifdef __GET_DIR_SIZE_ENABLE__
-                            if (((int)keys[si].slc1&D_F) != D_F)
-                                this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].size = GetDirSize(tfd,((int)keys[si].slc1&D_R) == D_R,((int)keys[si].slc1&D_C) == D_C);
+                            if ((keys[si].slc1.ll&D_F) != D_F)
+                                this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].size = GetDirSize(tfd,(keys[si].slc1.ll&D_R) == D_R,(keys[si].slc1.ll&D_C) == D_C);
                             else
                             #endif
                             {
@@ -408,7 +400,7 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
                             if (this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].SizErrToDisplay == NULL)
                                 this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].SizErrToDisplay = (char*)malloc(16);
                             MakeHumanReadAble(this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].SizErrToDisplay
-                                ,this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].size,((int)keys[si].slc1&D_H) != D_H);
+                                ,this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].size,(keys[si].slc1.ll&D_H) != D_H);
                             #endif
                             close(tfd);
                         }
@@ -418,14 +410,14 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
             }
             break;
         case 11:
-            this->Work[this->inW].SelectedGroup = (unsigned char)keys[si].slc1;
+            this->Work[this->inW].SelectedGroup = keys[si].slc1.ll;
             break;
         case 12:
             if (!this->Work[this->inW].win[1]->enable && this->Work[this->inW].win[1]->El_t > 0)
             {
                 this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].List[this->inW] ^= this->Work[this->inW].SelectedGroup;
                 MoveD(1,this);
-                if (Win3Enable)
+                if (settings->Win3Enable)
                         FastRun(this);
             }
             break;
@@ -435,42 +427,42 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
                 this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].List[this->inW] |= this->Work[this->inW].SelectedGroup;
             break;
         case 14:
-            if ((int)keys[si].slc2 == 0)
+            if (keys[si].slc2.ll == 0)
             {
-                if ((int)keys[si].slc1 == -1)
+                if (keys[si].slc1.ll == -1)
                 {
-                    for (int i = 0; i < this->ActualSize; i++)
-                        for (int j = 0; j < this->Base[i].El_t; j++)
+                    for (size_t i = 0; i < this->ActualSize; i++)
+                        for (size_t j = 0; j < this->Base[i].El_t; j++)
                             this->Base[i].El[j].List[this->inW] ^= this->Work[this->inW].SelectedGroup;
                 }
-                else if ((int)keys[si].slc1 == 0)
+                else if (keys[si].slc1.ll == 0)
                 {
-                    for (int i = 0; i < this->ActualSize; i++)
-                        for (int j = 0; j < this->Base[i].El_t; j++)
+                    for (size_t i = 0; i < this->ActualSize; i++)
+                        for (size_t j = 0; j < this->Base[i].El_t; j++)
                             this->Base[i].El[j].List[this->inW] ^= this->Work[this->inW].SelectedGroup*((this->Base[i].El[j].List[this->inW]&this->Work[this->inW].SelectedGroup) == this->Work[this->inW].SelectedGroup);
                 }
                 else
                 {
-                    for (int i = 0; i < this->ActualSize; i++)
-                        for (int j = 0; j < this->Base[i].El_t; j++)
+                    for (size_t i = 0; i < this->ActualSize; i++)
+                        for (size_t j = 0; j < this->Base[i].El_t; j++)
                             this->Base[i].El[j].List[this->inW] |= this->Work[this->inW].SelectedGroup;
                 }
             }
             else
             {
-                if ((int)keys[si].slc1 == -1)
+                if (keys[si].slc1.ll == -1)
                 {
-                    for (int i = 0; i < this->Work[this->inW].win[1]->El_t; i++)
+                    for (size_t i = 0; i < this->Work[this->inW].win[1]->El_t; i++)
                         this->Work[this->inW].win[1]->El[i].List[this->inW] ^= this->Work[this->inW].SelectedGroup;
                 }
-                else if ((int)keys[si].slc1 == 0)
+                else if (keys[si].slc1.ll == 0)
                 {
-                    for (int i = 0; i < this->Work[this->inW].win[1]->El_t; i++)
+                    for (size_t i = 0; i < this->Work[this->inW].win[1]->El_t; i++)
                         this->Work[this->inW].win[1]->El[i].List[this->inW] ^= this->Work[this->inW].SelectedGroup*((this->Work[this->inW].win[1]->El[i].List[this->inW]&this->Work[this->inW].SelectedGroup) == this->Work[this->inW].SelectedGroup);
                 }
                 else
                 {
-                    for (int i = 0; i < this->Work[this->inW].win[1]->El_t; i++)
+                    for (size_t i = 0; i < this->Work[this->inW].win[1]->El_t; i++)
                         this->Work[this->inW].win[1]->El[i].List[this->inW] |= this->Work[this->inW].SelectedGroup;
                 }
             }
@@ -486,16 +478,15 @@ void RunEvent(int si, bool *ExitTime, Basic* this, char* cSF)
             CD(".",this);
             break;
         case 17:
-            DeleteGroup(this,(bool)keys[si].slc1);
+            DeleteGroup(this,(bool)keys[si].slc1.ll);
             UpdateSizeBasic(this);
             CD(".",this);
             break;
         case 27:
-            if ((bool)keys[si].slc1 == 0)
-                CD(keys[si].slc2,this);
+            if (keys[si].slc1.ll == 0)
+                CD(keys[si].slc2.v,this);
             else
-                CD(getenv(keys[si].slc2),this);
+                CD(getenv(keys[si].slc2.v),this);
             break;
     }
 }
-

@@ -2,20 +2,229 @@
 #include "Functions.h"
 #include "Usefull.h"
 #include "Sort.h"
+#include "Loading.h"
 
-extern bool Win1Enable;
-    extern bool Win1Display;
-extern bool Win3Enable;
-    extern bool Win3Display;
-extern bool Bar1Enable;
-extern bool Bar2Enable;
-extern float WinSizeMod[];
-extern bool Borders;
-extern int WindowBorder[];
-extern bool UserRHost;
-extern char* UserHostPattern;
-extern char DirSizeMethod;
-extern unsigned char SortMethod;
+extern Settings* settings;
+extern Key* keys;
+extern size_t keys_t;
+extern size_t keys_a;
+
+void addKey(Key this)
+{
+    if (keys_t == keys_a)
+    {
+        keys = (Key*)realloc(keys,(keys_a+=32)*sizeof(Key));
+        for (size_t i = keys_t; i < keys_a; i++)
+            keys[i].keys = (char*)malloc(64);
+    }
+
+    long int found = -1;
+
+    for (size_t i = 0; i < keys_t; i++)
+    {
+        if (strcmp(this.keys,keys[i].keys) == 0)
+        {
+            found = (long int)i;
+            break;
+        }
+    }
+
+    if (found == -1)
+        found = (long int)keys_t++;
+    
+    strcpy(keys[found].keys,this.keys);
+    keys[found].act = this.act;
+    keys[found].slc1 = this.slc1;
+    keys[found].slc2 = this.slc2;
+}
+
+void KeyInit()
+{
+    addKey((Key){"q",0,.slc1.v=NULL,.slc2.v=NULL});
+    addKey((Key){"j",1,.slc1.ll=1,.slc2.v=NULL});
+    addKey((Key){"J",1,.slc1.ll=16,.slc2.v=NULL});
+    addKey((Key){"k",2,.slc1.ll=1,.slc2.v=NULL});
+    addKey((Key){"K",2,.slc1.ll=16,.slc2.v=NULL});
+    addKey((Key){"h",3,.slc1.v=NULL,.slc2.v=NULL});
+    addKey((Key){"l",4,.slc1.v=NULL,.slc2.v=NULL});
+    addKey((Key){"gff",27,.slc1.ll=0,.slc2.v="/run/media/kpp/fil"}); //0 - is env ; 1 - path/env
+    addKey((Key){"gfm",27,.slc1.ll=0,.slc2.v="/run/media/kpp/f/Muzyka"});
+    addKey((Key){"gfk",27,.slc1.ll=0,.slc2.v="/run/media/kpp/f/ksiegi"});
+    addKey((Key){"gh",27,.slc1.ll=1,.slc2.v="HOME"});
+    addKey((Key){"g/",27,.slc1.ll=0,.slc2.v="/"});
+    addKey((Key){"gd",27,.slc1.ll=0,.slc2.v="/dev"});
+    addKey((Key){"ge",27,.slc1.ll=0,.slc2.v="/etc"});
+    addKey((Key){"gm",27,.slc1.ll=1,.slc2.v="MEDIA"}); //variable
+    addKey((Key){"gM",27,.slc1.ll=0,.slc2.v="/mnt"});
+    addKey((Key){"go",27,.slc1.ll=0,.slc2.v="/opt"});
+    addKey((Key){"gs",27,.slc1.ll=0,.slc2.v="/srv"});
+    addKey((Key){"gp",27,.slc1.ll=0,.slc2.v="/tmp"});
+    addKey((Key){"gu",27,.slc1.ll=0,.slc2.v="/usr"});
+    addKey((Key){"gv",27,.slc1.ll=0,.slc2.v="/var"});
+    addKey((Key){"gg",5,.slc1.v=NULL,.slc2.v=NULL});
+    addKey((Key){"G",6,.slc1.v=NULL,.slc2.v=NULL});
+    addKey((Key){"z1",8,.slc1.ll=0,.slc2.v=NULL});
+    addKey((Key){"z2",8,.slc1.ll=1,.slc2.v=NULL});
+    addKey((Key){"z3",8,.slc1.ll=2,.slc2.v=NULL});
+    addKey((Key){"z4",8,.slc1.ll=3,.slc2.v=NULL});
+    addKey((Key){"z5",8,.slc1.ll=4,.slc2.v=NULL});
+    addKey((Key){"z6",8,.slc1.ll=5,.slc2.v=NULL});
+    addKey((Key){"z7",8,.slc1.ll=6,.slc2.v=NULL});
+    addKey((Key){"z8",8,.slc1.ll=7,.slc2.v=NULL});
+    addKey((Key){"z9",8,.slc1.ll=8,.slc2.v=NULL});
+    addKey((Key){"z0",8,.slc1.ll=9,.slc2.v=NULL});
+    addKey((Key){"oe",9,.slc1.ll=SORT_NONE,.slc2.v=NULL});
+    addKey((Key){"oE",9,.slc1.ll=SORT_NONE|SORT_REVERSE,.slc2.v=NULL});
+    addKey((Key){"or",9,.slc1.ll=SORT_TYPE,.slc2.v=NULL});
+    addKey((Key){"oR",9,.slc1.ll=SORT_TYPE|SORT_REVERSE,.slc2.v=NULL});
+    addKey((Key){"ob",9,.slc1.ll=SORT_CHIR,.slc2.v=NULL});
+    addKey((Key){"oB",9,.slc1.ll=SORT_CHIR|SORT_REVERSE,.slc2.v=NULL});
+    addKey((Key){"os",9,.slc1.ll=SORT_SIZE,.slc2.v=NULL});
+    addKey((Key){"oS",9,.slc1.ll=SORT_SIZE|SORT_REVERSE,.slc2.v=NULL});
+    addKey((Key){"otm",9,.slc1.ll=SORT_MTIME,.slc2.v=NULL});
+    addKey((Key){"otM",9,.slc1.ll=SORT_MTIME|SORT_REVERSE,.slc2.v=NULL});
+    addKey((Key){"otc",9,.slc1.ll=SORT_CTIME,.slc2.v=NULL});
+    addKey((Key){"otC",9,.slc1.ll=SORT_CTIME|SORT_REVERSE,.slc2.v=NULL});
+    addKey((Key){"ota",9,.slc1.ll=SORT_ATIME,.slc2.v=NULL});
+    addKey((Key){"otA",9,.slc1.ll=SORT_ATIME|SORT_REVERSE,.slc2.v=NULL});
+    addKey((Key){"og",9,.slc1.ll=SORT_GID,.slc2.v=NULL});
+    addKey((Key){"oG",9,.slc1.ll=SORT_GID|SORT_REVERSE,.slc2.v=NULL});
+    addKey((Key){"ou",9,.slc1.ll=SORT_UID,.slc2.v=NULL});
+    addKey((Key){"oU",9,.slc1.ll=SORT_UID|SORT_REVERSE,.slc2.v=NULL});
+    addKey((Key){"om",9,.slc1.ll=SORT_LNAME,.slc2.v=NULL});
+    addKey((Key){"oM",9,.slc1.ll=SORT_LNAME|SORT_REVERSE,.slc2.v=NULL});
+    addKey((Key){"on",9,.slc1.ll=SORT_NAME,.slc2.v=NULL});
+    addKey((Key){"oN",9,.slc1.ll=SORT_NAME|SORT_REVERSE,.slc2.v=NULL});
+    addKey((Key){"dch",10,.slc1.ll=D_C,.slc2.v=NULL});
+    addKey((Key){"dcH",10,.slc1.ll=D_C|D_H,.slc2.v=NULL});
+    addKey((Key){"dCh",10,.slc1.ll=D_C|D_R,.slc2.v=NULL});
+    addKey((Key){"dCH",10,.slc1.ll=D_C|D_R|D_H,.slc2.v=NULL});
+    addKey((Key){"dsh",10,.slc1.ll=0,.slc2.v=NULL});
+    addKey((Key){"dsH",10,.slc1.ll=D_H,.slc2.v=NULL});
+    addKey((Key){"dSh",10,.slc1.ll=D_R,.slc2.v=NULL});
+    addKey((Key){"dSH",10,.slc1.ll=D_R|D_H,.slc2.v=NULL});
+    addKey((Key){"dfh",10,.slc1.ll=D_F,.slc2.v=NULL});
+    addKey((Key){"dfH",10,.slc1.ll=D_F|D_H,.slc2.v=NULL});
+    addKey((Key){"x1",11,.slc1.ll=GROUP_0,.slc2.v=NULL});
+    addKey((Key){"x2",11,.slc1.ll=GROUP_1,.slc2.v=NULL});
+    addKey((Key){"x3",11,.slc1.ll=GROUP_2,.slc2.v=NULL});
+    addKey((Key){"x4",11,.slc1.ll=GROUP_3,.slc2.v=NULL});
+    addKey((Key){"x5",11,.slc1.ll=GROUP_4,.slc2.v=NULL});
+    addKey((Key){"x6",11,.slc1.ll=GROUP_5,.slc2.v=NULL});
+    addKey((Key){"x7",11,.slc1.ll=GROUP_6,.slc2.v=NULL});
+    addKey((Key){"x8",11,.slc1.ll=GROUP_7,.slc2.v=NULL});
+    addKey((Key){" ",12,.slc1.v=NULL,.slc2.v=NULL});
+    addKey((Key){"V",13,.slc1.v=NULL,.slc2.v=NULL});
+    addKey((Key){"vta",14,.slc1.ll=-1,.slc2.ll=0});
+    addKey((Key){"vth",14,.slc1.ll=-1,.slc2.ll=1});
+    addKey((Key){"vda",14,.slc1.ll=0,.slc2.ll=0});
+    addKey((Key){"vdh",14,.slc1.ll=0,.slc2.ll=1});
+    addKey((Key){"vea",14,.slc1.ll=1,.slc2.ll=0});
+    addKey((Key){"veh",14,.slc1.ll=1,.slc2.ll=1});
+    addKey((Key){"pm",15,.slc1.v=NULL,.slc2.v=NULL});
+    addKey((Key){"pp",16,.slc1.v=NULL,.slc2.v=NULL});
+    addKey((Key){"dd",17,.slc1.ll=1,.slc2.v=NULL});
+    addKey((Key){"dD",17,.slc1.ll=0,.slc2.v=NULL});
+}
+
+Settings* SettingsInit()
+{
+    Settings* this = (Settings*)malloc(sizeof(Settings));
+
+    this->Threads = 0;
+    this->shell                         = (char*)malloc(PATH_MAX);
+    strcpy(this->shell,"/bin/sh");
+    this->editor                        = (char*)malloc(PATH_MAX);
+    strcpy(this->editor,"/bin/nvim");
+    this->Values                        = (char*)malloc(PATH_MAX);
+    strcpy(this->Values,"BKMGTPEZY");
+    this->BarSettings                   =  B_UHNAME | B_DIR | B_NAME | B_WORKSPACES | DP_LSPERMS | DP_SMTIME | DP_PWNAME | DP_GRNAME | B_POSITION | B_FHBFREE | B_FGROUP | B_MODES;
+    this->UserHostPattern               = (char*)malloc(PATH_MAX);
+    strcpy(this->UserHostPattern,"%s@%s");
+    this->UserRHost                     = false;
+    this->CopyBufferSize                = 131072;
+    this->INOTIFY_MASK                  = IN_DELETE | IN_DELETE_SELF | IN_CREATE | IN_MOVE | IN_MOVE_SELF;
+    this->MoveOffSet                    = 8;
+    this->WrapScroll                    = false;
+    this->JumpScroll                    = false;
+    this->JumpScrollValue               = 16;
+    this->StatusBarOnTop                = false;
+    this->Win1Enable                    = true;
+    this->Win3Enable                    = true;
+    this->Bar1Enable                    = true;
+    this->Bar2Enable                    = true;
+    this->WinSizeMod                    = (float*)malloc(2*sizeof(float));
+    this->WinSizeMod[0]                 = 0.132f;
+    this->WinSizeMod[1]                 = 0.368f;
+    this->Borders                       = false;
+    this->FillBlankSpace                = true;
+    this->WindowBorder                  = (int*)malloc(8*sizeof(int));
+    this->WindowBorder[0]               = 0;
+    this->WindowBorder[1]               = 0;
+    this->WindowBorder[2]               = 0;
+    this->WindowBorder[3]               = 0;
+    this->WindowBorder[4]               = 0;
+    this->WindowBorder[5]               = 0;
+    this->WindowBorder[6]               = 0;
+    this->WindowBorder[7]               = 0;
+    this->EnableColor                   = true;
+    this->DelayBetweenFrames            = 1;
+    this->NumberLines                   = false;
+    this->NumberLinesOff                = false;
+    this->NumberLinesFromOne            = false;
+    this->DisplayingC                   = DP_HSIZE;
+    #ifdef __SHOW_HIDDEN_FILES_ENABLE__
+    this->ShowHiddenFiles               = true;
+    #endif
+    #ifdef __SORT_ELEMENTS_ENABLE__
+    this->SortMethod                    = SORT_NAME;
+    this->BetterFiles                   = (int*)calloc(24,sizeof(int));
+    this->BetterFiles[0]                = T_DIR;
+    this->BetterFiles[1]                = T_LDIR;
+    #endif
+    #ifdef __BLOCK_SIZE_ELEMENTS_ENABLE__
+    this->BlockSize                     = 1024;
+    #endif
+    this->DirSizeMethod                 = D_C;
+    this->C_Error                       = COLOR_PAIR(4) | A_BOLD | A_REVERSE;
+    #ifdef __COLOR_FILES_BY_EXTENSION__
+    this->C_FType_A                     = COLOR_PAIR(4);
+    this->C_FType_I                     = COLOR_PAIR(2);
+    this->C_FType_V                     = COLOR_PAIR(6);
+    #endif
+    this->C_Selected		            = A_REVERSE | A_BOLD;
+    this->C_Exec_set		            = A_BOLD;
+    this->C_Exec		                = COLOR_PAIR(10);
+    this->C_BLink		                = COLOR_PAIR(1);
+    this->C_Dir		                    = COLOR_PAIR(1) | A_BOLD;
+    this->C_Reg		                    = A_NORMAL;
+    this->C_Fifo		                = COLOR_PAIR(9) | A_ITALIC;
+    this->C_Sock		                = COLOR_PAIR(9) | A_ITALIC;
+    this->C_Dev		                    = COLOR_PAIR(9);
+    this->C_BDev		                = COLOR_PAIR(9);
+    this->C_LDir		                = COLOR_PAIR(5) | A_BOLD;
+    this->C_LReg		                = COLOR_PAIR(5);
+    this->C_LFifo		                = COLOR_PAIR(5);
+    this->C_LSock		                = COLOR_PAIR(5);
+    this->C_LDev		                = COLOR_PAIR(5);
+    this->C_LBDev		                = COLOR_PAIR(5);
+    this->C_Other		                = COLOR_PAIR(0);
+    this->C_User_S_D		            = COLOR_PAIR(6) | A_BOLD;
+    this->C_Bar_Dir		                = COLOR_PAIR(1) | A_BOLD;
+    this->C_Bar_Name		            = A_NORMAL | A_BOLD;
+    this->C_Bar_WorkSpace		        = A_NORMAL | A_BOLD;
+    this->C_Bar_WorkSpace_Selected	    = COLOR_PAIR(6) | A_REVERSE | A_BOLD;
+    this->C_Group_0		                = COLOR_PAIR(2);
+    this->C_Group_1		                = COLOR_PAIR(1);
+    this->C_Group_2		                = COLOR_PAIR(7);
+    this->C_Group_3		                = COLOR_PAIR(4);
+    this->C_Group_4		                = COLOR_PAIR(5);
+    this->C_Group_5		                = COLOR_PAIR(6);
+    this->C_Group_6		                = COLOR_PAIR(9);
+    this->C_Group_7		                = COLOR_PAIR(10);
+
+    return this;
+}
 
 Basic* InitBasic()
 {
@@ -24,6 +233,18 @@ Basic* InitBasic()
     #ifdef __FILESYSTEM_INFORMATION_ENABLE__
     statfs(".",&this->fs);
     #endif
+
+    KeyInit();
+    settings = SettingsInit();
+
+    #ifdef __LOAD_CONFIG_ENABLE__
+    LoadConfig("/home/hexderm/.config/csas/main",settings);
+    #endif
+
+    settings->Win1Display = settings->Win1Enable;
+    settings->Win3Display = settings->Win3Enable;
+
+    initscr();
 
     this->win[0] = newwin(0,0,0,0);
     this->win[1] = newwin(0,0,0,0);
@@ -42,10 +263,10 @@ Basic* InitBasic()
         char* HostN = (char*)malloc(32);
         getlogin_r(HostN,31);
         gethostname(UserN,31);
-        if (UserRHost)
-            sprintf(this->NameHost,UserHostPattern,UserN,HostN);
+        if (settings->UserRHost)
+            sprintf(this->NameHost,settings->UserHostPattern,UserN,HostN);
         else
-            sprintf(this->NameHost,UserHostPattern,HostN,UserN);
+            sprintf(this->NameHost,settings->UserHostPattern,HostN,UserN);
         free(UserN);
         free(HostN);
     }
@@ -70,85 +291,58 @@ Basic* InitBasic()
     return this;
 }
 
-extern bool StatusBarOnTop;
-
 void UpdateSizeBasic(Basic* this)
 {
     clear();
     getmaxyx(stdscr,this->wy,this->wx);
 
-    if (Bar1Enable)
+    if (settings->Bar1Enable)
     {
         wresize(this->win[3],1,this->wx);
         mvwin(this->win[3],0,1);
         wclear(this->win[3]);
     }
-    if (Bar2Enable)
+    if (settings->Bar2Enable)
     {
         wresize(this->win[4],1,this->wx);
-        mvwin(this->win[4],(this->wy-1)*!StatusBarOnTop+StatusBarOnTop-(!Bar1Enable*StatusBarOnTop),0);
+        mvwin(this->win[4],(this->wy-1)*!settings->StatusBarOnTop+settings->StatusBarOnTop-(!settings->Bar1Enable*settings->StatusBarOnTop),0);
         wclear(this->win[4]);
     }
 
-    if (Win1Enable)
+    if (settings->Win1Enable)
     {
-        wresize(this->win[0],this->wy-2+!Bar1Enable+!Bar2Enable,this->wx*WinSizeMod[0]);
-        mvwin(this->win[0],1+StatusBarOnTop-!Bar1Enable-(!Bar2Enable*StatusBarOnTop),0);
+        wresize(this->win[0],this->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,this->wx*settings->WinSizeMod[0]);
+        mvwin(this->win[0],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),0);
         this->WinMiddle = this->win[0]->_maxx;
         wclear(this->win[0]);
     }
-    wresize(this->win[1],this->wy-2+!Bar1Enable+!Bar2Enable,(this->wx*(WinSizeMod[1]*Win3Enable))+(!Win3Enable*(this->wx-this->WinMiddle)));
-    mvwin(this->win[1],1+StatusBarOnTop-!Bar1Enable-(!Bar2Enable*StatusBarOnTop),this->WinMiddle);
+    wresize(this->win[1],this->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,(this->wx*(settings->WinSizeMod[1]*settings->Win3Enable))+(!settings->Win3Enable*(this->wx-this->WinMiddle)));
+    mvwin(this->win[1],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),this->WinMiddle);
     wclear(this->win[1]);
-    if (Win3Enable)
+    if (settings->Win3Enable)
     {
-        wresize(this->win[2],this->wy-2+!Bar1Enable+!Bar2Enable,this->wx-this->win[1]->_maxx-this->WinMiddle);
-        mvwin(this->win[2],1+StatusBarOnTop-!Bar1Enable-(!Bar2Enable*StatusBarOnTop),this->win[1]->_maxx+this->WinMiddle);
+        wresize(this->win[2],this->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,this->wx-this->win[1]->_maxx-this->WinMiddle);
+        mvwin(this->win[2],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),this->win[1]->_maxx+this->WinMiddle);
         wclear(this->win[2]);
     }
 
     refresh();
-    if (Borders)
+    if (settings->Borders)
     {
-        if (Win1Enable)
+        if (settings->Win1Enable)
         {
-            wborder(this->win[0],WindowBorder[0],WindowBorder[1],WindowBorder[2],WindowBorder[3],WindowBorder[4],WindowBorder[5],WindowBorder[6],WindowBorder[7]);
+            wborder(this->win[0],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
             wrefresh(this->win[0]);
         }
-        wborder(this->win[1],WindowBorder[0],WindowBorder[1],WindowBorder[2],WindowBorder[3],WindowBorder[4],WindowBorder[5],WindowBorder[6],WindowBorder[7]);
+        wborder(this->win[1],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
         wrefresh(this->win[1]);
-        if (Win3Enable)
+        if (settings->Win3Enable)
         {
-            wborder(this->win[2],WindowBorder[0],WindowBorder[1],WindowBorder[2],WindowBorder[3],WindowBorder[4],WindowBorder[5],WindowBorder[6],WindowBorder[7]);
+            wborder(this->win[2],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
             wrefresh(this->win[2]);
         }
     }
 }
-
-extern int C_Error;
-#ifdef __COLOR_FILES_BY_EXTENSION__
-extern int C_FType_A;
-extern int C_FType_I;
-extern int C_FType_V;
-#endif
-extern int C_Selected;
-extern int C_Exec_set;
-extern int C_Exec;
-extern int C_BLink;
-extern int C_Dir;
-extern int C_Reg;
-extern int C_Fifo;
-extern int C_Sock;
-extern int C_Dev;
-extern int C_BDev;
-extern int C_LReg;
-extern int C_LDir;
-extern int C_LReg;
-extern int C_LFifo;
-extern int C_LSock;
-extern int C_LDev;
-extern int C_LBDev;
-extern int C_Other;
 
 int ColorEl(struct Element* this, bool Select)
 {
@@ -156,12 +350,12 @@ int ColorEl(struct Element* this, bool Select)
 
     if (this->flags & S_IXUSR)
     {
-        set |= C_Exec_set;
-        col = C_Exec;
+        set |= settings->C_Exec_set;
+        col = settings->C_Exec;
     }
 
     if (Select)
-        set |= C_Selected;
+        set |= settings->C_Selected;
 
 
 
@@ -172,67 +366,59 @@ int ColorEl(struct Element* this, bool Select)
             switch(this->FType)
             {
                 case 'A':
-                    col = C_FType_A;
+                    col = settings->C_FType_A;
                     break;
                 case 'I':
-                    col = C_FType_I;
+                    col = settings->C_FType_I;
                     break;
                 case 'V':
-                    col = C_FType_V;
+                    col = settings->C_FType_V;
                     break;
             }
 
             #endif
             break;
         case T_LREG:
-            col = C_LReg;
+            col = settings->C_LReg;
             break;
         case T_DIR:
-            col = C_Dir;
+            col = settings->C_Dir;
             break;
         case T_LDIR:
-            col = C_LDir;
+            col = settings->C_LDir;
             break;
         case T_LSOCK:
-            col = C_LSock;
+            col = settings->C_LSock;
             break;
         case T_SOCK:
-            col = C_Sock;
+            col = settings->C_Sock;
             break;
         case T_FIFO:
-            col = C_Fifo;
+            col = settings->C_Fifo;
             break;
         case T_LFIFO:
-            col = C_LFifo;
+            col = settings->C_LFifo;
             break;
         case T_DEV:
-            col = C_Dev;
+            col = settings->C_Dev;
             break;
         case T_LDEV:
-            col = C_LDev;
+            col = settings->C_LDev;
             break;
         case T_BLINK:
-            col = C_BLink;
+            col = settings->C_BLink;
             break;
         case T_BDEV:
-            col = C_BDev;
+            col = settings->C_BDev;
             break;
         case T_LBDEV:
-            col = C_LBDev;
+            col = settings->C_LBDev;
             break;
     }
 
 
     return set | col;
 }
-
-extern bool FillBlankSpace;
-extern bool NumberLines;
-extern bool NumberLinesOff;
-extern bool NumberLinesFromOne;
-#ifdef __BLOCK_SIZE_ELEMENTS_ENABLE__
-extern size_t BlockSize;
-#endif
 
 static void ByIntToStr(int Settings, char* result, struct Element* this)
 {
@@ -263,7 +449,7 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
         {
             this->SizErrToDisplay = (char*)malloc(16);
             MakeHumanReadAble(this->SizErrToDisplay,this->size,
-            ((DirSizeMethod&D_H) != D_H)*(this->Type == T_DIR || this->Type == T_LDIR) ? true : false);
+            ((settings->DirSizeMethod&D_H) != D_H)&&(this->Type == T_DIR || this->Type == T_LDIR));
         }
         strcat(result,this->SizErrToDisplay);
         strcat(result," ");
@@ -272,7 +458,7 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
     #ifdef __FILE_SIZE_ENABLE__
     if (Settings&DP_BLOCKS)
     {
-        sprintf(temp,"%lld ",this->size/BlockSize);
+        sprintf(temp,"%lld ",this->size/settings->BlockSize);
         strcat(result,temp);
     }
     #endif
@@ -393,25 +579,8 @@ static void ByIntToStr(int Settings, char* result, struct Element* this)
 
 }
 
-extern int C_Group_0;
-extern int C_Group_1;
-extern int C_Group_2;
-extern int C_Group_3;
-extern int C_Group_4;
-extern int C_Group_5;
-extern int C_Group_6;
-extern int C_Group_7;
-
 void DrawBasic(Basic* this, int which)
 {
-    extern int C_Bar_WorkSpace;
-    extern int C_Bar_WorkSpace_Selected;
-    extern int C_User_S_D;
-    extern int C_Bar_Dir;
-    extern int C_Bar_Name;
-    extern long long int BarsSettings;
-    extern int DisplayingC;
-
     int color;
     char* temp[3];
     temp[0] = (char*)malloc(NAME_MAX+16);
@@ -424,58 +593,58 @@ void DrawBasic(Basic* this, int which)
     {
         if (which != -1 && i != which)
             continue;
-        if (i == 0 && (!this->Work[this->inW].win[0] || !Win1Display))
+        if (i == 0 && (!this->Work[this->inW].win[0] || !settings->Win1Display))
             continue;
-        if (i == 2 && (!this->Work[this->inW].win[2] || !Win3Display))
+        if (i == 2 && (!this->Work[this->inW].win[2] || !settings->Win3Display))
             continue;
 
-        wattron(this->win[i],C_Error);
+        wattron(this->win[i],settings->C_Error);
         if (this->Work[this->inW].win[i]->enable)
         {
             //wclear(this->win[i]);
-            snprintf(temp[0],this->win[i]->_maxx-((Borders+1)+2),"LOADING");
-            mvwaddstr(this->win[i],Borders,Borders+3,temp[0]);
-            wattroff(this->win[i],C_Error);
+            snprintf(temp[0],this->win[i]->_maxx-((settings->Borders+1)+2),"LOADING");
+            mvwaddstr(this->win[i],settings->Borders,settings->Borders+3,temp[0]);
+            wattroff(this->win[i],settings->C_Error);
             wrefresh(this->win[i]);
             break;
         }
-        if (this->Work[this->inW].win[i]->El_t == -1)
+        if ((long long int)this->Work[this->inW].win[i]->El_t == (long long int)-1)
         {
             //wclear(this->win[i]);
-            snprintf(temp[0],this->win[i]->_maxx-((Borders+1)+2),"NOT ACCESSIBLE");
-            mvwaddstr(this->win[i],Borders,Borders+3,temp[0]);
-            wattroff(this->win[i],C_Error);
+            snprintf(temp[0],this->win[i]->_maxx-((settings->Borders+1)+2),"NOT ACCESSIBLE");
+            mvwaddstr(this->win[i],settings->Borders,settings->Borders+3,temp[0]);
+            wattroff(this->win[i],settings->C_Error);
             wrefresh(this->win[i]);
             break;
         }
-        if (this->Work[this->inW].win[i]->El_t == 0)
+        if ((long long int)this->Work[this->inW].win[i]->El_t == (long long int)0)
         {
             //wclear(this->win[i]);
-            snprintf(temp[0],this->win[i]->_maxx-((Borders+1)+2),"EMPTY");
-            mvwaddstr(this->win[i],Borders,Borders+3,temp[0]);
-            wattroff(this->win[i],C_Error);
+            snprintf(temp[0],this->win[i]->_maxx-((settings->Borders+1)+2),"EMPTY");
+            mvwaddstr(this->win[i],settings->Borders,settings->Borders+3,temp[0]);
+            wattroff(this->win[i],settings->C_Error);
             wrefresh(this->win[i]);
             break;
         }
-        wattroff(this->win[i],C_Error);
+        wattroff(this->win[i],settings->C_Error);
 
         line_off1 = 0;
 
-        for (int j = this->Work[this->inW].win[i]->Ltop[this->inW]; j < this->Work[this->inW].win[i]->El_t && j-this->Work[this->inW].win[i]->Ltop[this->inW] < this->win[i]->_maxy-(Borders*2)+1; j++)
+        for (size_t j = this->Work[this->inW].win[i]->Ltop[this->inW]; j < this->Work[this->inW].win[i]->El_t && j-this->Work[this->inW].win[i]->Ltop[this->inW] < (size_t)this->win[i]->_maxy-(settings->Borders*2)+1; j++)
         {
             color = ColorEl(&this->Work[this->inW].win[i]->El[j],(j == this->Work[this->inW].win[i]->selected[this->inW]));
 
-            if (this->Work[this->inW].win[i]->sort_m != SortMethod)
+            if (this->Work[this->inW].win[i]->sort_m != settings->SortMethod)
             {
-                this->Work[this->inW].win[i]->sort_m = SortMethod;
+                this->Work[this->inW].win[i]->sort_m = settings->SortMethod;
                 if (this->Work[this->inW].win[i]->El_t > 0)
-                    SortEl(this->Work[this->inW].win[i]->El,this->Work[this->inW].win[i]->El_t,SortMethod);
+                    SortEl(this->Work[this->inW].win[i]->El,this->Work[this->inW].win[i]->El_t,settings->SortMethod);
             }
 
-            if (FillBlankSpace)
+            if (settings->FillBlankSpace)
                 wattron(this->win[i],color);
-            for (int g = Borders+1; g < this->win[i]->_maxx-Borders-1+((i == 2)*2)*!Borders+(((i == 1)*2)*!Win3Enable)*!Borders; g++)
-                mvwaddch(this->win[i],Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],g+Borders,' ');
+            for (int g = settings->Borders+1; g < this->win[i]->_maxx-settings->Borders-1+((i == 2)*2)*!settings->Borders+(((i == 1)*2)*!settings->Win3Enable)*!settings->Borders; g++)
+                mvwaddch(this->win[i],settings->Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],g+settings->Borders,' ');
 
             wattron(this->win[i],color);
 
@@ -486,13 +655,16 @@ void DrawBasic(Basic* this, int which)
 
             if (i == 1)
             {
-                ByIntToStr(DisplayingC,temp[1],&this->Work[this->inW].win[i]->El[j]);
+                if (settings->DisplayingC != 0)
+                {
+                    ByIntToStr(settings->DisplayingC,temp[1],&this->Work[this->inW].win[i]->El[j]);
 
-                cont_s[0] += strlen(temp[1]);
+                    cont_s[0] += strlen(temp[1]);
 
-                mvwaddstr(this->win[i],Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],this->win[i]->_maxx-cont_s[0]-1+(((i == 1)*2)*!Win3Enable)*!Borders,temp[1]);
+                    mvwaddstr(this->win[i],settings->Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],this->win[i]->_maxx-cont_s[0]-1+(((i == 1)*2)*!settings->Win3Enable)*!settings->Borders,temp[1]);
+                }
 
-                if (NumberLinesOff)
+                if (settings->NumberLinesOff)
                 {
                     line_off1 = 0;
                     cont_s[1] = this->Work[this->inW].win[i]->El_t;
@@ -503,9 +675,9 @@ void DrawBasic(Basic* this, int which)
                     while (cont_s[1] > 9) { cont_s[1] /= 10; line_off2++; };
                 }
 
-                if (NumberLines)
+                if (settings->NumberLines)
                 {
-                    sprintf(temp[2],"%d ",j+NumberLinesFromOne);
+                    sprintf(temp[2],"%ld ",j+settings->NumberLinesFromOne);
                     strcat(temp[0],temp[2]);
                 }
             }
@@ -513,46 +685,41 @@ void DrawBasic(Basic* this, int which)
             strcat(temp[0],this->Work[this->inW].win[i]->El[j].name);
             cont_s[1] = strlen(temp[0]);
 
-            if (this->win[i]->_maxx < 4+cont_s[0]+Borders+1)
+            if ((long long int)this->win[i]->_maxx < (long long int)(4+cont_s[0]+settings->Borders+1))
             {
                 temp[0][0] = '\0';
             }
-            else if (cont_s[1] > this->win[i]->_maxx-cont_s[0]-2-((Borders+1)+1)-Borders)
+            else if ((size_t)cont_s[1] > this->win[i]->_maxx-cont_s[0]-2-((settings->Borders+1)+1)-settings->Borders)
             {
-                if (this->win[i]->_maxx-cont_s[0]-2-((Borders+1)+1)-Borders > -2)
-                    temp[0][0] = '\0';
-                else
-                {
-                    temp[0][this->win[i]->_maxx-cont_s[0]-2-((Borders+1)+1)-Borders] = '~';
-                    temp[0][this->win[i]->_maxx-cont_s[0]-1-((Borders+1)+1)-Borders] = '\0';
-                }
+                temp[0][this->win[i]->_maxx-cont_s[0]-2-((settings->Borders+1)+1)-settings->Borders] = '~';
+                temp[0][this->win[i]->_maxx-cont_s[0]-1-((settings->Borders+1)+1)-settings->Borders] = '\0';
             }
 
-            mvwaddstr(this->win[i],Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],(Borders*2)+2+(line_off1-line_off2),temp[0]);
+            mvwaddstr(this->win[i],settings->Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],(settings->Borders*2)+2+(line_off1-line_off2),temp[0]);
 
             wattroff(this->win[i],color);
 
             if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_0)
-                color = C_Group_0;
+                color = settings->C_Group_0;
             else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_1)
-                color = C_Group_1;
+                color = settings->C_Group_1;
             else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_2)
-                color = C_Group_2;
+                color = settings->C_Group_2;
             else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_3)
-                color = C_Group_3;
+                color = settings->C_Group_3;
             else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_4)
-                color = C_Group_4;
+                color = settings->C_Group_4;
             else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_5)
-                color = C_Group_5;
+                color = settings->C_Group_5;
             else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_6)
-                color = C_Group_6;
+                color = settings->C_Group_6;
             else if (this->Work[this->inW].win[i]->El[j].List[this->inW]&this->Work[this->inW].SelectedGroup&GROUP_7)
-                color = C_Group_7;
+                color = settings->C_Group_7;
             else
                 color = 0;
 
             wattron(this->win[i],(color|A_REVERSE)*(color > 0));
-            mvwaddch(this->win[i],Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],(Borders*2),' ');
+            mvwaddch(this->win[i],settings->Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],(settings->Borders*2),' ');
             wattroff(this->win[i],(color|A_REVERSE)*(color > 0));
 
 
@@ -563,12 +730,12 @@ void DrawBasic(Basic* this, int which)
 
     if (which == 1 || which == -1)
     {
-        if (Bar1Enable)
+        if (settings->Bar1Enable)
         {
             // 3
             cont_s[2] = 0;
 
-            if ((BarsSettings & B_WORKSPACES) == B_WORKSPACES)
+            if ((settings->BarSettings & B_WORKSPACES) == B_WORKSPACES)
             {
                 for (int i = 0; i < WORKSPACE_N; i++)
                         cont_s[2] += this->Work[i].exists;
@@ -578,17 +745,17 @@ void DrawBasic(Basic* this, int which)
 
             cont_s[3] = 0;
 
-            if ((BarsSettings & B_UHNAME) == B_UHNAME)
+            if ((settings->BarSettings & B_UHNAME) == B_UHNAME)
             {
-                wattron(this->win[3],C_User_S_D);
+                wattron(this->win[3],settings->C_User_S_D);
                 mvwaddstr(this->win[3],0,0,this->NameHost);
-                wattroff(this->win[3],C_User_S_D);
+                wattroff(this->win[3],settings->C_User_S_D);
                 cont_s[3] = strlen(this->NameHost);
             }
 
             if (!this->Work[this->inW].win[1]->enable && this->Work[this->inW].win[1]->El_t > 0)
             {
-                if ((BarsSettings & B_DIR) == B_DIR)
+                if ((settings->BarSettings & B_DIR) == B_DIR)
                 {
                     strcpy(temp[1],this->Work[this->inW].win[1]->path);
                     if (!(this->Work[this->inW].win[1]->path[0] == '/' && this->Work[this->inW].win[1]->path[1] == '\0'))
@@ -597,21 +764,21 @@ void DrawBasic(Basic* this, int which)
                         MakePathShorter(temp[1],this->win[3]->_maxx-(cont_s[3]+1+cont_s[2]+strlen(this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].name)));
                     }
 
-                    wattron(this->win[3],C_Bar_Dir);
+                    wattron(this->win[3],settings->C_Bar_Dir);
                     mvwprintw(this->win[3],0,cont_s[3]," %s",temp[1]);
-                    wattroff(this->win[3],C_Bar_Dir);
+                    wattroff(this->win[3],settings->C_Bar_Dir);
 
                     cont_s[3] += strlen(temp[1])+1;
                 }
-                if ((BarsSettings & B_NAME) == B_NAME)
+                if ((settings->BarSettings & B_NAME) == B_NAME)
                 {
-                    wattron(this->win[3],C_Bar_Name);
+                    wattron(this->win[3],settings->C_Bar_Name);
                     mvwaddstr(this->win[3],0,cont_s[3],this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]].name);
-                    wattroff(this->win[3],C_Bar_Name);
+                    wattroff(this->win[3],settings->C_Bar_Name);
                 }
             }
 
-            if ((BarsSettings & B_WORKSPACES) == B_WORKSPACES)
+            if ((settings->BarSettings & B_WORKSPACES) == B_WORKSPACES)
             {
                 cont_s[2] /= 3;
 
@@ -623,16 +790,16 @@ void DrawBasic(Basic* this, int which)
                         if (this->Work[i].exists)
                         {
                             if (i == this->inW)
-                                wattron(this->win[3],C_Bar_WorkSpace_Selected);
+                                wattron(this->win[3],settings->C_Bar_WorkSpace_Selected);
                             else
-                                wattron(this->win[3],C_Bar_WorkSpace);
+                                wattron(this->win[3],settings->C_Bar_WorkSpace);
 
                             mvwprintw(this->win[3],0,this->win[3]->_maxx-cont_s[2]," %d ",i);
 
                             if (i == this->inW)
-                                wattroff(this->win[3],C_Bar_WorkSpace_Selected);
+                                wattroff(this->win[3],settings->C_Bar_WorkSpace_Selected);
                             else
-                                wattroff(this->win[3],C_Bar_WorkSpace);
+                                wattroff(this->win[3],settings->C_Bar_WorkSpace);
 
                             cont_s[2] += 3;
                         }
@@ -646,7 +813,7 @@ void DrawBasic(Basic* this, int which)
             // 3
         }
 
-        if (Bar2Enable)
+        if (settings->Bar2Enable)
         {
             //4
             {
@@ -654,32 +821,32 @@ void DrawBasic(Basic* this, int which)
 
                 if (!this->Work[this->inW].win[1]->enable && this->Work[this->inW].win[1]->El_t > 0)
                 {
-                    ByIntToStr(BarsSettings,temp[1],&this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]]);
+                    ByIntToStr(settings->BarSettings,temp[1],&this->Work[this->inW].win[1]->El[this->Work[this->inW].win[1]->selected[this->inW]]);
                     mvwaddstr(this->win[4],0,0,temp[1]);
 
                     bzero(temp[1],PATH_MAX);
                 }
 
-                if (BarsSettings & B_MODES)
+                if (settings->BarSettings & B_MODES)
                 {
                     if (this->Work[this->inW].Visual)
                         strcat(temp[1]," VISUAL");
                 }
 
-                if (BarsSettings & B_FGROUP)
+                if (settings->BarSettings & B_FGROUP)
                 {
                     sprintf(temp[2]," %dW",this->Work[this->inW].SelectedGroup);
                     strcat(temp[1],temp[2]);
                 }
 
                 #ifdef __FILESYSTEM_INFORMATION_ENABLE__
-                if (BarsSettings & B_FTYPE)
+                if (settings->BarSettings & B_FTYPE)
                 {
-                    sprintf(temp[2]," %p",this->fs.f_type);
+                    sprintf(temp[2]," %p",(void*)this->fs.f_type);
                     strcpy(temp[1],temp[2]);
                 }
 
-                if (BarsSettings & B_SFTYPE)
+                if (settings->BarSettings & B_SFTYPE)
                 {
                     switch (this->fs.f_type)
                     {
@@ -763,81 +930,81 @@ void DrawBasic(Basic* this, int which)
                     }
                 }
 
-                if (BarsSettings & B_FBSIZE)
+                if (settings->BarSettings & B_FBSIZE)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_bsize);
                     strcat(temp[1],temp[2]);
                 }
 
-                if (BarsSettings & B_FBLOCKS)
+                if (settings->BarSettings & B_FBLOCKS)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_blocks);
                     strcat(temp[1],temp[2]);
                 }
 
                 #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-                if (BarsSettings & B_FHBLOCKS)
+                if (settings->BarSettings & B_FHBLOCKS)
                 {
                     MakeHumanReadAble(temp[2],this->fs.f_blocks*this->fs.f_bsize,false);
                     strcat(temp[1],temp[2]);
                 }
 
-                if (BarsSettings & B_FHBFREE)
+                if (settings->BarSettings & B_FHBFREE)
                 {
                     MakeHumanReadAble(temp[2],this->fs.f_bfree*this->fs.f_bsize,false);
                     strcat(temp[1],temp[2]);
                 }
 
-                if (BarsSettings & B_FHBAVAIL)
+                if (settings->BarSettings & B_FHBAVAIL)
                 {
                     MakeHumanReadAble(temp[2],this->fs.f_bavail*this->fs.f_bsize,false);
                     strcat(temp[1],temp[2]);
                 }
                 #endif
 
-                if (BarsSettings & B_FBFREE)
+                if (settings->BarSettings & B_FBFREE)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_bfree);
                     strcat(temp[1],temp[2]);
                 }
 
-                if (BarsSettings & B_FBAVAIL)
+                if (settings->BarSettings & B_FBAVAIL)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_bavail);
                     strcat(temp[1],temp[2]);
                 }
 
-                if (BarsSettings & B_FFILES)
+                if (settings->BarSettings & B_FFILES)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_files);
                     strcat(temp[1],temp[2]);
                 }
 
-                if (BarsSettings & B_FFFREE)
+                if (settings->BarSettings & B_FFFREE)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_ffree);
                     strcat(temp[1],temp[2]);
                 }
 
-                if (BarsSettings & B_FFSID)
+                if (settings->BarSettings & B_FFSID)
                 {
                     sprintf(temp[2]," %d %d",this->fs.f_fsid.__val[0],this->fs.f_fsid.__val[1]);
                     strcat(temp[1],temp[2]);
                 }
 
-                if (BarsSettings & B_FNAMELEN)
+                if (settings->BarSettings & B_FNAMELEN)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_namelen);
                     strcat(temp[1],temp[2]);
                 }
 
-                if (BarsSettings & B_FFRSIZE)
+                if (settings->BarSettings & B_FFRSIZE)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_frsize);
                     strcat(temp[1],temp[2]);
                 }
 
-                if (BarsSettings & B_FFLAGS)
+                if (settings->BarSettings & B_FFLAGS)
                 {
                     sprintf(temp[2]," %ld",this->fs.f_flags);
                     strcat(temp[1],temp[2]);
@@ -846,7 +1013,7 @@ void DrawBasic(Basic* this, int which)
 
                 if (!this->Work[this->inW].win[1]->enable && this->Work[this->inW].win[1]->El_t > 0)
                 {
-                    if (BarsSettings & B_POSITION)
+                    if (settings->BarSettings & B_POSITION)
                     {
                         sprintf(temp[2]," %ld/%ld",this->Work[this->inW].win[1]->selected[this->inW]+1,this->Work[this->inW].win[1]->El_t);
                         strcat(temp[1],temp[2]);
@@ -870,7 +1037,7 @@ void DrawBasic(Basic* this, int which)
 
 void freeBasic(Basic* this)
 {
-    for (int i = 0; i < this->ActualSize; i++)
+    for (size_t i = 0; i < this->ActualSize; i++)
         if (this->Base[i].enable)
             pthread_cancel(this->Base[i].thread);
 

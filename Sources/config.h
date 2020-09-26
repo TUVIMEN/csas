@@ -1,99 +1,188 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-char Values[] = {'B','K','M','G','T','P','E','Z','Y'};
-char* editor = "/usr/bin/nvim";
-
-long long int BarsSettings = B_UHNAME | B_DIR | B_NAME | B_WORKSPACES | DP_LSPERMS | DP_SMTIME | DP_PWNAME | DP_GRNAME
-                    | B_POSITION | B_FHBFREE | B_FGROUP | B_MODES;
-
-char* UserHostPattern = "%s@%s";
-//0 - User Host 1 - Host User
-bool UserRHost = 0;
-
-int CopyBufferSize = 2<<16;
-
-uint32_t INOTIFY_MASK = IN_DELETE | IN_DELETE_SELF | IN_CREATE | IN_MOVE | IN_MOVE_SELF;
-
-int MoveOffSet = 8;
-bool WrapScroll = false;
-bool JumpScroll = false;
-    int JumpScrollValue = 16;
-
-bool StatusBarOnTop = false;
-bool Win1Enable = true;
-bool Win1Display;
-bool Win3Enable = true;
-bool Win3Display;
-bool Bar1Enable = true;
-bool Bar2Enable = true;
-float WinSizeMod[2] = {0.132,0.368};
-
-bool Borders = false;
-bool FillBlankSpace = true;
-int WindowBorder[8] = {0,0,0,0,0,0,0,0};
-
-bool EnableColor = true;
-int DelayBetweenFrames = 1;
-
-bool NumberLines = false;
-    bool NumberLinesOff = false;
-    bool NumberLinesFromOne = false;
-
-int DisplayingC = DP_HSIZE;
-
-#ifdef __SHOW_HIDDEN_FILES_ENABLE__
-bool ShowHiddenFiles = true;
+#ifdef __LOAD_CONFIG_ENABLE__
+struct AliasesT aliases[] = {
+    {"COL_0",COLOR_PAIR(0x0)},
+    {"COL_1",COLOR_PAIR(0x1)},
+    {"COL_2",COLOR_PAIR(0x2)},
+    {"COL_3",COLOR_PAIR(0x3)},
+    {"COL_4",COLOR_PAIR(0x4)},
+    {"COL_5",COLOR_PAIR(0x5)},
+    {"COL_6",COLOR_PAIR(0x6)},
+    {"COL_7",COLOR_PAIR(0x7)},
+    {"COL_8",COLOR_PAIR(0x8)},
+    {"COL_9",COLOR_PAIR(0x9)},
+    {"COL_10",COLOR_PAIR(0xA)},
+    {"COL_11",COLOR_PAIR(0xB)},
+    {"COL_12",COLOR_PAIR(0xC)},
+    {"COL_13",COLOR_PAIR(0xD)},
+    {"COL_14",COLOR_PAIR(0xE)},
+    {"COL_15",COLOR_PAIR(0xF)},
+    {"A_BOLD",A_BOLD},
+    {"A_REVERSE",A_REVERSE},
+    {"A_UNDERLINE",A_UNDERLINE},
+    {"A_VERTICAL",A_VERTICAL},
+    {"A_HORIZONTAL",A_HORIZONTAL},
+    {"A_INVIS",A_INVIS},
+    {"A_ITALIC",A_ITALIC},
+    {"A_LEFT",A_LEFT},
+    {"A_NORMAL",A_NORMAL},
+    {"A_PROTECT",A_PROTECT},
+    {"A_UNDERLINE",A_UNDERLINE},
+    {"A_CHARTEXT",A_CHARTEXT},
+    {"A_RIGHT",A_RIGHT},
+    {"A_TOP",A_TOP},
+    {"A_LOW",A_LOW},
+    {"A_STANDOUT",A_STANDOUT},
+    {"A_DIM",A_DIM},
+    {"A_BLINK",A_BLINK},
+    {"NAME_MAX",NAME_MAX},
+    {"PATH_MAX",PATH_MAX},
+    {"DIR_INC_RATE",DIR_INC_RATE},
+    {"DIR_BASE_STABLE_RATE",DIR_BASE_STABLE_RATE},
+    {"T_DIR",T_DIR},
+    {"T_REG",T_REG},
+    {"T_DEV",T_DEV},
+    {"T_BDEV",T_BDEV},
+    {"T_SOCK",T_SOCK},
+    {"T_FIFO",T_FIFO},
+    {"T_BLINK",T_BLINK},
+    {"T_LDIR",T_LDIR},
+    {"T_LREG",T_LREG},
+    {"T_LDEV",T_LDEV},
+    {"T_LBDEV",T_LBDEV},
+    {"T_LSOCK",T_LSOCK},
+    {"T_LFIFO",T_LFIFO},
+    {"T_OTHER",T_OTHER},
+    #ifdef __SORT_ELEMENTS_ENABLE__
+    {"SORT_NONE",SORT_NONE},
+    {"SORT_TYPE",SORT_TYPE},
+    {"SORT_CHIR",SORT_CHIR},
+    {"SORT_SIZE",SORT_SIZE},
+    {"SORT_NAME",SORT_NAME},
+    {"SORT_LNAME",SORT_LNAME},
+    #ifdef __MTIME_ENABLE__
+    {"SORT_MTIME",SORT_MTIME},
+    #endif
+    #ifdef __ATIME_ENABLE__
+    {"SORT_ATIME",SORT_ATIME},
+    #endif
+    #ifdef __CTIME_ENABLE__
+    {"SORT_CTIME",SORT_CTIME},
+    #endif
+    {"SORT_GID",SORT_GID},
+    {"SORT_UID",SORT_UID},
+    {"SORT_REVERSE",SORT_REVERSE},
+    #endif
+    {"D_F",D_F},
+    {"D_R",D_R},
+    {"D_C",D_C},
+    {"D_H",D_H},
+    {"M_REPLACE",M_REPLACE},
+    {"M_MERGE",M_MERGE},
+    {"M_DCPY",M_DCPY},
+    {"M_CHNAME",M_CHNAME},
+    {"GROUP_0",GROUP_0},
+    {"GROUP_1",GROUP_1},
+    {"GROUP_2",GROUP_2},
+    {"GROUP_3",GROUP_3},
+    {"GROUP_4",GROUP_4},
+    {"GROUP_5",GROUP_5},
+    {"GROUP_6",GROUP_6},
+    {"GROUP_7",GROUP_7},
+    #ifdef __FILE_SIZE_ENABLE__
+    {"DP_SIZE",DP_SIZE},
+    #endif
+    {"DP_LSPERMS",DP_LSPERMS},
+    #ifdef __BLOCK_SIZE_ELEMENTS_ENABLE__
+    {"DP_BLOCKS",DP_BLOCKS},
+    #endif
+    {"DP_TYPE",DP_TYPE},
+    #ifdef __MTIME_ENABLE__
+    {"DP_MTIME",DP_MTIME},
+    {"DP_SMTIME",DP_SMTIME},
+    #endif
+    #ifdef __ATIME_ENABLE__
+    {"DP_ATIME",DP_ATIME},
+    {"DP_SATIME",DP_SATIME},
+    #endif
+    #ifdef __CTIME_ENABLE__
+    {"DP_CTIME",DP_CTIME},
+    {"DP_SCTIME",DP_SCTIME},
+    #endif
+    #ifdef __COLOR_FILES_BY_EXTENSION__
+    {"DP_FTYPE",DP_FTYPE},
+    #endif
+    #ifdef __FILE_GROUPS_ENABLE__
+    {"DP_GRNAME",DP_GRNAME},
+    {"DP_GRGID",DP_GRGID},
+    {"DP_GRPASSWD",DP_GRPASSWD},
+    #endif
+    #ifdef __FILE_OWNERS_ENABLE__
+    {"DP_PWNAME",DP_PWNAME},
+    {"DP_PWDIR",DP_PWDIR},
+    {"DP_PWGECOS",DP_PWGECOS},
+    {"DP_PWGID",DP_PWGID},
+    {"DP_PWPASSWD",DP_PWPASSWD},
+    {"DP_PWSHELL",DP_PWSHELL},
+    {"DP_PWUID",DP_PWUID},
+    #endif
+    #ifdef __HUMAN_READABLE_SIZE_ENABLE__
+    {"DP_HSIZE",DP_HSIZE},
+    #endif
+    {"B_UHNAME",B_UHNAME},
+    {"B_DIR",B_DIR},
+    {"B_NAME",B_NAME},
+    {"B_WORKSPACES",B_WORKSPACES},
+    {"B_POSITION",B_POSITION},
+    #ifdef __FILESYSTEM_INFORMATION_ENABLE__
+    {"B_FTYPE",B_FTYPE},
+    {"B_SFTYPE",B_SFTYPE},
+    {"B_FBSIZE",B_FBSIZE},
+    {"B_FBLOCKS",B_FBLOCKS},
+    {"B_FHBLOCKS",B_FHBLOCKS},
+    {"B_FBFREE",B_FBFREE},
+    {"B_FHBFREE",B_FHBFREE},
+    {"B_FBAVAIL",B_FBAVAIL},
+    {"B_FHBAVAIL",B_FHBAVAIL},
+    {"B_FFILES",B_FFILES},
+    {"B_FFFREE",B_FFFREE},
+    {"B_FFSID",B_FFSID},
+    {"B_FNAMELEN",B_FNAMELEN},
+    {"B_FFRSIZE",B_FFRSIZE},
+    {"B_FFLAGS",B_FFLAGS},
+    #endif
+    {"B_MODES",B_MODES},
+    {"IN_ALL_EVENTS",IN_ALL_EVENTS},
+    {"IN_ATTRIB",IN_ATTRIB},
+    {"IN_CLOEXEC",IN_CLOEXEC},
+    {"IN_CLOSE",IN_CLOSE},
+    {"IN_CLOSE_NOWRITE",IN_CLOSE_NOWRITE},
+    {"IN_CLOSE_WRITE",IN_CLOSE_WRITE},
+    {"IN_Q_OVERFLOW",IN_Q_OVERFLOW},
+    {"IN_UNMOUNT",IN_UNMOUNT},
+    {"IN_OPEN",IN_OPEN},
+    {"IN_ONLYDIR",IN_ONLYDIR},
+    {"IN_ONESHOT",IN_ONESHOT},
+    {"IN_NONBLOCK",IN_NONBLOCK},
+    {"IN_MOVED_TO",IN_MOVED_TO},
+    {"IN_MOVED_FROM",IN_MOVED_FROM},
+    {"IN_MOVE_SELF",IN_MOVE_SELF},
+    {"IN_MOVE",IN_MOVE},
+    {"IN_MODIFY",IN_MODIFY},
+    {"IN_MASK_CREATE",IN_MASK_CREATE},
+    {"IN_MASK_ADD",IN_MASK_ADD},
+    {"IN_ISDIR",IN_ISDIR},
+    {"IN_IGNORED",IN_IGNORED},
+    {"IN_DELETE_SELF",IN_DELETE_SELF},
+    {"IN_DELETE",IN_DELETE},
+    {"IN_CREATE",IN_CREATE},
+    {NULL,0}
+};
 #endif
 
-#ifdef __SORT_ELEMENTS_ENABLE__
-unsigned char SortMethod = SORT_NAME;
-int BetterFiles[] = {T_DIR,T_LDIR,0}; //Must be zero at the end
-#endif
-
-#ifdef __BLOCK_SIZE_ELEMENTS_ENABLE__
-size_t BlockSize = 1024;
-#endif
-
-/*                       Like File   Recursive   Count*/
-char DirSizeMethod = D_C;
-
-int C_Error = COLOR_PAIR(4) | A_BOLD | A_REVERSE;
-#ifdef __COLOR_FILES_BY_EXTENSION__
-int C_FType_A = COLOR_PAIR(4);
-int C_FType_I = COLOR_PAIR(2);
-int C_FType_V = COLOR_PAIR(6);
-#endif
-int C_Selected = A_REVERSE | A_BOLD;
-int C_Exec_set = A_BOLD;
-int C_Exec = COLOR_PAIR(10);
-int C_BLink = COLOR_PAIR(1);
-int C_Dir = COLOR_PAIR(1) | A_BOLD;
-int C_Reg = A_NORMAL;
-int C_Fifo = COLOR_PAIR(9) | A_ITALIC;
-int C_Sock = COLOR_PAIR(9) | A_ITALIC;
-int C_Dev = COLOR_PAIR(9);
-int C_BDev = COLOR_PAIR(9);
-int C_LDir = COLOR_PAIR(5) | A_BOLD;
-int C_LReg = COLOR_PAIR(5);
-int C_LFifo = COLOR_PAIR(5);
-int C_LSock = COLOR_PAIR(5);
-int C_LDev = COLOR_PAIR(5);
-int C_LBDev = COLOR_PAIR(5);
-int C_Other = COLOR_PAIR(0);
-int C_User_S_D = COLOR_PAIR(6) | A_BOLD;
-int C_Bar_Dir = COLOR_PAIR(1) | A_BOLD;
-int C_Bar_Name = A_NORMAL | A_BOLD;
-int C_Bar_WorkSpace = A_NORMAL | A_BOLD;
-int C_Bar_WorkSpace_Selected = COLOR_PAIR(6) | A_REVERSE | A_BOLD;
-int C_Group_0 = COLOR_PAIR(2);
-int C_Group_1 = COLOR_PAIR(1);
-int C_Group_2 = COLOR_PAIR(7);
-int C_Group_3 = COLOR_PAIR(4);
-int C_Group_4 = COLOR_PAIR(5);
-int C_Group_5 = COLOR_PAIR(6);
-int C_Group_6 = COLOR_PAIR(9);
-int C_Group_7 = COLOR_PAIR(10);
+Settings* settings;
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
 Extensions extensions[] = {
@@ -174,93 +263,97 @@ FileSignatures signatures[] = {
 };
 
     //First char in string can't be number!
-Key keys[] = {
-    {"q",0,NULL,NULL},
-    {"j",1,1,NULL},
-    {"J",1,16,NULL},
-    {"k",2,1,NULL},
-    {"K",2,16,NULL},
-    {"h",3,NULL,NULL},
-    {"l",4,NULL,NULL},
-    {"gff",27,0,"/run/media/kpp/fil"}, //0 - is env ; 1 - path/env
-    {"gfm",27,0,"/run/media/kpp/f/Muzyka"},
-    {"gfk",27,0,"/run/media/kpp/f/ksiegi"},
-    {"gh",27,1,"HOME"},
-    {"g/",27,0,"/"},
-    {"gd",27,0,"/dev"},
-    {"ge",27,0,"/etc"},
-    {"gm",27,1,"MEDIA"}, //variable
-    {"gM",27,0,"/mnt"},
-    {"go",27,0,"/opt"},
-    {"gs",27,0,"/srv"},
-    {"gp",27,0,"/tmp"},
-    {"gu",27,0,"/usr"},
-    {"gv",27,0,"/var"},
-    {"gg",5,NULL,NULL},
-    {"G",6,NULL,NULL},
-    {"z1",8,0,NULL},
-    {"z2",8,1,NULL},
-    {"z3",8,2,NULL},
-    {"z4",8,3,NULL},
-    {"z5",8,4,NULL},
-    {"z6",8,5,NULL},
-    {"z7",8,6,NULL},
-    {"z8",8,7,NULL},
-    {"z9",8,8,NULL},
-    {"z0",8,9,NULL},
-    {"oe",9,SORT_NONE,NULL},
-    {"oE",9,SORT_NONE|SORT_REVERSE,NULL},
-    {"or",9,SORT_TYPE,NULL},
-    {"oR",9,SORT_TYPE|SORT_REVERSE,NULL},
-    {"ob",9,SORT_CHIR,NULL},
-    {"oB",9,SORT_CHIR|SORT_REVERSE,NULL},
-    {"os",9,SORT_SIZE,NULL},
-    {"oS",9,SORT_SIZE|SORT_REVERSE,NULL},
-    {"otm",9,SORT_MTIME,NULL},
-    {"otM",9,SORT_MTIME|SORT_REVERSE,NULL},
-    {"otc",9,SORT_CTIME,NULL},
-    {"otC",9,SORT_CTIME|SORT_REVERSE,NULL},
-    {"ota",9,SORT_ATIME,NULL},
-    {"otA",9,SORT_ATIME|SORT_REVERSE,NULL},
-    {"og",9,SORT_GID,NULL},
-    {"oG",9,SORT_GID|SORT_REVERSE,NULL},
-    {"ou",9,SORT_UID,NULL},
-    {"oU",9,SORT_UID|SORT_REVERSE,NULL},
-    {"om",9,SORT_LNAME,NULL},
-    {"oM",9,SORT_LNAME|SORT_REVERSE,NULL},
-    {"on",9,SORT_NAME,NULL},
-    {"oN",9,SORT_NAME|SORT_REVERSE,NULL},
-    {"dch",10,D_C,NULL},
-    {"dcH",10,D_C|D_H,NULL},
-    {"dCh",10,D_C|D_R,NULL},
-    {"dCH",10,D_C|D_R|D_H,NULL},
-    {"dsh",10,0,NULL},
-    {"dsH",10,D_H,NULL},
-    {"dSh",10,D_R,NULL},
-    {"dSH",10,D_R|D_H,NULL},
-    {"dfh",10,D_F,NULL},
-    {"dfH",10,D_F|D_H,NULL},
-    {"x1",11,GROUP_0,NULL},
-    {"x2",11,GROUP_1,NULL},
-    {"x3",11,GROUP_2,NULL},
-    {"x4",11,GROUP_3,NULL},
-    {"x5",11,GROUP_4,NULL},
-    {"x6",11,GROUP_5,NULL},
-    {"x7",11,GROUP_6,NULL},
-    {"x8",11,GROUP_7,NULL},
-    {" ",12,NULL,NULL},
-    {"V",13,NULL,NULL},
-    {"vta",14,-1,0},
-    {"vth",14,-1,1},
-    {"vda",14,0,0},
-    {"vdh",14,0,1},
-    {"vea",14,1,0},
-    {"veh",14,1,1},
-    {"pm",15,NULL,NULL},
-    {"pp",16,NULL,NULL},
-    {"dd",17,1,NULL},
-    {"dD",17,0,NULL},
-    {NULL,0,NULL,NULL}
-};
+Key *keys = NULL;
+size_t keys_t = 0;
+size_t keys_a = 0;
+
+/* = {
+    {"q",0,.slc1.v=NULL,.slc2.v=NULL},
+    {"j",1,.slc1.ll=1,.slc2.v=NULL},
+    {"J",1,.slc1.ll=16,.slc2.v=NULL},
+    {"k",2,.slc1.ll=1,.slc2.v=NULL},
+    {"K",2,.slc1.ll=16,.slc2.v=NULL},
+    {"h",3,.slc1.v=NULL,.slc2.v=NULL},
+    {"l",4,.slc1.v=NULL,.slc2.v=NULL},
+    {"gff",27,.slc1.ll=0,.slc2.v="/run/media/kpp/fil"}, //0 - is env ; 1 - path/env
+    {"gfm",27,.slc1.ll=0,.slc2.v="/run/media/kpp/f/Muzyka"},
+    {"gfk",27,.slc1.ll=0,.slc2.v="/run/media/kpp/f/ksiegi"},
+    {"gh",27,.slc1.ll=1,.slc2.v="HOME"},
+    {"g/",27,.slc1.ll=0,.slc2.v="/"},
+    {"gd",27,.slc1.ll=0,.slc2.v="/dev"},
+    {"ge",27,.slc1.ll=0,.slc2.v="/etc"},
+    {"gm",27,.slc1.ll=1,.slc2.v="MEDIA"}, //variable
+    {"gM",27,.slc1.ll=0,.slc2.v="/mnt"},
+    {"go",27,.slc1.ll=0,.slc2.v="/opt"},
+    {"gs",27,.slc1.ll=0,.slc2.v="/srv"},
+    {"gp",27,.slc1.ll=0,.slc2.v="/tmp"},
+    {"gu",27,.slc1.ll=0,.slc2.v="/usr"},
+    {"gv",27,.slc1.ll=0,.slc2.v="/var"},
+    {"gg",5,.slc1.v=NULL,.slc2.v=NULL},
+    {"G",6,.slc1.v=NULL,.slc2.v=NULL},
+    {"z1",8,.slc1.ll=0,.slc2.v=NULL},
+    {"z2",8,.slc1.ll=1,.slc2.v=NULL},
+    {"z3",8,.slc1.ll=2,.slc2.v=NULL},
+    {"z4",8,.slc1.ll=3,.slc2.v=NULL},
+    {"z5",8,.slc1.ll=4,.slc2.v=NULL},
+    {"z6",8,.slc1.ll=5,.slc2.v=NULL},
+    {"z7",8,.slc1.ll=6,.slc2.v=NULL},
+    {"z8",8,.slc1.ll=7,.slc2.v=NULL},
+    {"z9",8,.slc1.ll=8,.slc2.v=NULL},
+    {"z0",8,.slc1.ll=9,.slc2.v=NULL},
+    {"oe",9,.slc1.ll=SORT_NONE,.slc2.v=NULL},
+    {"oE",9,.slc1.ll=SORT_NONE|SORT_REVERSE,.slc2.v=NULL},
+    {"or",9,.slc1.ll=SORT_TYPE,.slc2.v=NULL},
+    {"oR",9,.slc1.ll=SORT_TYPE|SORT_REVERSE,.slc2.v=NULL},
+    {"ob",9,.slc1.ll=SORT_CHIR,.slc2.v=NULL},
+    {"oB",9,.slc1.ll=SORT_CHIR|SORT_REVERSE,.slc2.v=NULL},
+    {"os",9,.slc1.ll=SORT_SIZE,.slc2.v=NULL},
+    {"oS",9,.slc1.ll=SORT_SIZE|SORT_REVERSE,.slc2.v=NULL},
+    {"otm",9,.slc1.ll=SORT_MTIME,.slc2.v=NULL},
+    {"otM",9,.slc1.ll=SORT_MTIME|SORT_REVERSE,.slc2.v=NULL},
+    {"otc",9,.slc1.ll=SORT_CTIME,.slc2.v=NULL},
+    {"otC",9,.slc1.ll=SORT_CTIME|SORT_REVERSE,.slc2.v=NULL},
+    {"ota",9,.slc1.ll=SORT_ATIME,.slc2.v=NULL},
+    {"otA",9,.slc1.ll=SORT_ATIME|SORT_REVERSE,.slc2.v=NULL},
+    {"og",9,.slc1.ll=SORT_GID,.slc2.v=NULL},
+    {"oG",9,.slc1.ll=SORT_GID|SORT_REVERSE,.slc2.v=NULL},
+    {"ou",9,.slc1.ll=SORT_UID,.slc2.v=NULL},
+    {"oU",9,.slc1.ll=SORT_UID|SORT_REVERSE,.slc2.v=NULL},
+    {"om",9,.slc1.ll=SORT_LNAME,.slc2.v=NULL},
+    {"oM",9,.slc1.ll=SORT_LNAME|SORT_REVERSE,.slc2.v=NULL},
+    {"on",9,.slc1.ll=SORT_NAME,.slc2.v=NULL},
+    {"oN",9,.slc1.ll=SORT_NAME|SORT_REVERSE,.slc2.v=NULL},
+    {"dch",10,.slc1.ll=D_C,.slc2.v=NULL},
+    {"dcH",10,.slc1.ll=D_C|D_H,.slc2.v=NULL},
+    {"dCh",10,.slc1.ll=D_C|D_R,.slc2.v=NULL},
+    {"dCH",10,.slc1.ll=D_C|D_R|D_H,.slc2.v=NULL},
+    {"dsh",10,.slc1.ll=0,.slc2.v=NULL},
+    {"dsH",10,.slc1.ll=D_H,.slc2.v=NULL},
+    {"dSh",10,.slc1.ll=D_R,.slc2.v=NULL},
+    {"dSH",10,.slc1.ll=D_R|D_H,.slc2.v=NULL},
+    {"dfh",10,.slc1.ll=D_F,.slc2.v=NULL},
+    {"dfH",10,.slc1.ll=D_F|D_H,.slc2.v=NULL},
+    {"x1",11,.slc1.ll=GROUP_0,.slc2.v=NULL},
+    {"x2",11,.slc1.ll=GROUP_1,.slc2.v=NULL},
+    {"x3",11,.slc1.ll=GROUP_2,.slc2.v=NULL},
+    {"x4",11,.slc1.ll=GROUP_3,.slc2.v=NULL},
+    {"x5",11,.slc1.ll=GROUP_4,.slc2.v=NULL},
+    {"x6",11,.slc1.ll=GROUP_5,.slc2.v=NULL},
+    {"x7",11,.slc1.ll=GROUP_6,.slc2.v=NULL},
+    {"x8",11,.slc1.ll=GROUP_7,.slc2.v=NULL},
+    {" ",12,.slc1.v=NULL,.slc2.v=NULL},
+    {"V",13,.slc1.v=NULL,.slc2.v=NULL},
+    {"vta",14,.slc1.ll=-1,.slc2.ll=0},
+    {"vth",14,.slc1.ll=-1,.slc2.ll=1},
+    {"vda",14,.slc1.ll=0,.slc2.ll=0},
+    {"vdh",14,.slc1.ll=0,.slc2.ll=1},
+    {"vea",14,.slc1.ll=1,.slc2.ll=0},
+    {"veh",14,.slc1.ll=1,.slc2.ll=1},
+    {"pm",15,.slc1.v=NULL,.slc2.v=NULL},
+    {"pp",16,.slc1.v=NULL,.slc2.v=NULL},
+    {"dd",17,.slc1.ll=1,.slc2.v=NULL},
+    {"dD",17,.slc1.ll=0,.slc2.v=NULL},
+    {NULL,0,.slc1.v=NULL,.slc2.v=NULL}
+};*/
 
 #endif
