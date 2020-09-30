@@ -99,16 +99,20 @@ void KeyInit()
     addKey((Key){"on",9,.slc1.ll=SORT_NAME,.slc2.v=NULL});
     addKey((Key){"oN",9,.slc1.ll=SORT_NAME|SORT_REVERSE,.slc2.v=NULL});
     #endif
+    #ifdef __GET_DIR_SIZE_ENABLE__
     addKey((Key){"dch",10,.slc1.ll=D_C,.slc2.v=NULL});
-    addKey((Key){"dcH",10,.slc1.ll=D_C|D_H,.slc2.v=NULL});
     addKey((Key){"dCh",10,.slc1.ll=D_C|D_R,.slc2.v=NULL});
-    addKey((Key){"dCH",10,.slc1.ll=D_C|D_R|D_H,.slc2.v=NULL});
     addKey((Key){"dsh",10,.slc1.ll=0,.slc2.v=NULL});
-    addKey((Key){"dsH",10,.slc1.ll=D_H,.slc2.v=NULL});
     addKey((Key){"dSh",10,.slc1.ll=D_R,.slc2.v=NULL});
-    addKey((Key){"dSH",10,.slc1.ll=D_R|D_H,.slc2.v=NULL});
     addKey((Key){"dfh",10,.slc1.ll=D_F,.slc2.v=NULL});
+    #ifdef __HUMAN_READABLE_SIZE_ENABLE__
+    addKey((Key){"dcH",10,.slc1.ll=D_C|D_H,.slc2.v=NULL});
+    addKey((Key){"dCH",10,.slc1.ll=D_C|D_R|D_H,.slc2.v=NULL});
+    addKey((Key){"dsH",10,.slc1.ll=D_H,.slc2.v=NULL});
+    addKey((Key){"dSH",10,.slc1.ll=D_R|D_H,.slc2.v=NULL});
     addKey((Key){"dfH",10,.slc1.ll=D_F|D_H,.slc2.v=NULL});
+    #endif
+    #endif
     addKey((Key){"x1",11,.slc1.ll=GROUP_0,.slc2.v=NULL});
     addKey((Key){"x2",11,.slc1.ll=GROUP_1,.slc2.v=NULL});
     addKey((Key){"x3",11,.slc1.ll=GROUP_2,.slc2.v=NULL});
@@ -125,8 +129,18 @@ void KeyInit()
     addKey((Key){"vdh",14,.slc1.ll=0,.slc2.ll=1});
     addKey((Key){"vea",14,.slc1.ll=1,.slc2.ll=0});
     addKey((Key){"veh",14,.slc1.ll=1,.slc2.ll=1});
-    addKey((Key){"pm",15,.slc1.v=NULL,.slc2.v=NULL});
-    addKey((Key){"pp",16,.slc1.v=NULL,.slc2.v=NULL});
+    addKey((Key){"mm",15,.slc1.ll=M_CHNAME,.slc2.v=NULL});
+    addKey((Key){"mr",15,.slc1.ll=M_REPLACE,.slc2.v=NULL});
+    addKey((Key){"md",15,.slc1.ll=M_DCPY,.slc2.v=NULL});
+    addKey((Key){"mM",15,.slc1.ll=M_CHNAME|M_MERGE,.slc2.v=NULL});
+    addKey((Key){"mR",15,.slc1.ll=M_REPLACE|M_MERGE,.slc2.v=NULL});
+    addKey((Key){"mD",15,.slc1.ll=M_DCPY|M_MERGE,.slc2.v=NULL});
+    addKey((Key){"pp",16,.slc1.ll=M_CHNAME,.slc2.v=NULL});
+    addKey((Key){"pr",16,.slc1.ll=M_REPLACE,.slc2.v=NULL});
+    addKey((Key){"pd",16,.slc1.ll=M_DCPY,.slc2.v=NULL});
+    addKey((Key){"pP",16,.slc1.ll=M_CHNAME|M_MERGE,.slc2.v=NULL});
+    addKey((Key){"pR",16,.slc1.ll=M_REPLACE|M_MERGE,.slc2.v=NULL});
+    addKey((Key){"pD",16,.slc1.ll=M_DCPY|M_MERGE,.slc2.v=NULL});
     addKey((Key){"dd",17,.slc1.ll=1,.slc2.v=NULL});
     addKey((Key){"dD",17,.slc1.ll=0,.slc2.v=NULL});
 }

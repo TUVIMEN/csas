@@ -414,14 +414,30 @@ void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, cons
     strcpy(temp,name);
     unsigned long long int num = 0;
 
-    while (faccessat(fd1,temp,F_OK,0) != -1)
+    if (!(arg&M_MERGE && (sFile.st_mode&S_IFMT) == S_IFDIR))
     {
-        if (snprintf(temp,NAME_MAX-1,"%s_%lld",name,num) == NAME_MAX-1)
+        if (arg&M_CHNAME)
         {
-            free(temp);
-            return;
+            while (faccessat(fd1,temp,F_OK,0) == 0)
+            {
+                if (snprintf(temp,NAME_MAX-1,"%s_%lld",name,num) == NAME_MAX-1)
+                {
+                    free(temp);
+                    return;
+                }
+                num++;
+            }
         }
-        num++;
+        else if (arg&M_DCPY)
+        {
+            if (faccessat(fd1,temp,F_OK,0) != 0)
+            {
+                free(temp);
+                return;
+            }
+        }
+        else if (arg&M_REPLACE)
+            DeleteFile(fd1,temp);
     }
 
     if ((sFile.st_mode& S_IFMT) == S_IFDIR)
@@ -517,14 +533,30 @@ void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, cons
     strcpy(temp,name);
     unsigned long long int num = 0;
 
-    while (faccessat(fd1,temp,F_OK,0) != -1)
+    if (!(arg&M_MERGE && (sFile.st_mode&S_IFMT) == S_IFDIR))
     {
-        if (snprintf(temp,NAME_MAX-1,"%s_%lld",name,num) == NAME_MAX-1)
+        if (arg&M_CHNAME)
         {
-            free(temp);
-            return;
+            while (faccessat(fd1,temp,F_OK,0) == 0)
+            {
+                if (snprintf(temp,NAME_MAX-1,"%s_%lld",name,num) == NAME_MAX-1)
+                {
+                    free(temp);
+                    return;
+                }
+                num++;
+            }
         }
-        num++;
+        else if (arg&M_DCPY)
+        {
+            if (faccessat(fd1,temp,F_OK,0) != 0)
+            {
+                free(temp);
+                return;
+            }
+        }
+        else if (arg&M_REPLACE)
+            DeleteFile(fd1,temp);
     }
 
     if ((sFile.st_mode& S_IFMT) == S_IFDIR)

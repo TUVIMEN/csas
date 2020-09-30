@@ -508,17 +508,17 @@ void RunEvent(const int si, Basic* this)
             }
             break;
         case 15:
-            MoveGroup(this,".",0);
+            MoveGroup(this,".",(mode_t)keys[si].slc1.ll);
             UpdateSizeBasic(this);
             CD(".",this);
             break;
         case 16:
-            CopyGroup(this,".",0);
+            CopyGroup(this,".",(mode_t)keys[si].slc1.ll);
             UpdateSizeBasic(this);
             CD(".",this);
             break;
         case 17:
-            DeleteGroup(this,(bool)keys[si].slc1.ll);
+            DeleteGroup(this,(mode_t)keys[si].slc1.ll);
             UpdateSizeBasic(this);
             CD(".",this);
             break;
