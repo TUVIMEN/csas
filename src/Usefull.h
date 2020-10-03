@@ -25,6 +25,4 @@ void DeleteGroup(Basic*, const bool);
 void MoveGroup(Basic*, const char*, const mode_t);
 void CopyGroup(Basic*, const char*, const mode_t);
 
-void ClearWindow(WINDOW* this);
-
 #endif

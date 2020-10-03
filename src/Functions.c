@@ -33,7 +33,7 @@ void addKey(Key this)
 
     if (found == -1)
         found = (long int)keys_t++;
-    
+
     strcpy(keys[found].keys,this.keys);
     keys[found].act = this.act;
     keys[found].slc1 = this.slc1;
@@ -175,12 +175,12 @@ Settings* SettingsInit()
     this->Win3Enable                    = true;
     this->Bar1Enable                    = true;
     this->Bar2Enable                    = true;
-    this->WinSizeMod                    = (float*)malloc(2*sizeof(float));
+    this->WinSizeMod                    = (double*)malloc(2*sizeof(double));
     this->WinSizeMod[0]                 = 0.132f;
     this->WinSizeMod[1]                 = 0.368f;
     this->Borders                       = false;
     this->FillBlankSpace                = true;
-    this->WindowBorder                  = (int*)malloc(8*sizeof(int));
+    this->WindowBorder                  = (long int*)malloc(8*sizeof(long int));
     this->WindowBorder[0]               = 0;
     this->WindowBorder[1]               = 0;
     this->WindowBorder[2]               = 0;
@@ -200,7 +200,7 @@ Settings* SettingsInit()
     #endif
     #ifdef __SORT_ELEMENTS_ENABLE__
     this->SortMethod                    = SORT_NAME;
-    this->BetterFiles                   = (int*)calloc(24,sizeof(int));
+    this->BetterFiles                   = (long int*)calloc(24,sizeof(long int));
     this->BetterFiles[0]                = T_DIR;
     this->BetterFiles[1]                = T_LDIR;
     #endif
@@ -267,11 +267,11 @@ Basic* InitBasic()
 
     #ifdef __LOAD_CONFIG_ENABLE__
     char* temp = (char*)malloc(PATH_MAX);
-    LoadConfig("/etc/.csasrc",settings);
+    LoadConfig("/etc/.csasrc");
     sprintf(temp,"%s/.csasrc",getenv("HOME"));
-    LoadConfig(temp,settings);
+    LoadConfig(temp);
     sprintf(temp,"%s/.config/csas/.csasrc",getenv("HOME"));
-    LoadConfig(temp,settings);
+    LoadConfig(temp);
     free(temp);
     #endif
 
@@ -300,10 +300,13 @@ Basic* InitBasic()
     this->ActualSize = 0;
     this->AllocatedSize = 0;
     this->Base = NULL;
+    
+    #ifdef __USER_NAME_ENABLE__
     this->H_Host = (char*)malloc(64);
     this->H_User = (char*)malloc(64);
     getlogin_r(this->H_User,31);
     gethostname(this->H_Host,31);
+    #endif
 
     for (int i = 0; i < WORKSPACE_N; i++)
     {
@@ -347,7 +350,7 @@ void RunBasic(Basic* this, const int argc, char** argv)
     // loading many directories from first loaded directory after loading directories
     // from other directory causes Segmentation fault
     // So i load the main directory, because he's in most cases small
-    
+
     if (chdir(argv[1]) != 0)
     {
         endwin();
@@ -355,7 +358,7 @@ void RunBasic(Basic* this, const int argc, char** argv)
         fflush(stderr);
         return;
     }
-    
+
     CD(".",this);
 
     do {
@@ -390,6 +393,16 @@ void RunBasic(Basic* this, const int argc, char** argv)
     freeBasic(this);
 }
 
+void SetBorders(Basic* this, const int which)
+{
+    if ((which == -1 || which == 0) && settings->Win1Enable)
+        wborder(this->win[0],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
+    if (which == -1 || which == 1)
+    wborder(this->win[1],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
+    if ((which == -1 || which == 2) && settings->Win3Enable)
+        wborder(this->win[2],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
+}
+
 void UpdateSizeBasic(Basic* this)
 {
     clear();
@@ -399,13 +412,13 @@ void UpdateSizeBasic(Basic* this)
     {
         wresize(this->win[3],1,this->wx);
         mvwin(this->win[3],0,1);
-        wclear(this->win[3]);
+        werase(this->win[3]);
     }
     if (settings->Bar2Enable)
     {
         wresize(this->win[4],1,this->wx);
         mvwin(this->win[4],(this->wy-1)*!settings->StatusBarOnTop+settings->StatusBarOnTop-(!settings->Bar1Enable*settings->StatusBarOnTop),0);
-        wclear(this->win[4]);
+        werase(this->win[4]);
     }
 
     if (settings->Win1Enable)
@@ -413,34 +426,21 @@ void UpdateSizeBasic(Basic* this)
         wresize(this->win[0],this->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,this->wx*settings->WinSizeMod[0]);
         mvwin(this->win[0],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),0);
         this->WinMiddle = this->win[0]->_maxx;
-        wclear(this->win[0]);
+        werase(this->win[0]);
     }
     wresize(this->win[1],this->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,(this->wx*(settings->WinSizeMod[1]*settings->Win3Enable))+(!settings->Win3Enable*(this->wx-this->WinMiddle)));
     mvwin(this->win[1],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),this->WinMiddle);
-    wclear(this->win[1]);
+    werase(this->win[1]);
     if (settings->Win3Enable)
     {
         wresize(this->win[2],this->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,this->wx-this->win[1]->_maxx-this->WinMiddle);
         mvwin(this->win[2],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),this->win[1]->_maxx+this->WinMiddle);
-        wclear(this->win[2]);
+        werase(this->win[2]);
     }
 
     refresh();
     if (settings->Borders)
-    {
-        if (settings->Win1Enable)
-        {
-            wborder(this->win[0],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
-            wrefresh(this->win[0]);
-        }
-        wborder(this->win[1],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
-        wrefresh(this->win[1]);
-        if (settings->Win3Enable)
-        {
-            wborder(this->win[2],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
-            wrefresh(this->win[2]);
-        }
-    }
+        SetBorders(this,-1);
 }
 
 static int ColorEl(const struct Element* this, const bool Select)
@@ -775,10 +775,10 @@ void DrawBasic(Basic* this, const int which)
             wattron(this->win[i],(color|A_REVERSE)*(color > 0));
             mvwaddch(this->win[i],settings->Borders+j-this->Work[this->inW].win[i]->Ltop[this->inW],(settings->Borders*2),' ');
             wattroff(this->win[i],(color|A_REVERSE)*(color > 0));
-
-
         }
 
+        if (settings->Borders)
+            SetBorders(this,-1);
         wrefresh(this->win[i]);
     }
 
@@ -797,6 +797,7 @@ void DrawBasic(Basic* this, const int which)
 
         cont_s[3] = 0;
 
+        #ifdef __USER_NAME_ENABLE__
         if ((settings->BarSettings & B_UHNAME) == B_UHNAME)
         {
             wattron(this->win[3],settings->C_User_S_D);
@@ -808,6 +809,7 @@ void DrawBasic(Basic* this, const int which)
             wattroff(this->win[3],settings->C_User_S_D);
             cont_s[3] = strlen(temp);
         }
+        #endif
 
         if (
             #ifdef __THREADS_ENABLE__
@@ -868,8 +870,7 @@ void DrawBasic(Basic* this, const int which)
         }
 
         wrefresh(this->win[3]);
-        for (int i = 0; i < this->win[3]->_maxx+1; i++)
-            mvwaddch(this->win[3],0,i,' ');
+        werase(this->win[3]);
         // 3
     }
 
@@ -992,17 +993,17 @@ void DrawBasic(Basic* this, const int which)
         if (settings->BarSettings & B_FHBLOCKS)
         {
             MakeHumanReadAble(temp,this->fs.f_blocks*this->fs.f_bsize,false);
-            cont_s[0] += sprintf(MainTemp+cont_s[0],temp);
+            cont_s[0] += sprintf(MainTemp+cont_s[0],"%s",temp);
         }
         if (settings->BarSettings & B_FHBFREE)
         {
             MakeHumanReadAble(temp,this->fs.f_bfree*this->fs.f_bsize,false);
-            cont_s[0] += sprintf(MainTemp+cont_s[0],temp);
+            cont_s[0] += sprintf(MainTemp+cont_s[0],"%s",temp);
         }
         if (settings->BarSettings & B_FHBAVAIL)
         {
             MakeHumanReadAble(temp,this->fs.f_bavail*this->fs.f_bsize,false);
-            cont_s[0] += sprintf(MainTemp+cont_s[0],temp);
+            cont_s[0] += sprintf(MainTemp+cont_s[0],"%s",temp);
         }
         #endif
         if (settings->BarSettings & B_FBFREE)
@@ -1037,8 +1038,7 @@ void DrawBasic(Basic* this, const int which)
         wattroff(this->win[4],settings->C_Bar_E);
 
         wrefresh(this->win[4]);
-        for (int i = 0; i < this->win[4]->_maxx+1; i++)
-            mvwaddch(this->win[4],0,i,' ');
+        werase(this->win[4]);
         //4
     }
 }
@@ -1055,8 +1055,10 @@ void freeBasic(Basic* this)
         delwin(this->win[i]);
 
     free(this->cSF);
+    #ifdef __USER_NAME_ENABLE__
     free(this->H_Host);
     free(this->H_User);
+    #endif
 
     /*for (int i = 0; i < this->ActualSize; i++)
     {
@@ -1082,4 +1084,3 @@ void freeBasic(Basic* this)
     free(this->Base);*/
     free(this);
 }
-

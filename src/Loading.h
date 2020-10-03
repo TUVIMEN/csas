@@ -2,7 +2,7 @@
 #define LOADING_H
 
 #ifdef __LOAD_CONFIG_ENABLE__
-void LoadConfig(char*, Settings*);
+void LoadConfig(const char*);
 #endif
 
 #endif

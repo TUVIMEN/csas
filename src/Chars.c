@@ -17,7 +17,7 @@ void CD(const char* path, Basic* this)
     statfs(".",&this->fs);
     #endif
 
-    ClearWindow(this->win[1]);
+    werase(this->win[1]);
     wrefresh(this->win[1]);
     GetDir(".",this,1
     #ifdef __THREADS_ENABLE__
@@ -27,7 +27,9 @@ void CD(const char* path, Basic* this)
 
     if (settings->Win1Enable)
     {
-        ClearWindow(this->win[0]);
+        werase(this->win[0]);
+        if (settings->Borders)
+            SetBorders(this,0);
         wrefresh(this->win[0]);
 
         if (this->Work[this->inW].win[1]->path[0] == '/' && this->Work[this->inW].win[1]->path[1] == '\0')
@@ -47,7 +49,9 @@ void CD(const char* path, Basic* this)
     {
         if (this->Work[this->inW].win[1]->El_t == 0)
         {
-            ClearWindow(this->win[2]);
+            werase(this->win[2]);
+            if (settings->Borders)
+                SetBorders(this,2);
             wrefresh(this->win[2]);
         }
         if (
@@ -279,15 +283,15 @@ void RunEvent(const int si, Basic* this)
                 !this->Work[this->inW].win[1]->enable &&
                 #endif
                 this->Work[this->inW].win[1]->El_t > 0)
-            {
-                temp = atoi(this->cSF);
-                for (int i = 0; i < (temp+(temp == 0))*(keys[si].slc1.ll+(keys[si].slc1.ll == 0)); i++)
                 {
-                    MoveD(2,this);
+                    temp = atoi(this->cSF);
+                    for (int i = 0; i < (temp+(temp == 0))*(keys[si].slc1.ll+(keys[si].slc1.ll == 0)); i++)
+                    {
+                        MoveD(2,this);
+                    }
+                    if (settings->Win3Enable)
+                        FastRun(this);
                 }
-                if (settings->Win3Enable)
-                    FastRun(this);
-            }
             break;
         case 3:
             CD("..",this);

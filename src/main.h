@@ -26,6 +26,7 @@
 #endif
 #include <linux/limits.h>
 #include <signal.h>
+#include <libgen.h>
 #include <sys/types.h>
 #include <sys/inotify.h>
 #ifdef __FILE_OWNERS_ENABLE__
@@ -254,14 +255,14 @@ typedef struct
     char* Values;
     char* editor;
     char* FileOpener;
-    long long int BarSettings;
+    long int BarSettings;
     char* UserHostPattern;
-    int CopyBufferSize;
-    uint32_t INOTIFY_MASK;
-    float MoveOffSet;
+    long int CopyBufferSize;
+    long int INOTIFY_MASK;
+    double MoveOffSet;
     bool WrapScroll;
     bool JumpScroll;
-    float JumpScrollValue;
+    double JumpScrollValue;
     bool UserRHost;
     bool StatusBarOnTop;
     bool Win1Enable;
@@ -270,65 +271,65 @@ typedef struct
     bool Win3Display;
     bool Bar1Enable;
     bool Bar2Enable;
-    float* WinSizeMod;
+    double* WinSizeMod;
     bool Borders;
     bool FillBlankSpace;
-    int* WindowBorder;
+    long int* WindowBorder;
     bool EnableColor;
-    int DelayBetweenFrames;
+    long int DelayBetweenFrames;
     bool NumberLines;
     bool NumberLinesOff;
     bool NumberLinesFromOne;
-    int DisplayingC;
+    long int DisplayingC;
     #ifdef __SHOW_HIDDEN_FILES_ENABLE__
     bool ShowHiddenFiles;
     #endif
     #ifdef __SORT_ELEMENTS_ENABLE__
     unsigned char SortMethod;
-    int* BetterFiles;
+    long int* BetterFiles;
     #endif
     #ifdef __BLOCK_SIZE_ELEMENTS_ENABLE__
     size_t BlockSize;
     #endif
     char DirSizeMethod;
-    int C_Error;
+    long int C_Error;
     #ifdef __COLOR_FILES_BY_EXTENSION__
-    int C_FType_A;
-    int C_FType_I;
-    int C_FType_V;
+    long int C_FType_A;
+    long int C_FType_I;
+    long int C_FType_V;
     #endif
-    int C_Selected;
-    int C_Exec_set;
-    int C_Exec;
-    int C_BLink;
-    int C_Dir;
-    int C_Reg;
-    int C_Fifo;
-    int C_Sock;
-    int C_Dev;
-    int C_BDev;
-    int C_LDir;
-    int C_LReg;
-    int C_LFifo;
-    int C_LSock;
-    int C_LDev;
-    int C_LBDev;
-    int C_Other;
-    int C_User_S_D;
-    int C_Bar_Dir;
-    int C_Bar_Name;
-    int C_Bar_WorkSpace;
-    int C_Bar_WorkSpace_Selected;
-    int C_Group_0;
-    int C_Group_1;
-    int C_Group_2;
-    int C_Group_3;
-    int C_Group_4;
-    int C_Group_5;
-    int C_Group_6;
-    int C_Group_7;
-    int C_Bar_F;
-    int C_Bar_E;
+    long int C_Selected;
+    long int C_Exec_set;
+    long int C_Exec;
+    long int C_BLink;
+    long int C_Dir;
+    long int C_Reg;
+    long int C_Fifo;
+    long int C_Sock;
+    long int C_Dev;
+    long int C_BDev;
+    long int C_LDir;
+    long int C_LReg;
+    long int C_LFifo;
+    long int C_LSock;
+    long int C_LDev;
+    long int C_LBDev;
+    long int C_Other;
+    long int C_User_S_D;
+    long int C_Bar_Dir;
+    long int C_Bar_Name;
+    long int C_Bar_WorkSpace;
+    long int C_Bar_WorkSpace_Selected;
+    long int C_Group_0;
+    long int C_Group_1;
+    long int C_Group_2;
+    long int C_Group_3;
+    long int C_Group_4;
+    long int C_Group_5;
+    long int C_Group_6;
+    long int C_Group_7;
+    long int C_Bar_F;
+    long int C_Bar_E;
 } Settings;
 
 typedef struct
@@ -340,8 +341,10 @@ typedef struct
     struct Dir* Base;
     int inW;
     WorkSpace Work[WORKSPACE_N];
+    #ifdef __USER_NAME_ENABLE__
     char* H_User;
     char* H_Host;
+    #endif
     bool ExitTime;
     char* cSF;
     bool cSF_E;

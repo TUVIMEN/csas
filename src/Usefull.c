@@ -347,8 +347,7 @@ void DeleteGroup(Basic* this, const bool here)
 
         if (settings->Bar2Enable)
         {
-            for (int i = 0; i < this->win[4]->_maxx; i++)
-                mvwaddch(this->win[4],0,i,' ');
+            werase(this->win[4]);
             if (count > 0)
                 mvwprintw(this->win[4],0,0,"Confirm deletion of %d files (y/N)",count);
             else if (
@@ -690,13 +689,6 @@ void MakePathShorter(char* path, const int max_size)
             return;
     }
 
-}
-
-void ClearWindow(WINDOW* this)
-{
-    for (register int i = settings->Borders; i < this->_maxy-settings->Borders+1; i++)
-        for (register int j = settings->Borders; j < this->_maxx-settings->Borders+1; j++)
-            mvwaddch(this,i,j,' ');
 }
 
 
