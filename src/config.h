@@ -3,22 +3,22 @@
 
 #ifdef __LOAD_CONFIG_ENABLE__
 struct AliasesT aliases[] = {
-    {"COL_0",COLOR_PAIR(0x0)},
-    {"COL_1",COLOR_PAIR(0x1)},
-    {"COL_2",COLOR_PAIR(0x2)},
-    {"COL_3",COLOR_PAIR(0x3)},
-    {"COL_4",COLOR_PAIR(0x4)},
-    {"COL_5",COLOR_PAIR(0x5)},
-    {"COL_6",COLOR_PAIR(0x6)},
-    {"COL_7",COLOR_PAIR(0x7)},
-    {"COL_8",COLOR_PAIR(0x8)},
-    {"COL_9",COLOR_PAIR(0x9)},
-    {"COL_10",COLOR_PAIR(0xA)},
-    {"COL_11",COLOR_PAIR(0xB)},
-    {"COL_12",COLOR_PAIR(0xC)},
-    {"COL_13",COLOR_PAIR(0xD)},
-    {"COL_14",COLOR_PAIR(0xE)},
-    {"COL_15",COLOR_PAIR(0xF)},
+    {"COL_00",COLOR_PAIR(0x0)},
+    {"COL_01",COLOR_PAIR(0x1)},
+    {"COL_02",COLOR_PAIR(0x2)},
+    {"COL_03",COLOR_PAIR(0x3)},
+    {"COL_04",COLOR_PAIR(0x4)},
+    {"COL_05",COLOR_PAIR(0x5)},
+    {"COL_06",COLOR_PAIR(0x6)},
+    {"COL_07",COLOR_PAIR(0x7)},
+    {"COL_08",COLOR_PAIR(0x8)},
+    {"COL_09",COLOR_PAIR(0x9)},
+    {"COL_0A",COLOR_PAIR(0xA)},
+    {"COL_0B",COLOR_PAIR(0xB)},
+    {"COL_0C",COLOR_PAIR(0xC)},
+    {"COL_0D",COLOR_PAIR(0xD)},
+    {"COL_0E",COLOR_PAIR(0xE)},
+    {"COL_0F",COLOR_PAIR(0xF)},
     {"A_BOLD",A_BOLD},
     {"A_REVERSE",A_REVERSE},
     {"A_UNDERLINE",A_UNDERLINE},
@@ -95,8 +95,23 @@ struct AliasesT aliases[] = {
     {"DP_SIZE",DP_SIZE},
     #endif
     {"DP_LSPERMS",DP_LSPERMS},
-    #ifdef __BLOCK_SIZE_ELEMENTS_ENABLE__
+    #ifdef __BLOCKS_ENABLE__
     {"DP_BLOCKS",DP_BLOCKS},
+    #endif
+    #ifdef __NLINK_ENABLE__
+    {"DP_NLINK",DP_NLINK},
+    #endif
+    #ifdef __BLK_SIZE_ENABLE__
+    {"DP_BLK_SIZE",DP_BLK_SIZE},
+    #endif
+    #ifdef __DEV_ENABLE__
+    {"DP_DEV",DP_DEV},
+    #endif
+    #ifdef __RDEV_ENABLE__
+    {"DP_RDEV",DP_RDEV},
+    #endif
+    #ifdef __INODE_ENABLE__
+    {"DP_INODE",DP_INODE},
     #endif
     {"DP_TYPE",DP_TYPE},
     #ifdef __MTIME_ENABLE__
@@ -156,6 +171,7 @@ struct AliasesT aliases[] = {
     {"B_MODES",B_MODES},
     {"B_FGROUP",B_FGROUP},
     {"B_CSF",B_CSF},
+    #ifdef __INOTIFY_ENABLE__
     {"IN_ALL_EVENTS",IN_ALL_EVENTS},
     {"IN_ATTRIB",IN_ATTRIB},
     {"IN_CLOEXEC",IN_CLOEXEC},
@@ -180,6 +196,7 @@ struct AliasesT aliases[] = {
     {"IN_DELETE_SELF",IN_DELETE_SELF},
     {"IN_DELETE",IN_DELETE},
     {"IN_CREATE",IN_CREATE},
+    #endif
     {NULL,0}
 };
 #endif

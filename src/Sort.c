@@ -6,11 +6,11 @@
 
 extern Settings* settings;
 
-static bool CheckIfMatchesBetterFiles(const unsigned char this)
+static bool CheckIfMatchesBetterFiles(const unsigned char grf)
 {
     for (register int i = 0; settings->BetterFiles[i] != 0; i++)
     {
-        if (this == settings->BetterFiles[i])
+        if (grf == settings->BetterFiles[i])
         {
             return 1;
         }
@@ -129,7 +129,7 @@ static int compMTime(const void *El1, const void *El2)
         return 0;
     //if (g1 == true && g1 == true)
         Result: ;
-            return (((struct Element*)El1)->mtime) > (((struct Element*)El2)->mtime);
+            return (((struct Element*)El1)->mtim.tv_sec) > (((struct Element*)El2)->mtim.tv_sec);
 }
 #endif
 #ifdef __ATIME_ENABLE__
@@ -148,7 +148,7 @@ static int compATime(const void *El1, const void *El2)
         return 0;
     //if (g1 == true && g1 == true)
         Result: ;
-            return (((struct Element*)El1)->atime) > (((struct Element*)El2)->atime);
+            return (((struct Element*)El1)->atim.tv_sec) > (((struct Element*)El2)->atim.tv_sec);
 }
 #endif
 #ifdef __CTIME_ENABLE__
@@ -167,7 +167,7 @@ static int compCTime(const void *El1, const void *El2)
         return 0;
     //if (g1 == true && g1 == true)
         Result: ;
-            return (((struct Element*)El1)->ctime) > (((struct Element*)El2)->ctime);
+            return (((struct Element*)El1)->ctim.tv_sec) > (((struct Element*)El2)->ctim.tv_sec);
 }
 #endif
 

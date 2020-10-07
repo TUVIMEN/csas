@@ -13,8 +13,8 @@ unsigned long long int GetDirSize(int, bool, bool);
 void CheckFileExtension(const char*, unsigned char*);
 #endif
 
-size_t xstrsncpy(char *dst, const char *src, size_t n);
-char* lsperms(const int mode, const int type);
+size_t xstrsncpy(char*, const char*, size_t);
+char* lsperms(const int, const int);
 
 size_t TimeToStr(const time_t *, char*);
 

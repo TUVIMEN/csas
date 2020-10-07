@@ -31,7 +31,6 @@ int main(int argc, char** argv)
     //bulk(sda1,"/bin/vim","/bin/sh","mv","","");
 
     Basic* Armor = InitBasic();
-
     RunBasic(Armor,argc,argv);
 
     return 0;

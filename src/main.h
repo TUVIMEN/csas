@@ -26,9 +26,10 @@
 #endif
 #include <linux/limits.h>
 #include <signal.h>
-#include <libgen.h>
 #include <sys/types.h>
+#ifdef __INOTIFY_ENABLE__
 #include <sys/inotify.h>
+#endif
 #ifdef __FILE_OWNERS_ENABLE__
 #include <pwd.h>
 #endif
@@ -117,30 +118,35 @@
 #define DP_PWSHELL      0x80000
 #define DP_PWUID        0x100000
 #define DP_HSIZE        0x200000
-// ONLY FOR BARS
-#define B_UHNAME        0x400000
-#define B_DIR           0x800000
-#define B_NAME          0x1000000
-#define B_WORKSPACES    0x2000000
-#define B_POSITION      0x4000000
-#define B_FTYPE         0x8000000
-#define B_SFTYPE        0x10000000
-#define B_FBSIZE        0x20000000
-#define B_FBLOCKS       0x40000000
-#define B_FHBLOCKS      0x80000000
-#define B_FBFREE        0x100000000
-#define B_FHBFREE       0x200000000
-#define B_FBAVAIL       0x400000000
-#define B_FHBAVAIL      0x800000000
-#define B_FFILES        0x1000000000
-#define B_FFFREE        0x2000000000
-#define B_FFSID         0x4000000000
-#define B_FNAMELEN      0x8000000000
-#define B_FFRSIZE       0x10000000000
-#define B_FFLAGS        0x20000000000
-#define B_FGROUP        0x40000000000
-#define B_MODES         0x80000000000
-#define B_CSF           0x100000000000
+#define DP_NLINK        0x400000
+#define DP_BLK_SIZE     0x800000
+#define DP_DEV          0x1000000
+#define DP_RDEV         0x2000000
+#define DP_INODE        0x4000000
+
+#define B_UHNAME        0x1
+#define B_DIR           0x2
+#define B_NAME          0x4
+#define B_WORKSPACES    0x8
+#define B_POSITION      0x10
+#define B_FTYPE         0x20
+#define B_SFTYPE        0x40
+#define B_FBSIZE        0x80
+#define B_FBLOCKS       0x100
+#define B_FHBLOCKS      0x200
+#define B_FBFREE        0x400
+#define B_FHBFREE       0x800
+#define B_FBAVAIL       0x1000
+#define B_FHBAVAIL      0x2000
+#define B_FFILES        0x4000
+#define B_FFFREE        0x8000
+#define B_FFSID         0x10000
+#define B_FNAMELEN      0x20000
+#define B_FFRSIZE       0x40000
+#define B_FFLAGS        0x80000
+#define B_FGROUP        0x100000
+#define B_MODES         0x200000
+#define B_CSF           0x400000
 
 #define GROUP_0 0x1
 #define GROUP_1 0x2
@@ -167,22 +173,26 @@ struct Element
 {
     char* name;
     unsigned char Type;
+    #ifdef __MODE_ENABLE__
     unsigned int flags;
+    #endif
     unsigned char *List;
+    #ifdef __INOTIFY_ENABLE__
     ino_t inode;
+    #endif
 
     #ifdef __FILE_SIZE_ENABLE__
     unsigned long long int size;
     #endif
 
-    #ifdef __MTIME_ENABLE__
-    time_t mtime;
-    #endif
     #ifdef __ATIME_ENABLE__
-    time_t atime;
+    struct timespec atim;
+    #endif
+    #ifdef __MTIME_ENABLE__
+    struct timespec mtim;
     #endif
     #ifdef __CTIME_ENABLE__
-    time_t ctime;
+    struct timespec ctim;
     #endif
 
     #ifdef __COLOR_FILES_BY_EXTENSION__
@@ -195,6 +205,24 @@ struct Element
     #ifdef __FILE_OWNERS_ENABLE__
     uid_t pw;
     #endif
+
+    #ifdef __DEV_ENABLE__
+    dev_t dev;
+    #endif
+    #ifdef __NLINK_ENABLE__
+    nlink_t nlink;
+    #endif
+    #ifdef __RDEV_ENABLE__
+    dev_t rdev;
+    #endif
+    #ifdef __BLK_SIZE_ENABLE__
+    blksize_t blksize;
+    #endif
+    #ifdef __BLOCKS_ENABLE__
+    blkcnt_t blocks;
+    #endif
+
+
 
     #ifdef __HUMAN_READABLE_SIZE_ENABLE__
     char* SizErrToDisplay;
@@ -227,14 +255,17 @@ struct Dir
     char* path;
     long long int El_t;
     struct Element* El;
-    #ifdef __THREADS_ENABLE__
+    #ifdef __THREADS_FOR_DIR_ENABLE__
     pthread_t thread;
     bool enable;
     #endif
     size_t *selected;
     size_t *Ltop;
+    #ifdef __INOTIFY_ENABLE__
     int fd;
     int wd;
+    bool Changed;
+    #endif
     unsigned char sort_m;
 };
 
@@ -248,17 +279,23 @@ typedef struct
 
 typedef struct
 {
-    #ifdef __THREADS_ENABLE__
-    bool Threads;
+    #ifdef __THREADS_FOR_DIR_ENABLE__
+    bool ThreadsForDir;
+    #endif
+    #ifdef __THREADS_FOR_FILE_ENABLE__
+    bool ThreadsForFile;
     #endif
     char* shell;
     char* Values;
     char* editor;
     char* FileOpener;
-    long int BarSettings;
+    long int Bar1Settings;
+    long int Bar2Settings;
     char* UserHostPattern;
     long int CopyBufferSize;
+    #ifdef __INOTIFY_ENABLE__
     long int INOTIFY_MASK;
+    #endif
     double MoveOffSet;
     bool WrapScroll;
     bool JumpScroll;
@@ -277,6 +314,8 @@ typedef struct
     long int* WindowBorder;
     bool EnableColor;
     long int DelayBetweenFrames;
+    long int SDelayBetweenFrames;
+    long int DirLoadingMode;
     bool NumberLines;
     bool NumberLinesOff;
     bool NumberLinesFromOne;
@@ -287,9 +326,6 @@ typedef struct
     #ifdef __SORT_ELEMENTS_ENABLE__
     unsigned char SortMethod;
     long int* BetterFiles;
-    #endif
-    #ifdef __BLOCK_SIZE_ELEMENTS_ENABLE__
-    size_t BlockSize;
     #endif
     char DirSizeMethod;
     long int C_Error;
@@ -332,6 +368,9 @@ typedef struct
     long int C_Bar_E;
 } Settings;
 
+#define F_TEXT 0x1
+#define F_WRAP 0x2
+
 typedef struct
 {
     int wx, wy, WinMiddle;
@@ -351,6 +390,8 @@ typedef struct
     #ifdef __FILESYSTEM_INFORMATION_ENABLE__
     struct statfs fs;
     #endif
+    int preview_fd;
+    long int FastRunSettings;
 } Basic;
 
 typedef struct {
@@ -360,7 +401,7 @@ typedef struct {
         void* v;
         double d;
         long long int ll;
-    } slc1, slc2;
+    } slc[2];
 } Key;
 
 struct SetEntry {

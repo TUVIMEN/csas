@@ -6,73 +6,73 @@
 extern struct AliasesT aliases[];
 extern Settings* settings;
 
-char* StrConv(char* this)
+char* StrConv(char* grf)
 {
-    for (int i = 0; this[i]; i++)
+    for (int i = 0; grf[i]; i++)
     {
-        if (this[i] == '\\' && this[i+1])
+        if (grf[i] == '\\' && grf[i+1])
         {
-            for (int j = i; this[j]; j++)
-                this[j] = this[j+1];
+            for (int j = i; grf[j]; j++)
+                grf[j] = grf[j+1];
 
-            switch (this[i])
+            switch (grf[i])
             {
                 case '0':
-                    this[i] = '\x0';
+                    grf[i] = '\x0';
                     break;
                 case 'a':
-                    this[i] = '\x7';
+                    grf[i] = '\x7';
                     break;
                 case 'b':
-                    this[i] = '\x8';
+                    grf[i] = '\x8';
                     break;
                 case 't':
-                    this[i] = '\x9';
+                    grf[i] = '\x9';
                     break;
                 case 'n':
-                    this[i] = '\xA';
+                    grf[i] = '\xA';
                     break;
                 case 'v':
-                    this[i] = '\xB';
+                    grf[i] = '\xB';
                     break;
                 case 'f':
-                    this[i] = '\xC';
+                    grf[i] = '\xC';
                     break;
                 case 'r':
-                    this[i] = '\xD';
+                    grf[i] = '\xD';
                     break;
                 case '\'':
-                    this[i] = '\x27';
+                    grf[i] = '\x27';
                     break;
                 case '\\':
-                    this[i] = '\x5C';
+                    grf[i] = '\x5C';
                     break;
             }
         }
     }
-    return this;
+    return grf;
 }
 
-void StrToType(struct SetEntry* this, char* file, char* temp, size_t* PosBegin)
+void StrToType(struct SetEntry* grf, char* file, char* temp, size_t* PosBegin)
 {
     int arr_t = 0;
-    bool arr = this->type&0x8;
+    bool arr = grf->type&0x8;
     size_t PosEnd = 0;
     do
     {
-        switch (this->type^(0x8*arr))
+        switch (grf->type^(0x8*arr))
         {
             case 0:
                 if (file[*PosBegin] == '1' || file[*PosBegin] == 't' || file[*PosBegin] == 'T')
                     if (arr)
-                        (*((bool**)this->value))[arr_t] = 1;
+                        (*((bool**)grf->value))[arr_t] = 1;
                     else
-                        *(bool*)this->value = 1;
+                        *(bool*)grf->value = 1;
                 else
                     if (arr)
-                        (*((bool**)this->value))[arr_t] = 0;
+                        (*((bool**)grf->value))[arr_t] = 0;
                     else
-                        *(bool*)this->value = 0;
+                        *(bool*)grf->value = 0;
                 while (file[*PosBegin] && (file[*PosBegin] != '\n' && file[*PosBegin] != ' ' && file[*PosBegin] != ','))
                     (*PosBegin)++;
                 (*PosBegin)++;
@@ -90,41 +90,43 @@ void StrToType(struct SetEntry* this, char* file, char* temp, size_t* PosBegin)
                         strncpy(temp,file+*PosBegin,PosEnd);
                         StrConv(temp);
                         if (arr)
-                            strcpy((*((char***)this->value))[arr_t],temp);
+                            strcpy((*((char***)grf->value))[arr_t],temp);
                         else
-                            strcpy(*(char**)this->value,temp);
+                            strcpy(*(char**)grf->value,temp);
                     }
                     *PosBegin += PosEnd+2;
                 }
                 break;
             case 2:
                 if (arr)
-                    (*((long int**)this->value))[arr_t] = 0;
+                    (*((long int**)grf->value))[arr_t] = 0;
                 else
-                    *(long int*)this->value = 0;
+                    *(long int*)grf->value = 0;
+                size_t itemp;
                 do {
                     PosEnd = 0;
                     while (file[*PosBegin+PosEnd] && (file[*PosBegin+PosEnd] != '|' && file[*PosBegin+PosEnd] != ',' && file[*PosBegin+PosEnd] != ' ' && file[*PosBegin+PosEnd] != '\n'))
                         PosEnd++;
-                    if (file[*PosBegin] > 47 && file[*PosBegin] < 58)
+                    if (file[*PosBegin] == '-' || (file[*PosBegin] > 47 && file[*PosBegin] < 58))
                     {
                         strncpy(temp,file+*PosBegin,PosEnd);
                         if (arr)
-                            (*((long int**)this->value))[arr_t] |= atoll(temp);
+                            (*((long int**)grf->value))[arr_t] |= atoll(temp);
                         else
-                            *(long int*)this->value |= atoll(temp);
+                            *(long int*)grf->value |= atoll(temp);
                         memset(temp,0,8191);
                     }
                     else
                     {
                         for (int j = 0; aliases[j].name; j++)
                         {
-                            if (strncmp(file+*PosBegin,aliases[j].name,PosEnd) == 0)
+                            itemp = strlen(aliases[j].name);
+                            if (itemp == PosEnd && strncmp(file+*PosBegin,aliases[j].name,itemp) == 0)
                             {
                                 if (arr)
-                                    (*((long int**)this->value))[arr_t] |= aliases[j].v;
+                                    (*((long int**)grf->value))[arr_t] |= aliases[j].v;
                                 else
-                                    *(long int*)this->value |= aliases[j].v;
+                                    *(long int*)grf->value |= aliases[j].v;
                                 break;
                             }
                         }
@@ -140,9 +142,9 @@ void StrToType(struct SetEntry* this, char* file, char* temp, size_t* PosBegin)
                 
                 strncpy(temp,file+*PosBegin,PosEnd);
                 if (arr)
-                    (*((double**)this->value))[arr_t] = atof(temp);
+                    (*((double**)grf->value))[arr_t] = atof(temp);
                 else
-                    *(double*)this->value = atof(temp);
+                    *(double*)grf->value = atof(temp);
                 memset(temp,0,8191);
                 
                 *PosBegin += PosEnd+1;
@@ -153,33 +155,33 @@ void StrToType(struct SetEntry* this, char* file, char* temp, size_t* PosBegin)
     } while (arr && file[*PosBegin-1] == ',');
 }
 
-char* StrToKeys(char* this)
+char* StrToKeys(char* grf)
 {
-    for (int i = 0; this[i]; i++)
+    for (int i = 0; grf[i]; i++)
     {
-        if (this[i] == '<' && this[i+1] == 'C' && this[i+2] == '-' && this[i+3] && this[i+4] == '>')
+        if (grf[i] == '<' && grf[i+1] == 'C' && grf[i+2] == '-' && grf[i+3] && grf[i+4] == '>')
         {
             for (int g = 0; g < 4; g++)
-                for (int j = i+(g == 3); this[j]; j++)
-                    this[j] = this[j+1];
-            this[i] &= 0x1f;
+                for (int j = i+(g == 3); grf[j]; j++)
+                    grf[j] = grf[j+1];
+            grf[i] &= 0x1f;
         }
-        else if (strncmp(this+i,"<space>",7) == 0)
+        else if (strncmp(grf+i,"<space>",7) == 0)
         {
             for (int g = 0; g < 6; g++)
-                for (int j = i; this[j]; j++)
-                    this[j] = this[j+1];
-            this[i] = ' ';  
+                for (int j = i; grf[j]; j++)
+                    grf[j] = grf[j+1];
+            grf[i] = ' ';  
         }
-        else if (strncmp(this+i,"<esc>",5) == 0)
+        else if (strncmp(grf+i,"<esc>",5) == 0)
         {
             for (int g = 0; g < 4; g++)
-                for (int j = i; this[j]; j++)
-                    this[j] = this[j+1];
-            this[i] = 27;
+                for (int j = i; grf[j]; j++)
+                    grf[j] = grf[j+1];
+            grf[i] = 27;
         }
     }
-    return this;
+    return grf;
 }
 
 void LoadConfig(const char* path)
@@ -190,7 +192,10 @@ void LoadConfig(const char* path)
 
     struct stat sFile;
     if (fstat(fd,&sFile) == -1)
+    {
+        close(fd);
         return;
+    }
 
     char* file = (char*)malloc(sFile.st_size+1);
     read(fd,file,sFile.st_size);
@@ -199,9 +204,13 @@ void LoadConfig(const char* path)
 
     struct SetEntry SetEntries[] = {
         {"FileOpener",1,&settings->FileOpener},
-        {"shell",1,&settings->shell},{"editor",1,&settings->editor},{"BarSettings",2,&settings->BarSettings},
+        {"shell",1,&settings->shell},{"editor",1,&settings->editor},{"Bar1Settings",2,&settings->Bar1Settings},
+        {"Bar2Settings",2,&settings->Bar2Settings},
         {"UserHostPattern",1,&settings->UserHostPattern},{"CopyBufferSize",2,&settings->CopyBufferSize},
-        {"INOTIFY_MASK",2,&settings->INOTIFY_MASK},{"MoveOffSet",3,&settings->MoveOffSet},
+        #ifdef __INOTIFY_ENABLE__
+        {"INOTIFY_MASK",2,&settings->INOTIFY_MASK},{"DirLoadingMode",2,&settings->DirLoadingMode},
+        #endif
+        {"MoveOffSet",3,&settings->MoveOffSet},{"SDelayBetweenFrames",2,&settings->SDelayBetweenFrames},
         {"WrapScroll",0,&settings->WrapScroll},{"JumpScrollValue",3,&settings->JumpScrollValue},
         {"StatusBarOnTop",0,&settings->StatusBarOnTop},{"WinSizeMod",3|8,&settings->WinSizeMod},
         {"Win1Enable",0,&settings->Win1Enable},{"Win3Enable",0,&settings->Win3Enable},{"UserRHost",0,&settings->UserRHost},
@@ -217,9 +226,6 @@ void LoadConfig(const char* path)
         #ifdef __SORT_ELEMENTS_ENABLE__
         {"SortMethod",2,&settings->SortMethod},{"BetterFiles",2|8,&settings->BetterFiles},
         #endif
-        #ifdef __BLOCK_SIZE_ELEMENTS_ENABLE__
-        {"BlockSize",2,&settings->BlockSize},
-        #endif
         {"DirSizeMethod",2,&settings->DirSizeMethod},{"C_Error",2,&settings->C_Error},
         #ifdef __COLOR_FILES_BY_EXTENSION__
         {"C_FType_A",2,&settings->C_FType_A},{"C_FType_I",2,&settings->C_FType_I},{"C_FType_V",2,&settings->C_FType_V},
@@ -234,8 +240,11 @@ void LoadConfig(const char* path)
         {"C_Group_1",2,&settings->C_Group_1},{"C_Group_2",2,&settings->C_Group_2},{"C_Group_3",2,&settings->C_Group_3},
         {"C_Group_4",2,&settings->C_Group_4},{"C_Group_5",2,&settings->C_Group_5},{"C_Group_6",2,&settings->C_Group_6},
         {"C_Group_7",2,&settings->C_Group_7},{"C_Bar_F",2,&settings->C_Bar_F},{"C_Bar_E",2,&settings->C_Bar_E},
-        #ifdef __THREADS_ENABLE__
-        {"Threads",0,&settings->Threads},
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        {"ThreadsForDir",0,&settings->ThreadsForDir},
+        #endif
+        #ifdef __THREADS_FOR_FILE_ENABLE__
+        {"ThreadsForFile",0,&settings->ThreadsForFile},
         #endif
         {NULL,0,NULL}
     };
@@ -282,6 +291,7 @@ void LoadConfig(const char* path)
         }
         else if (strncmp(file+PosBegin,"map ",4) == 0)
         {
+            size_t itemp;
             PosBegin += 4;
             PosEnd = 0;
             while (file[PosBegin+PosEnd] && file[PosBegin+PosEnd] != ' ')
@@ -299,8 +309,8 @@ void LoadConfig(const char* path)
             TempKey.act = atoi(temp);
             memset(temp,0,8181);
             PosBegin += PosEnd+1;
-            TempKey.slc1.ll = 0;
-            TempKey.slc2.ll = 0;
+            TempKey.slc[0].ll = 0;
+            TempKey.slc[1].ll = 0;
             if (file[PosBegin-1] == '\n')
             {
                 addKey(TempKey);
@@ -320,16 +330,8 @@ void LoadConfig(const char* path)
                     {
                         strncpy(temp,file+PosBegin,PosEnd);
                         StrConv(temp);
-                        if (g == 0)
-                        {
-                            TempKey.slc1.v = malloc(PosEnd);
-                            strcpy(TempKey.slc1.v,temp);
-                        }
-                        else
-                        {
-                            TempKey.slc2.v = malloc(PosEnd);
-                            strcpy(TempKey.slc2.v,temp);
-                        }
+                        TempKey.slc[g].v = malloc(PosEnd);
+                        strcpy(TempKey.slc[g].v,temp);
                         memset(temp,0,8191);
                     }
                     PosBegin += PosEnd+1;
@@ -340,25 +342,21 @@ void LoadConfig(const char* path)
                         PosEnd = 0;
                         while (file[PosBegin+PosEnd] && (file[PosBegin+PosEnd] != '|' && file[PosBegin+PosEnd] != ',' && file[PosBegin+PosEnd] != ' ' && file[PosBegin+PosEnd] != '\n'))
                             PosEnd++;
-                        if (file[PosBegin] > 47 && file[PosBegin] < 58)
+                        
+                        if (file[PosBegin] == '-' || (file[PosBegin] > 47 && file[PosBegin] < 58))
                         {
                             strncpy(temp,file+PosBegin,PosEnd);
-                            if (g == 0)
-                                TempKey.slc1.ll |= atoll(temp);
-                            else
-                                TempKey.slc2.ll |= atoll(temp);
+                            TempKey.slc[g].ll |= atoll(temp);
                             memset(temp,0,8191);
                         }
                         else
                         {
                             for (int j = 0; aliases[j].name; j++)
                             {
-                                if (strncmp(file+PosBegin,aliases[j].name,PosEnd) == 0)
+                                itemp = strlen(aliases[j].name);
+                                if (itemp == PosEnd && strncmp(file+PosBegin,aliases[j].name,itemp) == 0)
                                 {
-                                    if (g == 0)
-                                        TempKey.slc1.ll |= aliases[j].v;
-                                    else
-                                        TempKey.slc2.ll |= aliases[j].v;
+                                    TempKey.slc[g].ll |= aliases[j].v;
                                     break;
                                 }
                             }
