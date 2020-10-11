@@ -6,6 +6,7 @@
 #include "Load.h"
 #include "FastRun.h"
 #include "Draw.h"
+#include "Console.h"
 
 #include "config.h"
 
@@ -13,20 +14,23 @@
 #include "Loading.h"
 #endif
 
-void addKey(Key grf)
+void addKey(const Key src)
 {
     if (keys_t == keys_a)
     {
         keys = (Key*)realloc(keys,(keys_a+=32)*sizeof(Key));
         for (size_t i = keys_t; i < keys_a; i++)
+        {
             keys[i].keys = (char*)malloc(64);
+            keys[i].value = NULL;
+        }
     }
 
     long int found = -1;
 
     for (size_t i = 0; i < keys_t; i++)
     {
-        if (strcmp(grf.keys,keys[i].keys) == 0)
+        if (strcmp(src.keys,keys[i].keys) == 0)
         {
             found = (long int)i;
             break;
@@ -36,115 +40,117 @@ void addKey(Key grf)
     if (found == -1)
         found = (long int)keys_t++;
 
-    strcpy(keys[found].keys,grf.keys);
-    keys[found].act = grf.act;
-    keys[found].slc[0] = grf.slc[0];
-    keys[found].slc[1] = grf.slc[1];
+    strcpy(keys[found].keys,src.keys);
+
+    if (keys[found].value != NULL)
+    {
+        free(keys[found].value);
+        keys[found].value = NULL;
+    }
+    keys[found].value = (char*)malloc(PATH_MAX);
+    strcpy(keys[found].value,src.value);
 }
 
 void KeyInit()
 {
-    addKey((Key){"q",0,.slc[0].v=NULL,.slc[1].v=NULL});
-    addKey((Key){"j",1,.slc[0].ll=1,.slc[1].v=NULL});
-    addKey((Key){"J",1,.slc[0].ll=16,.slc[1].v=NULL});
-    addKey((Key){"k",2,.slc[0].ll=1,.slc[1].v=NULL});
-    addKey((Key){"K",2,.slc[0].ll=16,.slc[1].v=NULL});
-    addKey((Key){"h",3,.slc[0].v=NULL,.slc[1].v=NULL});
-    addKey((Key){"l",4,.slc[0].v=NULL,.slc[1].v=NULL});
-    addKey((Key){"gff",27,.slc[0].ll=0,.slc[1].v="/run/media/kpp/fil"}); //0 - is env ; 1 - path/env
-    addKey((Key){"gfm",27,.slc[0].ll=0,.slc[1].v="/run/media/kpp/f/Muzyka"});
-    addKey((Key){"gfk",27,.slc[0].ll=0,.slc[1].v="/run/media/kpp/f/ksiegi"});
-    addKey((Key){"gh",27,.slc[0].ll=1,.slc[1].v="HOME"});
-    addKey((Key){"g/",27,.slc[0].ll=0,.slc[1].v="/"});
-    addKey((Key){"gd",27,.slc[0].ll=0,.slc[1].v="/dev"});
-    addKey((Key){"ge",27,.slc[0].ll=0,.slc[1].v="/etc"});
-    addKey((Key){"gm",27,.slc[0].ll=1,.slc[1].v="MEDIA"}); //variable
-    addKey((Key){"gM",27,.slc[0].ll=0,.slc[1].v="/mnt"});
-    addKey((Key){"go",27,.slc[0].ll=0,.slc[1].v="/opt"});
-    addKey((Key){"gs",27,.slc[0].ll=0,.slc[1].v="/srv"});
-    addKey((Key){"gp",27,.slc[0].ll=0,.slc[1].v="/tmp"});
-    addKey((Key){"gu",27,.slc[0].ll=0,.slc[1].v="/usr"});
-    addKey((Key){"gv",27,.slc[0].ll=0,.slc[1].v="/var"});
-    addKey((Key){"gg",5,.slc[0].v=NULL,.slc[1].v=NULL});
-    addKey((Key){"G",6,.slc[0].v=NULL,.slc[1].v=NULL});
-    addKey((Key){"z1",8,.slc[0].ll=0,.slc[1].v=NULL});
-    addKey((Key){"z2",8,.slc[0].ll=1,.slc[1].v=NULL});
-    addKey((Key){"z3",8,.slc[0].ll=2,.slc[1].v=NULL});
-    addKey((Key){"z4",8,.slc[0].ll=3,.slc[1].v=NULL});
-    addKey((Key){"z5",8,.slc[0].ll=4,.slc[1].v=NULL});
-    addKey((Key){"z6",8,.slc[0].ll=5,.slc[1].v=NULL});
-    addKey((Key){"z7",8,.slc[0].ll=6,.slc[1].v=NULL});
-    addKey((Key){"z8",8,.slc[0].ll=7,.slc[1].v=NULL});
-    addKey((Key){"z9",8,.slc[0].ll=8,.slc[1].v=NULL});
-    addKey((Key){"z0",8,.slc[0].ll=9,.slc[1].v=NULL});
+    addKey((Key){"q","quit"});
+    addKey((Key){"Q","quit -f"});
+    addKey((Key){"j","move -d"});
+    addKey((Key){"J","move -dc 16"});
+    addKey((Key){"k","move -u"});
+    addKey((Key){"K","move -uc 16"});
+    addKey((Key){"h","move -l"});
+    addKey((Key){"l","move -r"});
+    addKey((Key){"g/","/"});
+    addKey((Key){"gd","cd /dev"});
+    addKey((Key){"ge","cd /etc"});
+    addKey((Key){"gM","cd /mnt"});
+    addKey((Key){"go","cd /opt"});
+    addKey((Key){"gs","cd /srv"});
+    addKey((Key){"gp","cd /tmp"});
+    addKey((Key){"gu","cd /usr"});
+    addKey((Key){"gv","cd /var"});
+    addKey((Key){"gg","gotop"});
+    addKey((Key){"G","godown"});
+    addKey((Key){"z1","ChangeWorkSpace 0"});
+    addKey((Key){"z2","ChangeWorkSpace 1"});
+    addKey((Key){"z3","ChangeWorkSpace 2"});
+    addKey((Key){"z4","ChangeWorkSpace 3"});
+    addKey((Key){"z5","ChangeWorkSpace 4"});
+    addKey((Key){"z6","ChangeWorkSpace 5"});
+    addKey((Key){"z7","ChangeWorkSpace 6"});
+    addKey((Key){"z8","ChangeWorkSpace 7"});
+    addKey((Key){"z9","ChangeWorkSpace 8"});
+    addKey((Key){"z0","ChangeWorkSpace 9"});
     #ifdef __SORT_ELEMENTS_ENABLE__
-    addKey((Key){"oe",9,.slc[0].ll=SORT_NONE,.slc[1].v=NULL});
-    addKey((Key){"oE",9,.slc[0].ll=SORT_NONE|SORT_REVERSE,.slc[1].v=NULL});
-    addKey((Key){"or",9,.slc[0].ll=SORT_TYPE,.slc[1].v=NULL});
-    addKey((Key){"oR",9,.slc[0].ll=SORT_TYPE|SORT_REVERSE,.slc[1].v=NULL});
-    addKey((Key){"ob",9,.slc[0].ll=SORT_CHIR,.slc[1].v=NULL});
-    addKey((Key){"oB",9,.slc[0].ll=SORT_CHIR|SORT_REVERSE,.slc[1].v=NULL});
-    addKey((Key){"os",9,.slc[0].ll=SORT_SIZE,.slc[1].v=NULL});
-    addKey((Key){"oS",9,.slc[0].ll=SORT_SIZE|SORT_REVERSE,.slc[1].v=NULL});
-    addKey((Key){"otm",9,.slc[0].ll=SORT_MTIME,.slc[1].v=NULL});
-    addKey((Key){"otM",9,.slc[0].ll=SORT_MTIME|SORT_REVERSE,.slc[1].v=NULL});
-    addKey((Key){"otc",9,.slc[0].ll=SORT_CTIME,.slc[1].v=NULL});
-    addKey((Key){"otC",9,.slc[0].ll=SORT_CTIME|SORT_REVERSE,.slc[1].v=NULL});
-    addKey((Key){"ota",9,.slc[0].ll=SORT_ATIME,.slc[1].v=NULL});
-    addKey((Key){"otA",9,.slc[0].ll=SORT_ATIME|SORT_REVERSE,.slc[1].v=NULL});
-    addKey((Key){"og",9,.slc[0].ll=SORT_GID,.slc[1].v=NULL});
-    addKey((Key){"oG",9,.slc[0].ll=SORT_GID|SORT_REVERSE,.slc[1].v=NULL});
-    addKey((Key){"ou",9,.slc[0].ll=SORT_UID,.slc[1].v=NULL});
-    addKey((Key){"oU",9,.slc[0].ll=SORT_UID|SORT_REVERSE,.slc[1].v=NULL});
-    addKey((Key){"om",9,.slc[0].ll=SORT_LNAME,.slc[1].v=NULL});
-    addKey((Key){"oM",9,.slc[0].ll=SORT_LNAME|SORT_REVERSE,.slc[1].v=NULL});
-    addKey((Key){"on",9,.slc[0].ll=SORT_NAME,.slc[1].v=NULL});
-    addKey((Key){"oN",9,.slc[0].ll=SORT_NAME|SORT_REVERSE,.slc[1].v=NULL});
+    addKey((Key){"oe","set SortMethod SORT_NONE"});
+    addKey((Key){"oE","set SortMethod SORT_NONE|SORT_REVERSE"});
+    addKey((Key){"or","set SortMethod SORT_TYPE"});
+    addKey((Key){"oR","set SortMethod SORT_TYPE|SORT_REVERSE'"});
+    addKey((Key){"ob","set SortMethod SORT_CHIR"});
+    addKey((Key){"oB","set SortMethod SORT_CHIR|SORT_REVERSE"});
+    addKey((Key){"os","set SortMethod SORT_SIZE"});
+    addKey((Key){"oS","set SortMethod SORT_SIZE|SORT_REVERSE"});
+    addKey((Key){"otm","set SortMethod SORT_MTIME"});
+    addKey((Key){"otM","set SortMethod SORT_MTIME|SORT_REVERSE"});
+    addKey((Key){"otc","set SortMethod SORT_CTIME"});
+    addKey((Key){"otC","set SortMethod SORT_CTIME|SORT_REVERSE"});
+    addKey((Key){"ota","set SortMethod SORT_ATIME"});
+    addKey((Key){"otA","set SortMethod SORT_ATIME|SORT_REVERSE"});
+    addKey((Key){"og","set SortMethod SORT_GID"});
+    addKey((Key){"oG","set SortMethod SORT_GID|SORT_REVERSE"});
+    addKey((Key){"ou","set SortMethod SORT_UID"});
+    addKey((Key){"oU","set SortMethod SORT_UID|SORT_REVERSE"});
+    addKey((Key){"om","set SortMethod SORT_LNAME"});
+    addKey((Key){"oM","set SortMethod SORT_LNAME|SORT_REVERSE"});
+    addKey((Key){"on","set SortMethod SORT_NAME"});
+    addKey((Key){"oN","set SortMethod SORT_NAME|SORT_REVERSE"});
     #endif
     #ifdef __GET_DIR_SIZE_ENABLE__
-    addKey((Key){"dch",10,.slc[0].ll=D_C,.slc[1].v=NULL});
-    addKey((Key){"dCh",10,.slc[0].ll=D_C|D_R,.slc[1].v=NULL});
-    addKey((Key){"dsh",10,.slc[0].ll=0,.slc[1].v=NULL});
-    addKey((Key){"dSh",10,.slc[0].ll=D_R,.slc[1].v=NULL});
-    addKey((Key){"dfh",10,.slc[0].ll=D_F,.slc[1].v=NULL});
+    addKey((Key){"dch","getsize -c"});
+    addKey((Key){"dCh","getsize -cr"});
+    addKey((Key){"dsh","getsize"});
+    addKey((Key){"dSh","getsize -r"});
+    addKey((Key){"dfh","getsize -f"});
     #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-    addKey((Key){"dcH",10,.slc[0].ll=D_C|D_H,.slc[1].v=NULL});
-    addKey((Key){"dCH",10,.slc[0].ll=D_C|D_R|D_H,.slc[1].v=NULL});
-    addKey((Key){"dsH",10,.slc[0].ll=D_H,.slc[1].v=NULL});
-    addKey((Key){"dSH",10,.slc[0].ll=D_R|D_H,.slc[1].v=NULL});
-    addKey((Key){"dfH",10,.slc[0].ll=D_F|D_H,.slc[1].v=NULL});
+    addKey((Key){"dcH","getsize -ch"});
+    addKey((Key){"dCH","getsize -crh"});
+    addKey((Key){"dsH","getsize -h"});
+    addKey((Key){"dSH","getsize -rh"});
+    addKey((Key){"dfH","getsize -fh"});
     #endif
     #endif
-    addKey((Key){"x1",11,.slc[0].ll=GROUP_0,.slc[1].v=NULL});
-    addKey((Key){"x2",11,.slc[0].ll=GROUP_1,.slc[1].v=NULL});
-    addKey((Key){"x3",11,.slc[0].ll=GROUP_2,.slc[1].v=NULL});
-    addKey((Key){"x4",11,.slc[0].ll=GROUP_3,.slc[1].v=NULL});
-    addKey((Key){"x5",11,.slc[0].ll=GROUP_4,.slc[1].v=NULL});
-    addKey((Key){"x6",11,.slc[0].ll=GROUP_5,.slc[1].v=NULL});
-    addKey((Key){"x7",11,.slc[0].ll=GROUP_6,.slc[1].v=NULL});
-    addKey((Key){"x8",11,.slc[0].ll=GROUP_7,.slc[1].v=NULL});
-    addKey((Key){" ",12,.slc[0].v=NULL,.slc[1].v=NULL});
-    addKey((Key){"V",13,.slc[0].v=NULL,.slc[1].v=NULL});
-    addKey((Key){"vta",14,.slc[0].ll=-1,.slc[1].ll=0});
-    addKey((Key){"vth",14,.slc[0].ll=-1,.slc[1].ll=1});
-    addKey((Key){"vda",14,.slc[0].ll=0,.slc[1].ll=0});
-    addKey((Key){"vdh",14,.slc[0].ll=0,.slc[1].ll=1});
-    addKey((Key){"vea",14,.slc[0].ll=1,.slc[1].ll=0});
-    addKey((Key){"veh",14,.slc[0].ll=1,.slc[1].ll=1});
-    addKey((Key){"mm",15,.slc[0].ll=M_CHNAME,.slc[1].v=NULL});
-    addKey((Key){"mr",15,.slc[0].ll=M_REPLACE,.slc[1].v=NULL});
-    addKey((Key){"md",15,.slc[0].ll=M_DCPY,.slc[1].v=NULL});
-    addKey((Key){"mM",15,.slc[0].ll=M_CHNAME|M_MERGE,.slc[1].v=NULL});
-    addKey((Key){"mR",15,.slc[0].ll=M_REPLACE|M_MERGE,.slc[1].v=NULL});
-    addKey((Key){"mD",15,.slc[0].ll=M_DCPY|M_MERGE,.slc[1].v=NULL});
-    addKey((Key){"pp",16,.slc[0].ll=M_CHNAME,.slc[1].v=NULL});
-    addKey((Key){"pr",16,.slc[0].ll=M_REPLACE,.slc[1].v=NULL});
-    addKey((Key){"pd",16,.slc[0].ll=M_DCPY,.slc[1].v=NULL});
-    addKey((Key){"pP",16,.slc[0].ll=M_CHNAME|M_MERGE,.slc[1].v=NULL});
-    addKey((Key){"pR",16,.slc[0].ll=M_REPLACE|M_MERGE,.slc[1].v=NULL});
-    addKey((Key){"pD",16,.slc[0].ll=M_DCPY|M_MERGE,.slc[1].v=NULL});
-    addKey((Key){"dd",17,.slc[0].ll=1,.slc[1].v=NULL});
-    addKey((Key){"dD",17,.slc[0].ll=0,.slc[1].v=NULL});
+    addKey((Key){"x1","setgroup 0"});
+    addKey((Key){"x2","setgroup 1"});
+    addKey((Key){"x3","setgroup 2"});
+    addKey((Key){"x4","setgroup 3"});
+    addKey((Key){"x5","setgroup 4"});
+    addKey((Key){"x6","setgroup 5"});
+    addKey((Key){"x7","setgroup 6"});
+    addKey((Key){"x8","setgroup 7"});
+    addKey((Key){" ","fastselect"});
+    addKey((Key){"V","togglevisual"});
+    addKey((Key){"vta","select -ta"});
+    addKey((Key){"vth","select -t ."});
+    addKey((Key){"vda","select -da"});
+    addKey((Key){"vdh","select -d ."});
+    addKey((Key){"vea","select -ea"});
+    addKey((Key){"veh","select -e ."});
+    addKey((Key){"mm","f_move -c ."});
+    addKey((Key){"mr","f_move -r ."});
+    addKey((Key){"md","f_move -d ."});
+    addKey((Key){"mM","f_move -cm ."});
+    addKey((Key){"mR","f_move -rm ."});
+    addKey((Key){"mD","f_move -dm ."});
+    addKey((Key){"pp","f_copy -c ."});
+    addKey((Key){"pr","f_copy -r ."});
+    addKey((Key){"pd","f_copy -d ."});
+    addKey((Key){"pP","f_copy -cm ."});
+    addKey((Key){"pR","f_copy -rm ."});
+    addKey((Key){"pD","f_copy -dm ."});
+    addKey((Key){"dd","f_delete ."});
+    addKey((Key){"dD","f_delete -a"});
+    addKey((Key){"dh","f_delete -s"});
 }
 
 Settings* SettingsInit()
@@ -194,53 +200,53 @@ Settings* SettingsInit()
     grf->WindowBorder[2]               = 0;
     grf->WindowBorder[3]               = 0;
     grf->WindowBorder[4]               = 0;
-    grf->WindowBorder[5]               = 0;
-    grf->WindowBorder[6]               = 0;
-    grf->WindowBorder[7]               = 0;
-    grf->EnableColor                   = true;
-    grf->DelayBetweenFrames            = 8;
-    grf->SDelayBetweenFrames           = 1;
-    grf->NumberLines                   = false;
-    grf->NumberLinesOff                = false;
-    grf->NumberLinesFromOne            = false;
-    grf->DirLoadingMode                = 1;
-    grf->DisplayingC                   = DP_HSIZE;
+    grf->WindowBorder[5]                = 0;
+    grf->WindowBorder[6]                = 0;
+    grf->WindowBorder[7]                = 0;
+    grf->EnableColor                    = true;
+    grf->DelayBetweenFrames             = 8;
+    grf->SDelayBetweenFrames            = 1;
+    grf->NumberLines                    = false;
+    grf->NumberLinesOff                 = false;
+    grf->NumberLinesFromOne             = false;
+    grf->DirLoadingMode                 = 1;
+    grf->DisplayingC                    = DP_HSIZE;
     #ifdef __SHOW_HIDDEN_FILES_ENABLE__
-    grf->ShowHiddenFiles               = true;
+    grf->ShowHiddenFiles                = true;
     #endif
     #ifdef __SORT_ELEMENTS_ENABLE__
-    grf->SortMethod                    = SORT_NAME;
-    grf->BetterFiles                   = (long int*)calloc(24,sizeof(long int));
-    grf->BetterFiles[0]                = T_DIR;
-    grf->BetterFiles[1]                = T_LDIR;
+    grf->SortMethod                     = SORT_NAME;
+    grf->BetterFiles                    = (long int*)calloc(24,sizeof(long int));
+    grf->BetterFiles[0]                 = T_DIR;
+    grf->BetterFiles[1]                 = T_LDIR;
     #endif
-    grf->DirSizeMethod                 = D_C;
-    grf->C_Error                       = COLOR_PAIR(4) | A_BOLD | A_REVERSE;
+    grf->DirSizeMethod                  = D_C;
+    grf->C_Error                        = COLOR_PAIR(4) | A_BOLD | A_REVERSE;
     #ifdef __COLOR_FILES_BY_EXTENSION__
-    grf->C_FType_A                     = COLOR_PAIR(4);
-    grf->C_FType_I                     = COLOR_PAIR(2);
-    grf->C_FType_V                     = COLOR_PAIR(6);
+    grf->C_FType_A                      = COLOR_PAIR(4);
+    grf->C_FType_I                      = COLOR_PAIR(2);
+    grf->C_FType_V                      = COLOR_PAIR(6);
     #endif
-    grf->C_Selected		            = A_REVERSE | A_BOLD;
-    grf->C_Exec_set		            = A_BOLD;
-    grf->C_Exec		                = COLOR_PAIR(10);
+    grf->C_Selected		                = A_REVERSE | A_BOLD;
+    grf->C_Exec_set		                = A_BOLD;
+    grf->C_Exec		                    = COLOR_PAIR(10);
     grf->C_BLink		                = COLOR_PAIR(1);
     grf->C_Dir		                    = COLOR_PAIR(1) | A_BOLD;
     grf->C_Reg		                    = A_NORMAL;
-    grf->C_Fifo		                = COLOR_PAIR(9) | A_ITALIC;
-    grf->C_Sock		                = COLOR_PAIR(9) | A_ITALIC;
+    grf->C_Fifo		                    = COLOR_PAIR(9) | A_ITALIC;
+    grf->C_Sock		                    = COLOR_PAIR(9) | A_ITALIC;
     grf->C_Dev		                    = COLOR_PAIR(9);
-    grf->C_BDev		                = COLOR_PAIR(9);
-    grf->C_LDir		                = COLOR_PAIR(5) | A_BOLD;
-    grf->C_LReg		                = COLOR_PAIR(5);
+    grf->C_BDev		                    = COLOR_PAIR(9);
+    grf->C_LDir		                    = COLOR_PAIR(5) | A_BOLD;
+    grf->C_LReg		                    = COLOR_PAIR(5);
     grf->C_LFifo		                = COLOR_PAIR(5);
     grf->C_LSock		                = COLOR_PAIR(5);
-    grf->C_LDev		                = COLOR_PAIR(5);
+    grf->C_LDev		                    = COLOR_PAIR(5);
     grf->C_LBDev		                = COLOR_PAIR(5);
     grf->C_Other		                = COLOR_PAIR(0);
-    grf->C_User_S_D		            = COLOR_PAIR(6) | A_BOLD;
+    grf->C_User_S_D		                = COLOR_PAIR(6) | A_BOLD;
     grf->C_Bar_Dir		                = COLOR_PAIR(1) | A_BOLD;
-    grf->C_Bar_Name		            = A_NORMAL | A_BOLD;
+    grf->C_Bar_Name		                = A_NORMAL | A_BOLD;
     grf->C_Bar_WorkSpace		        = A_NORMAL | A_BOLD;
     grf->C_Bar_WorkSpace_Selected	    = COLOR_PAIR(6) | A_REVERSE | A_BOLD;
     grf->C_Group_0		                = COLOR_PAIR(2);
@@ -251,8 +257,9 @@ Settings* SettingsInit()
     grf->C_Group_5		                = COLOR_PAIR(6);
     grf->C_Group_6		                = COLOR_PAIR(9);
     grf->C_Group_7		                = COLOR_PAIR(10);
-    grf->C_Bar_E                       = 0;
-    grf->C_Bar_F                       = 0;
+    grf->C_Bar_E                                = 0;
+    grf->C_Bar_F                                = 0;
+    grf->C_Borders                              = 0;
 
     return grf;
 }
@@ -273,15 +280,15 @@ Basic* InitBasic()
     settings = SettingsInit();
 
     #ifdef __LOAD_CONFIG_ENABLE__
-    LoadConfig("/etc/.csasrc");
+    LoadConfig("/etc/.csasrc",grf);
     char* HomeTemp = getenv("HOME");
     if (HomeTemp != NULL)
     {
         char* temp = (char*)malloc(PATH_MAX);
         sprintf(temp,"%s/.csasrc",HomeTemp);
-        LoadConfig(temp);
+        LoadConfig(temp,grf);
         sprintf(temp,"%s/.config/csas/.csasrc",HomeTemp);
-        LoadConfig(temp);
+        LoadConfig(temp,grf);
         free(temp);
     }
     #endif
@@ -302,7 +309,7 @@ Basic* InitBasic()
             init_pair(i,i,-1);
     }
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 6; i++)
         grf->win[i] = newwin(0,0,0,0);
 
     grf->WinMiddle = 0;
@@ -375,7 +382,7 @@ void RunBasic(Basic* grf, const int argc, char** argv)
         return;
     }
 
-    CD(".",grf);
+    CD(".",0,grf);
 
     do {
         clock_gettime(1,&MainTimer);
@@ -397,18 +404,18 @@ void RunBasic(Basic* grf, const int argc, char** argv)
 
         si = UpdateEvent(grf);
         if (si != -1)
-            RunEvent(si,grf);
+            RunCommand(keys[si].value,grf);
 
         if (ActualTime != PastTime)
         {
             PastTime = ActualTime;
-            GetDir(".",grf,1,settings->DirLoadingMode
+            GetDir(".",grf,grf->inW,1,settings->DirLoadingMode
                 #ifdef __THREADS_FOR_DIR_ENABLE__
                 ,settings->ThreadsForDir
                 #endif
                 );
             if (settings->Win1Display)
-                GetDir("..",grf,0,settings->DirLoadingMode
+                GetDir("..",grf,grf->inW,0,settings->DirLoadingMode
                 #ifdef __THREADS_FOR_DIR_ENABLE__
                 ,settings->ThreadsForDir
                 #endif
@@ -469,7 +476,7 @@ void freeBasic(Basic* grf)
             pthread_cancel(grf->Base[i].thread);
     #endif
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 6; i++)
         delwin(grf->win[i]);
 
     free(grf->cSF);

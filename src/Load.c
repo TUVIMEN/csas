@@ -238,7 +238,7 @@ void* LoadDir(void *arg)
 }
 
 // The despair
-void GetDir(const char* path, Basic* grf, const int Which, const char mode
+void GetDir(const char* path, Basic* grf, const int workspace, const int Which, const char mode
 #ifdef __THREADS_FOR_DIR_ENABLE__
 ,const bool threaded
 #endif
@@ -295,7 +295,7 @@ void GetDir(const char* path, Basic* grf, const int Which, const char mode
         found = grf->ActualSize++;
     }
 
-    grf->Work[grf->inW].win[Which] = &grf->Base[found];
+    grf->Work[workspace].win[Which] = &grf->Base[found];
     if (!exists)
     {
         grf->Base[found].path = (char*)malloc(PATH_MAX);
@@ -344,7 +344,7 @@ void GetDir(const char* path, Basic* grf, const int Which, const char mode
     grf->Base[found].Changed = false;
 }
 
-void CD(const char* path, Basic* grf)
+void CD(const char* path, const int workspace, Basic* grf)
 {
     if (chdir(path) != 0)
         return;
@@ -355,7 +355,7 @@ void CD(const char* path, Basic* grf)
 
     werase(grf->win[1]);
     wrefresh(grf->win[1]);
-    GetDir(".",grf,1,settings->DirLoadingMode
+    GetDir(".",grf,workspace,1,settings->DirLoadingMode
     #ifdef __THREADS_FOR_DIR_ENABLE__
     ,settings->ThreadsForDir
     #endif
@@ -368,11 +368,11 @@ void CD(const char* path, Basic* grf)
             SetBorders(grf,0);
         wrefresh(grf->win[0]);
 
-        if (grf->Work[grf->inW].win[1]->path[0] == '/' && grf->Work[grf->inW].win[1]->path[1] == '\0')
+        if (grf->Work[workspace].win[1]->path[0] == '/' && grf->Work[workspace].win[1]->path[1] == '\0')
             settings->Win1Display = false;
         else
         {
-            GetDir("..",grf,0,settings->DirLoadingMode
+            GetDir("..",grf,workspace,0,settings->DirLoadingMode
             #ifdef __THREADS_FOR_DIR_ENABLE__
             ,settings->ThreadsForDir
             #endif
@@ -381,9 +381,9 @@ void CD(const char* path, Basic* grf)
         }
     }
 
-    if (settings->Win3Enable)
+    if (grf->inW == workspace && settings->Win3Enable)
     {
-        if (grf->Work[grf->inW].win[1]->El_t == 0)
+        if (grf->Work[workspace].win[1]->El_t == 0)
         {
             werase(grf->win[2]);
             if (settings->Borders)
@@ -392,9 +392,9 @@ void CD(const char* path, Basic* grf)
         }
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !grf->Work[grf->inW].win[1]->enable &&
+            !grf->Work[workspace].win[1]->enable &&
             #endif
-            grf->Work[grf->inW].win[1]->El_t > 0)
+            grf->Work[workspace].win[1]->El_t > 0)
             FastRun(grf);
     }
 }

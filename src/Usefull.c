@@ -692,3 +692,178 @@ void MakePathShorter(char* path, const int max_size)
     }
 
 }
+
+size_t FindFirstCharacter(const char* src)
+{
+    size_t pos = 0;
+    while (src[pos] && isspace(src[pos])) pos++;
+    return pos;
+}
+
+extern struct AliasesT aliases[];
+
+size_t StrToValue(void* dest, const char* src, char* temp)
+{
+    size_t PosBegin = 0, PosEnd = 0;
+    if (src[PosBegin] == '{')
+    {
+        char temp2[NAME_MAX];
+        for (int i = 0; src[PosBegin] != '}'; i++)
+        {
+            PosBegin++;
+            PosEnd = 0;
+            PosBegin += FindFirstCharacter(src+PosBegin);
+            while (src[PosBegin+PosEnd] && !isspace(src[PosBegin+PosEnd]) && src[PosBegin+PosEnd] != ',' && src[PosBegin+PosEnd] != '}')
+                PosEnd++;
+            
+            strncpy(temp2,src+PosBegin,PosEnd);
+            temp2[PosEnd] = '\0';
+
+            PosBegin += PosEnd;
+            PosBegin += FindFirstCharacter(src+PosBegin);
+
+            StrToValue(&(*(long int**)dest)[i],temp2,temp);
+        }
+        PosBegin++;
+    }
+    else if (src[PosBegin] == '\'')
+    {
+        PosBegin++;
+        PosEnd += FindEndOf(src+PosBegin,'\'');
+        strncpy(*(char**)dest,src+PosBegin,PosEnd);
+        (*(char**)dest)[PosEnd] = '\0';
+        PosBegin += PosEnd+1;
+    }
+    else
+    {
+        int type;
+        *(bool*)dest = 0;
+
+        do {
+            PosEnd = 0;
+            type = 0;
+            while (src[PosBegin+PosEnd] && !isspace(src[PosBegin+PosEnd]) && src[PosBegin+PosEnd] != '|')
+            {
+                if (src[PosBegin+PosEnd] == '.')
+                    type |= 0x1;
+                else if (isalpha(src[PosBegin+PosEnd]))
+                    type |= 0x2;
+                PosEnd++;
+            }
+            memcpy(temp,src+PosBegin,PosEnd);
+            temp[PosEnd] = '\0';
+
+            if (type == 0) { *(long int*)dest |= atol(temp); }
+            else if (type == 1)
+            {
+                *(double*)dest = atof(temp);
+                PosBegin += PosEnd;
+                PosBegin += FindFirstCharacter(src+PosBegin);
+                return PosBegin;
+            }
+            else
+                for (int i = 0; aliases[i].name; i++)
+                    if (strlen(aliases[i].name) == PosEnd && strncmp(temp,aliases[i].name,PosEnd) == 0)
+                    {
+                        *(long int*)dest |= aliases[i].v;
+                        break;
+                    }
+            
+            PosBegin += PosEnd;
+        } while (src[PosBegin++] == '|');
+    
+    }
+    return PosBegin;
+}
+
+
+char* StrConv(char* dest)
+{
+    for (int i = 0; dest[i]; i++)
+    {
+        if (dest[i] == '\\' && dest[i+1])
+        {
+            for (int j = i; dest[j]; j++)
+                dest[j] = dest[j+1];
+
+            switch (dest[i])
+            {
+                case '0':
+                    dest[i] = '\x0';
+                    break;
+                case 'a':
+                    dest[i] = '\x7';
+                    break;
+                case 'b':
+                    dest[i] = '\x8';
+                    break;
+                case 't':
+                    dest[i] = '\x9';
+                    break;
+                case 'n':
+                    dest[i] = '\xA';
+                    break;
+                case 'v':
+                    dest[i] = '\xB';
+                    break;
+                case 'f':
+                    dest[i] = '\xC';
+                    break;
+                case 'r':
+                    dest[i] = '\xD';
+                    break;
+                case '\'':
+                    dest[i] = '\x27';
+                    break;
+                case '\\':
+                    dest[i] = '\x5C';
+                    break;
+            }
+        }
+    }
+    return dest;
+}
+
+char* StrToKeys(char* dest)
+{
+    StrConv(dest);
+    for (int i = 0; dest[i]; i++)
+    {
+        if (dest[i] == '<' && dest[i+1] == 'C' && dest[i+2] == '-' && dest[i+3] && dest[i+4] == '>')
+        {
+            for (int g = 0; g < 4; g++)
+                for (int j = i+(g == 3); dest[j]; j++)
+                    dest[j] = dest[j+1];
+            dest[i] &= 0x1f;
+        }
+        else if (strncmp(dest+i,"<space>",7) == 0)
+        {
+            for (int g = 0; g < 6; g++)
+                for (int j = i; dest[j]; j++)
+                    dest[j] = dest[j+1];
+            dest[i] = ' ';  
+        }
+        else if (strncmp(dest+i,"<esc>",5) == 0)
+        {
+            for (int g = 0; g < 4; g++)
+                for (int j = i; dest[j]; j++)
+                    dest[j] = dest[j+1];
+            dest[i] = 27;
+        }
+    }
+    return dest;
+}
+
+size_t FindEndOf(const char* src, const char res)
+{
+    size_t end = 0;
+    while (src[end++])
+    {
+        if (src[end] == res && src[end-1] != '\\')
+            break;
+    }
+    return end;
+}
+
+
+

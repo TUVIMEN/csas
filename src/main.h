@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <limits.h>
 #include <locale.h>
+#include <sys/mman.h>
 #ifdef __THREADS_ENABLE__
 #include <pthread.h>
 #endif
@@ -162,6 +163,29 @@
 #define M_DCPY    0x4 //don't copy if file exists
 #define M_CHNAME  0x8 //if file exists change name
 
+enum Actions
+{
+    A_QUIT = 1,
+    A_MOVE,
+    A_CD,
+    A_GOTOP,
+    A_GODOWN,
+    A_CHANGEWORKSPACE,
+    A_SET,
+    A_GETSIZE,
+    A_SETGROUP,
+    A_FASTSELECT,
+    A_TOGGLEVISUAL,
+    A_SELECT,
+    A_F_MOVE,
+    A_F_COPY,
+    A_F_DELETE,
+    A_INCLUDE,
+    A_MAP,
+    A_LOAD,
+    A_EXEC
+};
+
 struct ShortDir
 {
     char* cwd;
@@ -222,8 +246,6 @@ struct Element
     blkcnt_t blocks;
     #endif
 
-
-
     #ifdef __HUMAN_READABLE_SIZE_ENABLE__
     char* SizErrToDisplay;
     #endif
@@ -280,48 +302,48 @@ typedef struct
 typedef struct
 {
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    bool ThreadsForDir;
+    long int ThreadsForDir;
     #endif
     #ifdef __THREADS_FOR_FILE_ENABLE__
-    bool ThreadsForFile;
+    long int ThreadsForFile;
     #endif
     char* shell;
     char* Values;
     char* editor;
     char* FileOpener;
+    char* UserHostPattern;
     long int Bar1Settings;
     long int Bar2Settings;
-    char* UserHostPattern;
     long int CopyBufferSize;
     #ifdef __INOTIFY_ENABLE__
     long int INOTIFY_MASK;
     #endif
     double MoveOffSet;
-    bool WrapScroll;
-    bool JumpScroll;
+    long int WrapScroll;
+    long int JumpScroll;
     double JumpScrollValue;
-    bool UserRHost;
-    bool StatusBarOnTop;
-    bool Win1Enable;
-    bool Win1Display;
-    bool Win3Enable;
-    bool Win3Display;
-    bool Bar1Enable;
-    bool Bar2Enable;
+    long int UserRHost;
+    long int StatusBarOnTop;
+    long int Win1Enable;
+    long int Win1Display;
+    long int Win3Enable;
+    long int Win3Display;
+    long int Bar1Enable;
+    long int Bar2Enable;
     double* WinSizeMod;
-    bool Borders;
-    bool FillBlankSpace;
+    long int Borders;
+    long int FillBlankSpace;
     long int* WindowBorder;
-    bool EnableColor;
+    long int EnableColor;
     long int DelayBetweenFrames;
     long int SDelayBetweenFrames;
     long int DirLoadingMode;
-    bool NumberLines;
-    bool NumberLinesOff;
-    bool NumberLinesFromOne;
+    long int NumberLines;
+    long int NumberLinesOff;
+    long int NumberLinesFromOne;
     long int DisplayingC;
     #ifdef __SHOW_HIDDEN_FILES_ENABLE__
-    bool ShowHiddenFiles;
+    long int ShowHiddenFiles;
     #endif
     #ifdef __SORT_ELEMENTS_ENABLE__
     unsigned char SortMethod;
@@ -334,38 +356,7 @@ typedef struct
     long int C_FType_I;
     long int C_FType_V;
     #endif
-    long int C_Selected;
-    long int C_Exec_set;
-    long int C_Exec;
-    long int C_BLink;
-    long int C_Dir;
-    long int C_Reg;
-    long int C_Fifo;
-    long int C_Sock;
-    long int C_Dev;
-    long int C_BDev;
-    long int C_LDir;
-    long int C_LReg;
-    long int C_LFifo;
-    long int C_LSock;
-    long int C_LDev;
-    long int C_LBDev;
-    long int C_Other;
-    long int C_User_S_D;
-    long int C_Bar_Dir;
-    long int C_Bar_Name;
-    long int C_Bar_WorkSpace;
-    long int C_Bar_WorkSpace_Selected;
-    long int C_Group_0;
-    long int C_Group_1;
-    long int C_Group_2;
-    long int C_Group_3;
-    long int C_Group_4;
-    long int C_Group_5;
-    long int C_Group_6;
-    long int C_Group_7;
-    long int C_Bar_F;
-    long int C_Bar_E;
+    long int C_Selected,C_Exec_set,C_Exec,C_BLink,C_Dir,C_Reg,C_Fifo,C_Sock,C_Dev,C_BDev,C_LDir,C_LReg,C_LFifo,C_LSock,C_LDev,C_LBDev,C_Other,C_User_S_D,C_Bar_Dir,C_Bar_Name,C_Bar_WorkSpace,C_Bar_WorkSpace_Selected,C_Group_0,C_Group_1,C_Group_2,C_Group_3,C_Group_4,C_Group_5,C_Group_6,C_Group_7,C_Bar_F,C_Bar_E,C_Borders;
 } Settings;
 
 #define F_TEXT 0x1
@@ -374,7 +365,7 @@ typedef struct
 typedef struct
 {
     int wx, wy, WinMiddle;
-    WINDOW *win[5];
+    WINDOW *win[6];
     size_t ActualSize;
     size_t AllocatedSize;
     struct Dir* Base;
@@ -396,17 +387,11 @@ typedef struct
 
 typedef struct {
     char* keys;
-    int act;
-    union {
-        void* v;
-        double d;
-        long long int ll;
-    } slc[2];
+    char* value;
 } Key;
 
 struct SetEntry {
     char* name;
-    char type;
     void* value;
 };
 

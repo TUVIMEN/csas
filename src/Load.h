@@ -2,11 +2,11 @@
 #define LOAD_H
 
 void* LoadDir(void*);
-void GetDir(const char*, Basic*, const int, const char
+void GetDir(const char*, Basic*, const int, const int, const char
 #ifdef __THREADS_FOR_DIR_ENABLE__
 , const bool
 #endif
 );
-void CD(const char*, Basic*);
+void CD(const char*, const int, Basic*);
 
 #endif

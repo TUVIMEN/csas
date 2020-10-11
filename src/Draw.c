@@ -34,11 +34,23 @@ void DrawText(WINDOW* grf, int fd, char* buffer, off_t offset, int whence, bool 
 void SetBorders(Basic* grf, const int which)
 {
     if ((which == -1 || which == 0) && settings->Win1Enable)
+    {
+        wattron(grf->win[0],settings->C_Borders);
         wborder(grf->win[0],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
+        wattroff(grf->win[0],settings->C_Borders);
+    }
     if (which == -1 || which == 1)
-    wborder(grf->win[1],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
+    {
+        wattron(grf->win[1],settings->C_Borders);
+        wborder(grf->win[1],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
+        wattroff(grf->win[1],settings->C_Borders);
+    }
     if ((which == -1 || which == 2) && settings->Win3Enable)
+    {
+        wattron(grf->win[2],settings->C_Borders);
         wborder(grf->win[2],settings->WindowBorder[0],settings->WindowBorder[1],settings->WindowBorder[2],settings->WindowBorder[3],settings->WindowBorder[4],settings->WindowBorder[5],settings->WindowBorder[6],settings->WindowBorder[7]);
+        wattroff(grf->win[2],settings->C_Borders);
+    }
 }
 
 static int ColorEl(const struct Element* grf, const bool Select)
@@ -64,9 +76,8 @@ static int ColorEl(const struct Element* grf, const bool Select)
             {
                 case 'A': col = settings->C_FType_A; break;
                 case 'I': col = settings->C_FType_I; break;
-                case 'V': col = settings->C_FType_V;break;
+                case 'V': col = settings->C_FType_V; break;
             }
-
             #endif
             break;
         case T_LREG: col = settings->C_LReg; break;
@@ -168,7 +179,7 @@ static char* fsName(const long int ftype)
         case 0x33:        return " Z3FOLD_MAGIC";
         case 0xc7571590:  return " PPC_CMM_MAGIC";
     }
-    return "UNKNOWN";
+    return " UNKNOWN";
 }
 
 

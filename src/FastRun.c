@@ -93,7 +93,7 @@ void FastRun(Basic* grf)
         grf->Work[grf->inW].win[1]->El[grf->Work[grf->inW].win[1]->selected[grf->inW]].Type == T_LDIR)
     {
         settings->Win3Display = true;
-        GetDir(grf->Work[grf->inW].win[1]->El[grf->Work[grf->inW].win[1]->selected[grf->inW]].name,grf,2,settings->DirLoadingMode
+        GetDir(grf->Work[grf->inW].win[1]->El[grf->Work[grf->inW].win[1]->selected[grf->inW]].name,grf,grf->inW,2,settings->DirLoadingMode
         #ifdef __THREADS_FOR_DIR_ENABLE__
         ,settings->ThreadsForDir
         #endif
