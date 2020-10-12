@@ -12,7 +12,7 @@ void* FileRun(void* arg)
 
     char buffer[257];
     int fd;
-    if ((fd = open(grf->Work[grf->inW].win[1]->El[grf->Work[grf->inW].win[1]->selected[grf->inW]].name,O_RDONLY)) == -1)
+    if ((fd = open(grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].name,O_RDONLY)) == -1)
         goto END;
     struct stat sFile;
     if (fstat(fd,&sFile) == -1)
@@ -53,7 +53,7 @@ void* FileRun(void* arg)
         {
             close(pipes[0]);
             dup2(pipes[1],1);
-            execl("/bin/file","file","-b",grf->Work[grf->inW].win[1]->El[grf->Work[grf->inW].win[1]->selected[grf->inW]].name,NULL);
+            execl("/bin/file","file","-b",grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].name,NULL);
         }
         else
         {
@@ -78,22 +78,22 @@ void* FileRun(void* arg)
 
 void FastRun(Basic* grf)
 {
-    if (grf->Work[grf->inW].win[1] == NULL ||
+    if (grf->Work[grf->inW].win[1] == -1 ||
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    grf->Work[grf->inW].win[1]->enable ||
+    grf->Base[grf->Work[grf->inW].win[1]].enable ||
     #endif
-    grf->Work[grf->inW].win[1]->El_t < 1)
+    grf->Base[grf->Work[grf->inW].win[1]].El_t < 1)
         return;
 
     werase(grf->win[2]);
     if (settings->Borders)
         SetBorders(grf,2);
 
-    if (grf->Work[grf->inW].win[1]->El[grf->Work[grf->inW].win[1]->selected[grf->inW]].Type == T_DIR ||
-        grf->Work[grf->inW].win[1]->El[grf->Work[grf->inW].win[1]->selected[grf->inW]].Type == T_LDIR)
+    if (grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].Type == T_DIR ||
+        grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].Type == T_LDIR)
     {
         settings->Win3Display = true;
-        GetDir(grf->Work[grf->inW].win[1]->El[grf->Work[grf->inW].win[1]->selected[grf->inW]].name,grf,grf->inW,2,settings->DirLoadingMode
+        GetDir(grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].name,grf,grf->inW,2,settings->DirLoadingMode
         #ifdef __THREADS_FOR_DIR_ENABLE__
         ,settings->ThreadsForDir
         #endif
@@ -103,8 +103,8 @@ void FastRun(Basic* grf)
 
     settings->Win3Display = false;
 
-    if (grf->Work[grf->inW].win[1]->El[grf->Work[grf->inW].win[1]->selected[grf->inW]].Type == T_REG ||
-        grf->Work[grf->inW].win[1]->El[grf->Work[grf->inW].win[1]->selected[grf->inW]].Type == T_LREG)
+    if (grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].Type == T_REG ||
+        grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].Type == T_LREG)
     {
         #ifdef __THREADS_FOR_FILE_ENABLE__
         if (settings->ThreadsForFile)

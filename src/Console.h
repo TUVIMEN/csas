@@ -1,6 +1,6 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
 
-void RunCommand(char*, Basic*);
+void RunCommand(const char*, Basic*);
 
 #endif

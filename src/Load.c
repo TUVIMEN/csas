@@ -152,7 +152,7 @@ void* LoadDir(void *arg)
             #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
             if (isOld)
             {
-                for (size_t i = begin; i < end; i++) //killer
+                for (register size_t i = begin; i < end; i++)
                 {
                     #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
                         #ifdef __FAST_RESCUE__
@@ -237,7 +237,6 @@ void* LoadDir(void *arg)
     #endif
 }
 
-// The despair
 void GetDir(const char* path, Basic* grf, const int workspace, const int Which, const char mode
 #ifdef __THREADS_FOR_DIR_ENABLE__
 ,const bool threaded
@@ -295,7 +294,7 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
         found = grf->ActualSize++;
     }
 
-    grf->Work[workspace].win[Which] = &grf->Base[found];
+    grf->Work[workspace].win[Which] = found;
     if (!exists)
     {
         grf->Base[found].path = (char*)malloc(PATH_MAX);
@@ -368,7 +367,7 @@ void CD(const char* path, const int workspace, Basic* grf)
             SetBorders(grf,0);
         wrefresh(grf->win[0]);
 
-        if (grf->Work[workspace].win[1]->path[0] == '/' && grf->Work[workspace].win[1]->path[1] == '\0')
+        if (grf->Base[grf->Work[workspace].win[1]].path[0] == '/' && grf->Base[grf->Work[workspace].win[1]].path[1] == '\0')
             settings->Win1Display = false;
         else
         {
@@ -383,7 +382,7 @@ void CD(const char* path, const int workspace, Basic* grf)
 
     if (grf->inW == workspace && settings->Win3Enable)
     {
-        if (grf->Work[workspace].win[1]->El_t == 0)
+        if (grf->Base[grf->Work[workspace].win[1]].El_t == 0)
         {
             werase(grf->win[2]);
             if (settings->Borders)
@@ -392,9 +391,9 @@ void CD(const char* path, const int workspace, Basic* grf)
         }
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !grf->Work[workspace].win[1]->enable &&
+            !grf->Base[grf->Work[workspace].win[1]].enable &&
             #endif
-            grf->Work[workspace].win[1]->El_t > 0)
+            grf->Base[grf->Work[workspace].win[1]].El_t > 0)
             FastRun(grf);
     }
 }

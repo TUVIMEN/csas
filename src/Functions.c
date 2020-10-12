@@ -332,9 +332,7 @@ Basic* InitBasic()
         grf->Work[i].SelectedGroup = GROUP_0;
         grf->Work[i].Visual = 0;
         for (int j = 0; j < 3; j++)
-        {
-            grf->Work[i].win[j] = NULL;
-        }
+            grf->Work[i].win[j] = -1;
     }
 
     grf->inW = 0;
@@ -369,11 +367,6 @@ void RunBasic(Basic* grf, const int argc, char** argv)
 
     int si;
 
-    // Error
-    // loading many directories from first loaded directory after loading directories
-    // from other directory causes Segmentation fault
-    // So i load the main directory, because he's in most cases small
-
     if (chdir(argv[1]) != 0)
     {
         endwin();
@@ -389,9 +382,9 @@ void RunBasic(Basic* grf, const int argc, char** argv)
         ActualTime = MainTimer.tv_sec;
 
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        if (grf->Work[grf->inW].win[2] != NULL && grf->Work[grf->inW].win[0] != NULL)
+        if (grf->Work[grf->inW].win[2] != -1 && grf->Work[grf->inW].win[0] != -1)
         {
-            if (grf->Work[grf->inW].win[0]->enable || grf->Work[grf->inW].win[2]->enable)
+            if (grf->Base[grf->Work[grf->inW].win[0]].enable || grf->Base[grf->Work[grf->inW].win[2]].enable)
                 SetDelay(settings->SDelayBetweenFrames);
             else
                 SetDelay(settings->DelayBetweenFrames);

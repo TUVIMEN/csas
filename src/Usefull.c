@@ -96,11 +96,8 @@ unsigned long long int GetDirSize(const int fd, const bool Recursive, const bool
 #endif
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
-void CheckFileExtension(const char* name, unsigned char* FType)
+unsigned char CheckFileExtension(const char* name)
 {
-    if (*FType == 0)
-        return;
-
     static char stemp[NAME_MAX];
     static size_t tse, nse;
     static bool found;
@@ -109,7 +106,7 @@ void CheckFileExtension(const char* name, unsigned char* FType)
     tse = strlen(name);
     nse = 0;
 
-    for (size_t j = tse-1; j; j--)
+    for (register size_t j = tse-1; j; j--)
     {
         if (name[j] == '.' && j < tse-1)
         {
@@ -124,15 +121,15 @@ void CheckFileExtension(const char* name, unsigned char* FType)
         strcpy(stemp,name+tse+1);
         nse = strlen(stemp);
 
-        for (size_t j = 0; j < nse; j++)
+        for (register size_t j = 0; j < nse; j++)
             stemp[j] ^= 32*(stemp[j] > 96 && stemp[j] < 123);
 
-        for (size_t j = 0; extensions[j].group != 0; j++)
+        for (register size_t j = 0; extensions[j].group != 0; j++)
             if (strcmp(stemp,extensions[j].Name) == 0)
-                *FType = extensions[j].group;
+                return extensions[j].group;
     }
-    else
-        *FType = 0;
+    
+    return 0;
 }
 #endif
 
@@ -326,8 +323,8 @@ void DeleteGroup(Basic* grf, const bool here)
 
     if (here)
     {
-        for (long long int i = 0; i < grf->Work[grf->inW].win[1]->El_t; i++)
-            if ((grf->Work[grf->inW].win[1]->El[i].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup)
+        for (long long int i = 0; i < grf->Base[grf->Work[grf->inW].win[1]].El_t; i++)
+            if ((grf->Base[grf->Work[grf->inW].win[1]].El[i].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup)
                 count++;
     }
     else
@@ -354,10 +351,10 @@ void DeleteGroup(Basic* grf, const bool here)
                 mvwprintw(grf->win[4],0,0,"Confirm deletion of %d files (y/N)",count);
             else if (
                 #ifdef __THREADS_FOR_DIR_ENABLE__
-                !grf->Work[grf->inW].win[1]->enable &&
+                !grf->Base[grf->Work[grf->inW].win[1]].enable &&
                 #endif
-                grf->Work[grf->inW].win[1]->El_t > 0)
-                mvwprintw(grf->win[4],0,0,"Confirm deletion of %s (y/N)",grf->Work[grf->inW].win[1]->El[grf->Work[grf->inW].win[1]->selected[grf->inW]].name);
+                grf->Base[grf->Work[grf->inW].win[1]].El_t > 0)
+                mvwprintw(grf->win[4],0,0,"Confirm deletion of %s (y/N)",grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].name);
             wrefresh(grf->win[4]);
         }
         Event = getch();
@@ -368,23 +365,23 @@ void DeleteGroup(Basic* grf, const bool here)
         int fd;
         if (count == 0 &&
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        !grf->Work[grf->inW].win[1]->enable &&
+        !grf->Base[grf->Work[grf->inW].win[1]].enable &&
         #endif
-        grf->Work[grf->inW].win[1]->El_t > 0)
+        grf->Base[grf->Work[grf->inW].win[1]].El_t > 0)
         {
-            if ((fd = open(grf->Work[grf->inW].win[1]->path,O_DIRECTORY)) != -1)
+            if ((fd = open(grf->Base[grf->Work[grf->inW].win[1]].path,O_DIRECTORY)) != -1)
             {
-                DeleteFile(fd,grf->Work[grf->inW].win[1]->El[grf->Work[grf->inW].win[1]->selected[grf->inW]].name);
+                DeleteFile(fd,grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].name);
                 close(fd);
             }
         }
         else if (here)
         {
-            if ((fd = open(grf->Work[grf->inW].win[1]->path,O_DIRECTORY)) != -1)
+            if ((fd = open(grf->Base[grf->Work[grf->inW].win[1]].path,O_DIRECTORY)) != -1)
             {
-                for (long long int i = 0; i < grf->Work[grf->inW].win[1]->El_t; i++)
-                    if ((grf->Work[grf->inW].win[1]->El[i].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup)
-                        DeleteFile(fd,grf->Work[grf->inW].win[1]->El[i].name);
+                for (long long int i = 0; i < grf->Base[grf->Work[grf->inW].win[1]].El_t; i++)
+                    if ((grf->Base[grf->Work[grf->inW].win[1]].El[i].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup)
+                        DeleteFile(fd,grf->Base[grf->Work[grf->inW].win[1]].El[i].name);
                 close(fd);
             }
 
@@ -702,12 +699,12 @@ size_t FindFirstCharacter(const char* src)
 
 extern struct AliasesT aliases[];
 
-size_t StrToValue(void* dest, const char* src, char* temp)
+size_t StrToValue(void* dest, const char* src)
 {
     size_t PosBegin = 0, PosEnd = 0;
+    char temp[8192];
     if (src[PosBegin] == '{')
     {
-        char temp2[NAME_MAX];
         for (int i = 0; src[PosBegin] != '}'; i++)
         {
             PosBegin++;
@@ -716,13 +713,13 @@ size_t StrToValue(void* dest, const char* src, char* temp)
             while (src[PosBegin+PosEnd] && !isspace(src[PosBegin+PosEnd]) && src[PosBegin+PosEnd] != ',' && src[PosBegin+PosEnd] != '}')
                 PosEnd++;
             
-            strncpy(temp2,src+PosBegin,PosEnd);
-            temp2[PosEnd] = '\0';
+            strncpy(temp,src+PosBegin,PosEnd);
+            temp[PosEnd] = '\0';
 
             PosBegin += PosEnd;
             PosBegin += FindFirstCharacter(src+PosBegin);
 
-            StrToValue(&(*(long int**)dest)[i],temp2,temp);
+            StrToValue(&(*(long int**)dest)[i],temp);
         }
         PosBegin++;
     }

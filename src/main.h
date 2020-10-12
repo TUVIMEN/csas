@@ -54,7 +54,7 @@
 #endif
 
 #define DIR_INC_RATE 64
-#define DIR_BASE_STABLE_RATE 8192
+#define DIR_BASE_STABLE_RATE 32
 
 #define TEMPTEMP "/tmp/CSAS-XXXXXX"
 
@@ -162,29 +162,6 @@
 #define M_MERGE   0x2 //merge directory
 #define M_DCPY    0x4 //don't copy if file exists
 #define M_CHNAME  0x8 //if file exists change name
-
-enum Actions
-{
-    A_QUIT = 1,
-    A_MOVE,
-    A_CD,
-    A_GOTOP,
-    A_GODOWN,
-    A_CHANGEWORKSPACE,
-    A_SET,
-    A_GETSIZE,
-    A_SETGROUP,
-    A_FASTSELECT,
-    A_TOGGLEVISUAL,
-    A_SELECT,
-    A_F_MOVE,
-    A_F_COPY,
-    A_F_DELETE,
-    A_INCLUDE,
-    A_MAP,
-    A_LOAD,
-    A_EXEC
-};
 
 struct ShortDir
 {
@@ -296,7 +273,7 @@ typedef struct
     bool Visual;
     unsigned char SelectedGroup;
     bool exists;
-    struct Dir* win[3];
+    int win[3];
 } WorkSpace;
 
 typedef struct
