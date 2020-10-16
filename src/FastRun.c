@@ -1,3 +1,21 @@
+/*
+    csas - terminal file manager
+    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "main.h"
 #include "FastRun.h"
 #include "Load.h"
@@ -12,7 +30,7 @@ void* FileRun(void* arg)
 
     char buffer[257];
     int fd;
-    if ((fd = open(grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].name,O_RDONLY)) == -1)
+    if ((fd = open(GET_ESELECTED(grf->inW,1).name,O_RDONLY)) == -1)
         goto END;
     struct stat sFile;
     if (fstat(fd,&sFile) == -1)
@@ -49,11 +67,12 @@ void* FileRun(void* arg)
         if (pipe(pipes) == -1)
             goto END;
 
-        if (fork() == 0) //Delay must be small
+        if (fork() == 0) //Delay must be small to see
         {
             close(pipes[0]);
             dup2(pipes[1],1);
-            execl("/bin/file","file","-b",grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].name,NULL);
+            execl("/bin/file","file","-b",GET_ESELECTED(grf->inW,1).name,NULL);
+            _exit(1);
         }
         else
         {
@@ -89,11 +108,10 @@ void FastRun(Basic* grf)
     if (settings->Borders)
         SetBorders(grf,2);
 
-    if (grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].Type == T_DIR ||
-        grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].Type == T_LDIR)
+    if (GET_ESELECTED(grf->inW,1).Type == T_DIR || GET_ESELECTED(grf->inW,1).Type == T_LDIR)
     {
         settings->Win3Display = true;
-        GetDir(grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].name,grf,grf->inW,2,settings->DirLoadingMode
+        GetDir(GET_ESELECTED(grf->inW,1).name,grf,grf->inW,2,settings->DirLoadingMode
         #ifdef __THREADS_FOR_DIR_ENABLE__
         ,settings->ThreadsForDir
         #endif
@@ -103,8 +121,7 @@ void FastRun(Basic* grf)
 
     settings->Win3Display = false;
 
-    if (grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].Type == T_REG ||
-        grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].Type == T_LREG)
+    if (GET_ESELECTED(grf->inW,1).Type == T_REG || GET_ESELECTED(grf->inW,1).Type == T_LREG)
     {
         #ifdef __THREADS_FOR_FILE_ENABLE__
         if (settings->ThreadsForFile)

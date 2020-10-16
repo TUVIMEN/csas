@@ -1,3 +1,21 @@
+/*
+    csas - terminal file manager
+    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "main.h"
 #include "Usefull.h"
 #include "FastRun.h"
@@ -11,6 +29,64 @@ extern Extensions extensions[];
 extern FileSignatures signatures[];
 
 extern Settings* settings;
+
+int spawn(char* file, char* arg1, char* arg2, const unsigned char flag)
+{
+    if (!file || !*file) return -1;
+
+    char* argv[4] = {0};
+
+    if (!arg1 && arg2)
+    {
+        arg1 = arg2;
+        arg2 = NULL;
+    }
+
+    argv[0] = file;
+    argv[1] = arg1;
+    argv[2] = arg2;
+    argv[3] = NULL;
+
+    if (flag&F_NORMAL) endwin();
+
+    pid_t pid = fork();
+
+    if (pid == 0)
+    {
+        signal(SIGHUP, SIG_DFL);
+        signal(SIGINT, SIG_DFL);
+        signal(SIGQUIT, SIG_DFL);
+        signal(SIGTSTP, SIG_DFL);
+
+        if (flag&F_SILENT)
+        {
+            int fd = open("/dev/null",O_WRONLY);
+            dup2(fd,1);
+            dup2(fd,2);
+            close(fd);
+        }
+        execvp(file,argv);
+        _exit(1);
+    }
+    else
+    {
+        if (flag&F_WAIT)
+            while (waitpid(pid,NULL,0) == -1);
+
+        if (flag&F_NORMAL)
+        {
+            if (flag&F_CONFIRM)
+            {
+                printf("\nPress ENTER to continue");
+                fflush(stdout);
+                while (getch() != '\n');
+            }
+            refresh();
+        }
+    }
+
+    return 0;
+}
 
 #ifdef __HUMAN_READABLE_SIZE_ENABLE__
 void MakeHumanReadAble(char* pointer, const unsigned long long int rvalue, const bool isDir)
@@ -147,7 +223,7 @@ size_t xstrsncpy(char *dst, const char *src, size_t n)
 
 char* lsperms(const int mode, const int type)
 {
-    static const char * const rwx[] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
+    static const char* const rwx[] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
 	static char bits[11] = {0};
 
     if (type == T_DIR)
@@ -167,31 +243,25 @@ char* lsperms(const int mode, const int type)
     else
        bits[0] = '?';
 
-	xstrsncpy(&bits[1], rwx[(mode >> 6) & 7], 4);
-	xstrsncpy(&bits[4], rwx[(mode >> 3) & 7], 4);
-	xstrsncpy(&bits[7], rwx[(mode & 7)], 4);
+    memcpy(bits+1,rwx[(mode >> 6)&7],4);
+    memcpy(bits+4,rwx[(mode >> 3)&7],4);
+    memcpy(bits+7,rwx[mode&7],4);
 
 	if (mode & S_ISUID)
-		bits[3] = (mode & 0100) ? 's' : 'S';
+		bits[3] = (mode&0100) ? 's' : 'S';
 	if (mode & S_ISGID)
-		bits[6] = (mode & 0010) ? 's' : 'l';
+		bits[6] = (mode&0010) ? 's' : 'l';
 	if (mode & S_ISVTX)
-		bits[9] = (mode & 0001) ? 't' : 'T';
+		bits[9] = (mode&0001) ? 't' : 'T';
 
 	return bits;
 }
 
-void RunFile(const char* path)
+void RunFile(char* path)
 {
 
     if (strcmp(settings->FileOpener,"NULL") != 0)
-    {
-        endwin();
-        if (fork() == 0)
-            execlp(settings->FileOpener,settings->FileOpener,path,NULL);
-        wait(NULL);
-        initscr();
-    }
+        spawn(settings->FileOpener,path,NULL,F_NORMAL|F_WAIT);
     else
     {
         struct stat sFile;
@@ -202,11 +272,7 @@ void RunFile(const char* path)
 
         if (sFile.st_size == 0)
         {
-            endwin();
-            if (fork() == 0)
-                execlp(settings->editor,settings->editor,path,NULL);
-            wait(NULL);
-            initscr();
+            spawn(settings->editor,path,NULL,F_NORMAL|F_WAIT);
             return;
         }
 
@@ -244,30 +310,7 @@ void RunFile(const char* path)
 
                 if (strcmp(nest,signatures[i].sig) == 0)
                 {
-                    if (!signatures[i].RunInBG)
-                        endwin();
-                    if (fork() == 0)
-                    {
-                        if (signatures[i].RunInBG)
-                        {
-                            int fdc;
-                            if ((fdc = open("/dev/null",O_WRONLY)) != -1)
-                            {
-                                dup2(fdc,1);
-                                dup2(fdc,2);
-                                close(fdc);
-                            }
-                        }
-                        execlp(signatures[i].comma_com,signatures[i].comma_com,path,NULL);
-                    }
-                    if (!signatures[i].RunInBG)
-                    {
-                        wait(NULL);
-                        initscr();
-                    }
-
-                    close(fd);
-                    free(nest);
+                    spawn(signatures[i].comma_com,path,NULL,signatures->RunInBG ? F_SILENT : F_NORMAL|F_WAIT);
                     return;
                 }
             }
@@ -276,13 +319,7 @@ void RunFile(const char* path)
         free(nest);
 
         if (binary == false)
-        {
-            endwin();
-            if (fork() == 0)
-                execlp(settings->editor,settings->editor,path,NULL);
-            wait(NULL);
-            initscr();
-        }
+            spawn(settings->editor,path,NULL,F_NORMAL|F_WAIT);
 
         close(fd);
     }
@@ -338,7 +375,7 @@ void DeleteGroup(Basic* grf, const bool here)
     int Event = -1;
 
     do {
-        if (Event == 410)
+        if (Event == KEY_RESIZE)
         {
             DrawBasic(grf,-1);
             UpdateSizeBasic(grf);
@@ -690,6 +727,17 @@ void MakePathShorter(char* path, const int max_size)
 
 }
 
+char* MakePath(const char* dir, const char* name)
+{
+    static char path[PATH_MAX];
+    strcpy(path,dir);
+    size_t dir_t = strlen(dir);
+    if (path[0] == '/' && path[1] != '\0')
+        path[dir_t++] = '/';
+    strcpy(path+dir_t,name);
+    return path;
+}
+
 size_t FindFirstCharacter(const char* src)
 {
     size_t pos = 0;
@@ -734,7 +782,7 @@ size_t StrToValue(void* dest, const char* src)
     else
     {
         int type;
-        *(bool*)dest = 0;
+        *(long int*)dest = 0;
 
         do {
             PosEnd = 0;
@@ -809,16 +857,68 @@ char* StrConv(char* dest)
                 case 'r':
                     dest[i] = '\xD';
                     break;
-                case '\'':
-                    dest[i] = '\x27';
-                    break;
-                case '\\':
-                    dest[i] = '\x5C';
-                    break;
             }
         }
     }
     return dest;
+}
+
+size_t StrToPath(char* dest, const char* src)
+{
+    size_t pos = 0, x, end;
+    if (src[pos] == '"')
+    {
+        pos++;
+        x = 0;
+        while (src[pos])
+        {
+            if (src[pos] == '"' && src[pos-1] != '\\')
+                break;
+            if (src[pos] == '$' && src[pos-1] != '\\' && src[pos+1] == '{')
+            {
+                pos += 2;
+                char temp1[NAME_MAX];
+                end = FindEndOf(src+pos,'}');
+                strncpy(temp1,src+pos,end);
+                temp1[end] = '\0';
+                char* temp2 = getenv(temp1);
+                if (temp2)
+                {
+                    memcpy(dest+x,temp2,strlen(temp2));
+                    x += strlen(temp2);
+                }
+                pos += end+1;
+                continue;
+            }
+            
+            dest[x++] = src[pos++];
+        }
+        pos++;
+    }
+    else if (src[pos] == '\'')
+    {
+        pos++;
+        end = FindEndOf(src+pos,'\'');
+        strncpy(dest,src+pos,end);
+        dest[end] = '\0';
+        pos += end+1;
+    }
+    else
+    {
+        x = 0;
+        while (src[pos] && !isspace(src[pos]))
+        {
+            if (src[pos] == '\\')
+                dest[x] = src[++pos];
+            else
+                dest[x] = src[pos];
+            x++;
+            pos++;
+        }
+        dest[x] = '\0';
+    }
+    StrConv(dest);
+    return pos;
 }
 
 char* StrToKeys(char* dest)
@@ -862,5 +962,18 @@ size_t FindEndOf(const char* src, const char res)
     return end;
 }
 
-
+char* MakePathRunAble(char* temp)
+{
+    for (size_t i = 0; i < strlen(temp); i++)
+    {
+        if(temp[i] == '\\' || temp[i] == '\"' || temp[i] == '\'' || temp[i] == ' ' || temp[i] == '(' || temp[i] == ')' || temp[i] == '[' || temp[i] == ']' || temp[i] == '{' || temp[i] == '}')
+        {
+            for (size_t j = strlen(temp); j > i; j--)
+                temp[j] = temp[j-1];
+            temp[i] = '\\';
+            i++;
+        }
+    }
+    return temp;
+}
 

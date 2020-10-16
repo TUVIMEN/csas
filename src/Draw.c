@@ -1,3 +1,21 @@
+/*
+    csas - terminal file manager
+    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "main.h"
 #include "Draw.h"
 #include "FastRun.h"
@@ -97,6 +115,7 @@ static int ColorEl(const struct Element* src, const bool Select)
     return set | col;
 }
 
+#ifdef __FILESYSTEM_INFORMATION_ENABLE__
 static char* fsName(const long int ftype)
 {
     switch (ftype)
@@ -181,6 +200,7 @@ static char* fsName(const long int ftype)
     }
     return " UNKNOWN";
 }
+#endif
 
 
 static void ByIntToStr(size_t* size, const int Settings, char* result, struct Element* grf)
@@ -231,9 +251,8 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
     if (Settings&DP_INODE)
         *size += sprintf(result+*size,"%ld ",grf->inode);
     #endif
-
     #ifdef __FILE_OWNERS_ENABLE__
-    if (grf->pw != 1001)
+    if (grf->pw != 1001) //!
     {
         pw = getpwuid(grf->pw);
         if (Settings&DP_PWDIR)
@@ -321,7 +340,7 @@ void DrawBasic(Basic* grf, const int which)
             continue;
         if (i == 2 && (!settings->Win3Enable
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        || grf->Base[grf->Work[grf->inW].win[1]].enable
+        || GET_DIR(grf->inW,1).enable
         #endif
         ))
             continue;
@@ -338,7 +357,7 @@ void DrawBasic(Basic* grf, const int which)
 
         wattron(grf->win[i],settings->C_Error);
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        if (grf->Base[grf->Work[grf->inW].win[i]].enable)
+        if (GET_DIR(grf->inW,i).enable)
         {
             snprintf(NameTemp,grf->win[i]->_maxx-((settings->Borders+1)+2),"LOADING");
             mvwaddstr(grf->win[i],settings->Borders,settings->Borders+3,NameTemp);
@@ -347,7 +366,7 @@ void DrawBasic(Basic* grf, const int which)
             continue;
         }
         #endif
-        if ((long long int)grf->Base[grf->Work[grf->inW].win[i]].El_t == (long long int)-1)
+        if ((long long int)GET_DIR(grf->inW,i).El_t == (long long int)-1)
         {
             snprintf(NameTemp,grf->win[i]->_maxx-((settings->Borders+1)+2),"NOT ACCESSIBLE");
             mvwaddstr(grf->win[i],settings->Borders,settings->Borders+3,NameTemp);
@@ -355,7 +374,7 @@ void DrawBasic(Basic* grf, const int which)
             wrefresh(grf->win[i]);
             continue;
         }
-        if ((long long int)grf->Base[grf->Work[grf->inW].win[i]].El_t == (long long int)0)
+        if ((long long int)GET_DIR(grf->inW,i).El_t == (long long int)0)
         {
             snprintf(NameTemp,grf->win[i]->_maxx-((settings->Borders+1)+2),"EMPTY");
             mvwaddstr(grf->win[i],settings->Borders,settings->Borders+3,NameTemp);
@@ -365,46 +384,29 @@ void DrawBasic(Basic* grf, const int which)
         }
         wattroff(grf->win[i],settings->C_Error);
 
-        if ((long long int)grf->Base[grf->Work[grf->inW].win[i]].selected[grf->inW] >= grf->Base[grf->Work[grf->inW].win[i]].El_t)
-        {
-            grf->Base[grf->Work[grf->inW].win[i]].selected[grf->inW] = grf->Base[grf->Work[grf->inW].win[i]].El_t-1;
-            if (grf->Base[grf->Work[grf->inW].win[i]].El_t-1-grf->win[i]->_maxy < 0)
-                grf->Base[grf->Work[grf->inW].win[i]].Ltop[grf->inW] = 0;
-            else
-                grf->Base[grf->Work[grf->inW].win[i]].Ltop[grf->inW] = grf->Base[grf->Work[grf->inW].win[i]].El_t-1-grf->win[i]->_maxy;
-        }
-        if (grf->Base[grf->Work[grf->inW].win[i]].Ltop[grf->inW]+grf->win[i]->_maxy < grf->Base[grf->Work[grf->inW].win[i]].selected[grf->inW])
-            grf->Base[grf->Work[grf->inW].win[i]].Ltop[grf->inW] = grf->Base[grf->Work[grf->inW].win[i]].selected[grf->inW]-grf->win[i]->_maxy;
-
         line_off1 = 0;
 
-        for (long long int j = grf->Base[grf->Work[grf->inW].win[i]].Ltop[grf->inW]; j-grf->Base[grf->Work[grf->inW].win[i]].Ltop[grf->inW] < (size_t)grf->win[i]->_maxy-(settings->Borders*2)+1; j++)
+        for (long long int j = GET_DIR(grf->inW,i).Ltop[grf->inW]; j-GET_DIR(grf->inW,i).Ltop[grf->inW] < (size_t)grf->win[i]->_maxy-(settings->Borders*2)+1 && j < GET_DIR(grf->inW,i).El_t; j++)
         {
-            if (j == grf->Base[grf->Work[grf->inW].win[i]].El_t)
-            {
-                if (grf->Base[grf->Work[grf->inW].win[i]].Ltop[grf->inW] != 0)
-                    grf->Base[grf->Work[grf->inW].win[i]].Ltop[grf->inW] = grf->Base[grf->Work[grf->inW].win[i]].El_t-1-grf->win[i]->_maxy;
-                break;
-            }
             #ifdef __COLOR_FILES_BY_EXTENSION__
-            if (grf->Base[grf->Work[grf->inW].win[i]].El[j].FType == 1)
-                grf->Base[grf->Work[grf->inW].win[i]].El[j].FType = CheckFileExtension(grf->Base[grf->Work[grf->inW].win[i]].El[j].name);
+            if (GET_DIR(grf->inW,i).El[j].FType == 1)
+                GET_DIR(grf->inW,i).El[j].FType = CheckFileExtension(GET_DIR(grf->inW,i).El[j].name);
             #endif
-            color = ColorEl(&grf->Base[grf->Work[grf->inW].win[i]].El[j],(j == (long long int)grf->Base[grf->Work[grf->inW].win[i]].selected[grf->inW]));
+            color = ColorEl(&GET_DIR(grf->inW,i).El[j],(j == (long long int)GET_SELECTED(grf->inW,i)));
 
             #ifdef __SORT_ELEMENTS_ENABLE__
-            if (grf->Base[grf->Work[grf->inW].win[i]].sort_m != settings->SortMethod)
+            if (GET_DIR(grf->inW,i).sort_m != settings->SortMethod)
             {
-                grf->Base[grf->Work[grf->inW].win[i]].sort_m = settings->SortMethod;
-                if (grf->Base[grf->Work[grf->inW].win[i]].El_t > 0)
-                    SortEl(grf->Base[grf->Work[grf->inW].win[i]].El,grf->Base[grf->Work[grf->inW].win[i]].El_t,settings->SortMethod);
+                GET_DIR(grf->inW,i).sort_m = settings->SortMethod;
+                if (GET_DIR(grf->inW,i).El_t > 0)
+                    SortEl(GET_DIR(grf->inW,i).El,GET_DIR(grf->inW,i).El_t,settings->SortMethod);
             }
             #endif
 
             if (settings->FillBlankSpace)
                 wattron(grf->win[i],color);
             for (int g = settings->Borders+1; g < grf->win[i]->_maxx-settings->Borders-1+((i == 2)*2)*!settings->Borders+(((i == 1)*2)*!settings->Win3Enable)*!settings->Borders; g++)
-                mvwaddch(grf->win[i],settings->Borders+j-grf->Base[grf->Work[grf->inW].win[i]].Ltop[grf->inW],g+settings->Borders,' ');
+                mvwaddch(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i).Ltop[grf->inW],g+settings->Borders,' ');
             if (!settings->FillBlankSpace)
                 wattron(grf->win[i],color);
 
@@ -417,15 +419,15 @@ void DrawBasic(Basic* grf, const int which)
             {
                 if (settings->DisplayingC != 0)
                 {
-                    ByIntToStr(&cont_s[0],settings->DisplayingC,MainTemp,&grf->Base[grf->Work[grf->inW].win[i]].El[j]);
+                    ByIntToStr(&cont_s[0],settings->DisplayingC,MainTemp,&GET_DIR(grf->inW,i).El[j]);
 
-                    mvwaddstr(grf->win[i],settings->Borders+j-grf->Base[grf->Work[grf->inW].win[i]].Ltop[grf->inW],grf->win[i]->_maxx-cont_s[0]-1+(((i == 1)*2)*!settings->Win3Enable)*!settings->Borders,MainTemp);
+                    mvwaddstr(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i).Ltop[grf->inW],grf->win[i]->_maxx-cont_s[0]-1+(((i == 1)*2)*!settings->Win3Enable)*!settings->Borders,MainTemp);
                 }
 
                 if (settings->NumberLinesOff)
                 {
                     line_off1 = 0;
-                    cont_s[1] = grf->Base[grf->Work[grf->inW].win[i]].El_t;
+                    cont_s[1] = GET_DIR(grf->inW,i).El_t;
                     while (cont_s[1] > 9) { cont_s[1] /= 10; line_off1++; }
 
                     line_off2 = 0;
@@ -440,7 +442,7 @@ void DrawBasic(Basic* grf, const int which)
                 }
             }
 
-            strcat(NameTemp,grf->Base[grf->Work[grf->inW].win[i]].El[j].name);
+            strcat(NameTemp,GET_DIR(grf->inW,i).El[j].name);
             cont_s[1] = strlen(NameTemp);
 
             if ((long long int)grf->win[i]->_maxx < (long long int)(4+cont_s[0]+settings->Borders+1))
@@ -451,31 +453,45 @@ void DrawBasic(Basic* grf, const int which)
                 NameTemp[grf->win[i]->_maxx-cont_s[0]-1-((settings->Borders+1)+1)-settings->Borders] = '\0';
             }
 
-            mvwaddstr(grf->win[i],settings->Borders+j-grf->Base[grf->Work[grf->inW].win[i]].Ltop[grf->inW],(settings->Borders*2)+2+(line_off1-line_off2),NameTemp);
+            mvwaddstr(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i).Ltop[grf->inW],(settings->Borders*2)+2+(line_off1-line_off2),NameTemp);
 
             wattroff(grf->win[i],color);
 
-            if (grf->Base[grf->Work[grf->inW].win[i]].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup&GROUP_0)
-                color = settings->C_Group_0;
-            else if (grf->Base[grf->Work[grf->inW].win[i]].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup&GROUP_1)
-                color = settings->C_Group_1;
-            else if (grf->Base[grf->Work[grf->inW].win[i]].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup&GROUP_2)
-                color = settings->C_Group_2;
-            else if (grf->Base[grf->Work[grf->inW].win[i]].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup&GROUP_3)
-                color = settings->C_Group_3;
-            else if (grf->Base[grf->Work[grf->inW].win[i]].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup&GROUP_4)
-                color = settings->C_Group_4;
-            else if (grf->Base[grf->Work[grf->inW].win[i]].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup&GROUP_5)
-                color = settings->C_Group_5;
-            else if (grf->Base[grf->Work[grf->inW].win[i]].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup&GROUP_6)
-                color = settings->C_Group_6;
-            else if (grf->Base[grf->Work[grf->inW].win[i]].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup&GROUP_7)
-                color = settings->C_Group_7;
+            if (GET_DIR(grf->inW,i).El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup)
+            {
+                switch (grf->Work[grf->inW].SelectedGroup)
+                {
+                    case 1<<0:
+                        color = settings->C_Group_0;
+                        break;
+                    case 1<<1:
+                        color = settings->C_Group_1;
+                        break;
+                    case 1<<2:
+                        color = settings->C_Group_2;
+                        break;
+                    case 1<<3:
+                        color = settings->C_Group_3;
+                        break;
+                    case 1<<4:
+                        color = settings->C_Group_4;
+                        break;
+                    case 1<<5:
+                        color = settings->C_Group_5;
+                        break;
+                    case 1<<6:
+                        color = settings->C_Group_6;
+                        break;
+                    case 1<<7:
+                        color = settings->C_Group_7;
+                        break;
+                }
+            }
             else
                 color = 0;
 
             wattron(grf->win[i],(color|A_REVERSE)*(color > 0));
-            mvwaddch(grf->win[i],settings->Borders+j-grf->Base[grf->Work[grf->inW].win[i]].Ltop[grf->inW],(settings->Borders*2),' ');
+            mvwaddch(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i).Ltop[grf->inW],(settings->Borders*2),' ');
             wattroff(grf->win[i],(color|A_REVERSE)*(color > 0));
         }
 
@@ -515,17 +531,17 @@ void DrawBasic(Basic* grf, const int which)
 
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !grf->Base[grf->Work[grf->inW].win[1]].enable &&
+            !GET_DIR(grf->inW,1).enable &&
             #endif
-            grf->Base[grf->Work[grf->inW].win[1]].El_t > 0)
+            GET_DIR(grf->inW,1).El_t > 0)
         {
             if ((settings->Bar1Settings & B_DIR) == B_DIR)
             {
-                strcpy(MainTemp,grf->Base[grf->Work[grf->inW].win[1]].path);
-                if (!(grf->Base[grf->Work[grf->inW].win[1]].path[0] == '/' && grf->Base[grf->Work[grf->inW].win[1]].path[1] == '\0'))
+                strcpy(MainTemp,GET_DIR(grf->inW,1).path);
+                if (!(GET_DIR(grf->inW,1).path[0] == '/' && GET_DIR(grf->inW,1).path[1] == '\0'))
                 {
                     strcat(MainTemp,"/");
-                    MakePathShorter(MainTemp,grf->win[3]->_maxx-(cont_s[3]+1+cont_s[2]+strlen(grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].name)));
+                    MakePathShorter(MainTemp,grf->win[3]->_maxx-(cont_s[3]+1+cont_s[2]+strlen(GET_ESELECTED(grf->inW,1).name)));
                 }
 
                 wattron(grf->win[3],settings->C_Bar_Dir);
@@ -537,7 +553,7 @@ void DrawBasic(Basic* grf, const int which)
             if ((settings->Bar1Settings & B_NAME) == B_NAME)
             {
                 wattron(grf->win[3],settings->C_Bar_Name);
-                mvwaddstr(grf->win[3],0,cont_s[3],grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].name);
+                mvwaddstr(grf->win[3],0,cont_s[3],GET_ESELECTED(grf->inW,1).name);
                 wattroff(grf->win[3],settings->C_Bar_Name);
             }
         }
@@ -578,13 +594,14 @@ void DrawBasic(Basic* grf, const int which)
 
     if (settings->Bar2Enable && (which == -1 || which == 4))
     {
+        // 4
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !grf->Base[grf->Work[grf->inW].win[1]].enable &&
+            !GET_DIR(grf->inW,1).enable &&
             #endif
-            grf->Base[grf->Work[grf->inW].win[1]].El_t > 0)
+            GET_DIR(grf->inW,1).El_t > 0)
         {
-            ByIntToStr(&cont_s[0],settings->Bar2Settings,MainTemp,&grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]]);
+            ByIntToStr(&cont_s[0],settings->Bar2Settings,MainTemp,&GET_ESELECTED(grf->inW,1));
             wattron(grf->win[4],settings->C_Bar_F);
             mvwaddstr(grf->win[4],0,0,MainTemp);
             wattroff(grf->win[4],settings->C_Bar_E);
@@ -598,8 +615,10 @@ void DrawBasic(Basic* grf, const int which)
             cont_s[0] += sprintf(MainTemp+cont_s[0],"%s",grf->cSF);
         if (settings->Bar1Settings & B_MODES)
         {
-            if (grf->Base[grf->Work[grf->inW].win[1]].Changed)
+            #ifdef __INOTIFY_ENABLE__
+            if (GET_DIR(grf->inW,1).Changed)
                 cont_s[0] += sprintf(MainTemp+cont_s[0]," C");
+            #endif
 
             if (grf->Work[grf->inW].Visual)
                 cont_s[0] += sprintf(MainTemp+cont_s[0]," VISUAL");
@@ -651,12 +670,12 @@ void DrawBasic(Basic* grf, const int which)
         #endif
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !grf->Base[grf->Work[grf->inW].win[1]].enable &&
+            !GET_DIR(grf->inW,1).enable &&
             #endif
-            grf->Base[grf->Work[grf->inW].win[1]].El_t > 0)
+            GET_DIR(grf->inW,1).El_t > 0)
         {
             if (settings->Bar1Settings & B_POSITION)
-                cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld/%lld",grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]+1,grf->Base[grf->Work[grf->inW].win[1]].El_t);
+                cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld/%lld",GET_SELECTED(grf->inW,1)+1,GET_DIR(grf->inW,1).El_t);
         }
 
         wattron(grf->win[4],settings->C_Bar_E);
@@ -665,6 +684,6 @@ void DrawBasic(Basic* grf, const int which)
 
         wrefresh(grf->win[4]);
         werase(grf->win[4]);
-        //4
+        // 4
     }
 }

@@ -1,3 +1,21 @@
+/*
+    csas - terminal file manager
+    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "main.h"
 #include "Functions.h"
 
@@ -5,30 +23,6 @@ int main(int argc, char** argv)
 {
     setlocale(LC_ALL, "");
     signal(SIGINT,SIG_IGN);
-
-    /*struct ShortDir* sda1 = (struct ShortDir*)malloc(sizeof(struct ShortDir)*4);
-    for (int i = 0; i < 4; i++)
-    {
-        sda1[i].cwd = (char*)malloc(PATH_MAX);
-        sda1[i].names = (char**)malloc(sizeof(char*)*6);
-        for (int j = 0; j < 6; j++)
-            sda1[i].names[j] = (char*)malloc(NAME_MAX);
-    }
-
-    strcpy(sda1[0].cwd,"/run");
-    strcpy(sda1[0].names[0],"media");
-    strcpy(sda1[0].names[1],"mount");
-    strcpy(sda1[0].names[2],"log");
-    strcpy(sda1[0].names[3],"lvm");
-    sda1[0].names_t = 4;
-    strcpy(sda1[1].cwd,"/bin");
-    strcpy(sda1[1].names[0],"bash");
-    strcpy(sda1[1].names[1],"sh");
-    strcpy(sda1[1].names[2],"zsh");
-    strcpy(sda1[1].names[3],"dash");
-    sda1[1].names_t = 4;*/
-
-    //bulk(sda1,"/bin/vim","/bin/sh","mv","","");
 
     Basic* Armor = InitBasic();
     RunBasic(Armor,argc,argv);

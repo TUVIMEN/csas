@@ -56,7 +56,34 @@
 #define DIR_INC_RATE 64
 #define DIR_BASE_STABLE_RATE 32
 
+/*
+    csas - terminal file manager
+    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #define TEMPTEMP "/tmp/CSAS-XXXXXX"
+
+#define GET_DIR(x,y) grf->Base[grf->Work[x].win[y]]
+#define GET_SELECTED(x,y) GET_DIR(x,y).selected[x]
+#define GET_ESELECTED(x,y) GET_DIR(x,y).El[GET_SELECTED(x,y)]
+
+#define F_SILENT 0x1
+#define F_NORMAL 0x2
+#define F_CONFIRM 0x4
+#define F_WAIT 0x8
 
 #define T_DIR 1
 #define T_REG 2
@@ -163,13 +190,6 @@
 #define M_DCPY    0x4 //don't copy if file exists
 #define M_CHNAME  0x8 //if file exists change name
 
-struct ShortDir
-{
-    char* cwd;
-    char** names;
-    size_t names_t;
-};
-
 struct Element
 {
     char* name;
@@ -178,7 +198,7 @@ struct Element
     unsigned int flags;
     #endif
     unsigned char *List;
-    #ifdef __INOTIFY_ENABLE__
+    #ifdef __INODE_ENABLE__
     ino_t inode;
     #endif
 
@@ -284,6 +304,9 @@ typedef struct
     #ifdef __THREADS_FOR_FILE_ENABLE__
     long int ThreadsForFile;
     #endif
+    #ifdef __LOAD_CONFIG_ENABLE__
+    long int LoadConfig;
+    #endif
     char* shell;
     char* Values;
     char* editor;
@@ -323,10 +346,10 @@ typedef struct
     long int ShowHiddenFiles;
     #endif
     #ifdef __SORT_ELEMENTS_ENABLE__
-    unsigned char SortMethod;
+    long int SortMethod;
     long int* BetterFiles;
     #endif
-    char DirSizeMethod;
+    long int DirSizeMethod;
     long int C_Error;
     #ifdef __COLOR_FILES_BY_EXTENSION__
     long int C_FType_A;
@@ -376,3 +399,5 @@ struct AliasesT {
     char* name;
     long long int v;
 };
+
+

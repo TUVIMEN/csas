@@ -1,3 +1,21 @@
+/*
+    csas - terminal file manager
+    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "main.h"
 #include "Functions.h"
 #include "Usefull.h"
@@ -280,16 +298,20 @@ Basic* InitBasic()
     settings = SettingsInit();
 
     #ifdef __LOAD_CONFIG_ENABLE__
-    LoadConfig("/etc/.csasrc",grf);
-    char* HomeTemp = getenv("HOME");
-    if (HomeTemp != NULL)
+    settings->LoadConfig = 1;
+    if (settings->LoadConfig)
     {
-        char* temp = (char*)malloc(PATH_MAX);
-        sprintf(temp,"%s/.csasrc",HomeTemp);
-        LoadConfig(temp,grf);
-        sprintf(temp,"%s/.config/csas/.csasrc",HomeTemp);
-        LoadConfig(temp,grf);
-        free(temp);
+        LoadConfig("/etc/.csasrc",grf);
+        char* HomeTemp = getenv("HOME");
+        if (HomeTemp != NULL)
+        {
+            char* temp = (char*)malloc(PATH_MAX);
+            sprintf(temp,"%s/.csasrc",HomeTemp);
+            LoadConfig(temp,grf);
+            sprintf(temp,"%s/.config/csas/.csasrc",HomeTemp);
+            LoadConfig(temp,grf);
+            free(temp);
+        }
     }
     #endif
 
@@ -359,7 +381,8 @@ void RunBasic(Basic* grf, const int argc, char** argv)
     noecho();
 
     curs_set(0);
-    keypad(stdscr,TRUE);
+    keypad(stdscr,true);
+    notimeout(stdscr,true);
     SetDelay(settings->DelayBetweenFrames);
 
     time_t ActualTime, PastTime = 0;
@@ -384,7 +407,7 @@ void RunBasic(Basic* grf, const int argc, char** argv)
         #ifdef __THREADS_FOR_DIR_ENABLE__
         if (grf->Work[grf->inW].win[2] != -1 && grf->Work[grf->inW].win[0] != -1)
         {
-            if (grf->Base[grf->Work[grf->inW].win[0]].enable || grf->Base[grf->Work[grf->inW].win[2]].enable)
+            if (GET_DIR(grf->inW,0).enable || GET_DIR(grf->inW,2).enable)
                 SetDelay(settings->SDelayBetweenFrames);
             else
                 SetDelay(settings->DelayBetweenFrames);
@@ -459,6 +482,42 @@ void UpdateSizeBasic(Basic* grf)
     refresh();
     if (settings->Borders)
         SetBorders(grf,-1);
+
+    for (int i = 0; i < 3; i++)
+    {
+        if (grf->Work[grf->inW].win[i] == -1)
+            continue;
+        if (i == 0 && (!settings->Win1Enable || !settings->Win1Display))
+            continue;
+        if (i == 2 && (!settings->Win3Enable
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        || GET_DIR(grf->inW,1).enable
+        #endif
+        ))
+            continue;
+
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        if (GET_DIR(grf->inW,i).enable)
+            continue;
+        #endif
+        if ((long long int)GET_DIR(grf->inW,i).El_t == (long long int)-1)
+            continue;
+        if ((long long int)GET_DIR(grf->inW,i).El_t == (long long int)0)
+            continue;
+
+        if (GET_DIR(grf->inW,i).Ltop[grf->inW]+grf->win[i]->_maxy < GET_SELECTED(grf->inW,i))
+            GET_DIR(grf->inW,i).Ltop[grf->inW] = GET_SELECTED(grf->inW,i)-grf->win[i]->_maxy;
+        
+        for (long long int j = GET_DIR(grf->inW,i).Ltop[grf->inW]; j-GET_DIR(grf->inW,i).Ltop[grf->inW] < (size_t)grf->win[i]->_maxy-(settings->Borders*2)+1; j++)
+        {
+            if (j == GET_DIR(grf->inW,i).El_t)
+            {
+                if (GET_DIR(grf->inW,i).Ltop[grf->inW] != 0)
+                    GET_DIR(grf->inW,i).Ltop[grf->inW] = GET_DIR(grf->inW,i).El_t-1-grf->win[i]->_maxy;
+                break;
+            }
+        }
+    }
 }
 
 void freeBasic(Basic* grf)

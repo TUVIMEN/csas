@@ -1,3 +1,21 @@
+/*
+    csas - terminal file manager
+    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "main.h"
 #include "Load.h"
 
@@ -112,7 +130,9 @@ void* LoadDir(void *arg)
                 typeOFF = 0;
             }
 
+            #ifdef __INODE_ENABLE__
             grf->El[grf->El_t].inode = dir->d_ino;
+            #endif
 
             #ifdef __MTIME_ENABLE__
             grf->El[grf->El_t].mtim = sFile.st_mtim;
@@ -340,7 +360,9 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     LoadDir(&grf->Base[found]);
     #endif
 
+    #ifdef __INOTIFY_ENABLE__
     grf->Base[found].Changed = false;
+    #endif
 }
 
 void CD(const char* path, const int workspace, Basic* grf)
@@ -367,7 +389,7 @@ void CD(const char* path, const int workspace, Basic* grf)
             SetBorders(grf,0);
         wrefresh(grf->win[0]);
 
-        if (grf->Base[grf->Work[workspace].win[1]].path[0] == '/' && grf->Base[grf->Work[workspace].win[1]].path[1] == '\0')
+        if (GET_DIR(workspace,1).path[0] == '/' && GET_DIR(workspace,1).path[1] == '\0')
             settings->Win1Display = false;
         else
         {
@@ -382,7 +404,7 @@ void CD(const char* path, const int workspace, Basic* grf)
 
     if (grf->inW == workspace && settings->Win3Enable)
     {
-        if (grf->Base[grf->Work[workspace].win[1]].El_t == 0)
+        if (GET_DIR(workspace,1).El_t == 0)
         {
             werase(grf->win[2]);
             if (settings->Borders)
@@ -391,9 +413,9 @@ void CD(const char* path, const int workspace, Basic* grf)
         }
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !grf->Base[grf->Work[workspace].win[1]].enable &&
+            !GET_DIR(workspace,1).enable &&
             #endif
-            grf->Base[grf->Work[workspace].win[1]].El_t > 0)
+            GET_DIR(grf->inW,1).El_t > 0)
             FastRun(grf);
     }
 }
