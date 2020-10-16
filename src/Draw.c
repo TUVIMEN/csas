@@ -202,7 +202,6 @@ static char* fsName(const long int ftype)
 }
 #endif
 
-
 static void ByIntToStr(size_t* size, const int Settings, char* result, struct Element* grf)
 {
     #ifdef __FILE_GROUPS_ENABLE__

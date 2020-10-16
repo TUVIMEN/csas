@@ -24,7 +24,6 @@
 #include "Functions.h"
 #include "Console.h"
 #include "Loading.h"
-#include "Bulk.h"
 
 extern Key* keys;
 extern size_t keys_t;
@@ -151,7 +150,7 @@ static void MoveD(const int how, Basic* grf, const int workspace)
         }
         if (GET_DIR(workspace,1).El_t-1 > (long long int)GET_SELECTED(workspace,1))
             GET_SELECTED(workspace,1)++;
-        
+
         if ((long long int)(grf->win[1]->_maxy+GET_DIR(workspace,1).Ltop[workspace]-(settings->Borders*2)) < GET_DIR(workspace,1).El_t-1 &&
             grf->win[1]->_maxy+GET_DIR(workspace,1).Ltop[workspace]-(settings->Borders*2) < GET_SELECTED(workspace,1)+(int)(grf->win[1]->_maxy*settings->MoveOffSet))
         {
@@ -385,7 +384,7 @@ struct WinArgs {
 void ConsoleResize(WINDOW* win, const struct WinArgs args)
 {
     Vector2i Size = {0,0}, Pos = {0,0};
-    
+
     if (args.S_Size.x != -1)
         Size.x = args.S_Size.x;
     if (args.S_Size.y != -1)
@@ -419,7 +418,7 @@ void ConsoleResize(WINDOW* win, const struct WinArgs args)
         Pos.x = args.MaxPos.x;
     if (args.MaxPos.y != -1 && Pos.y > args.MaxPos.y)
         Pos.y = args.MaxPos.y;
-    
+
     wresize(win,Size.y,Size.x);
     mvwin(win,Pos.y,Pos.x);
     refresh();
@@ -428,7 +427,7 @@ void ConsoleResize(WINDOW* win, const struct WinArgs args)
     wrefresh(win);
 }
 
-void ConsoleGetLine(WINDOW* win, Basic* grf, char* buffer, struct WinArgs args, char* first, char* add)
+void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t max, struct WinArgs args, char* first, char* add)
 {
     curs_set(1);
     int Event;
@@ -436,12 +435,12 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char* buffer, struct WinArgs args, 
 
     short int x = 0, y = 0, off = 0;
     int border = (args.settings&0x1) == 0x1;
-    size_t first_t = strlen(first);
+    size_t first_t = strlen(first), z = size-1;
     if (add)
     {
-        strcpy(buffer,add);
+        strcpy(History[size-1],add);
         x = strlen(add);
-        while (x-off >= win->_maxx) off++; 
+        while (x-off >= win->_maxx) off++;
     }
 
     for (;;)
@@ -449,17 +448,44 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char* buffer, struct WinArgs args, 
         for (int i = border; i < win->_maxx-border; i++)
             mvwaddch(win,border+y,i,' ');
         mvwaddstr(win,border+y,border,first);
-        mvwaddnstr(win,border+y,border+first_t,buffer+off,win->_maxx-border*2-first_t);
+        mvwaddnstr(win,border+y,border+first_t,History[size-1]+off,win->_maxx-border*2-first_t);
         wmove(win,border+y,border+x+first_t-off);
         wrefresh(win);
-        
+
         switch (Event = getch())
         {
             case -1:
-                continue;
+                break;
             case 10:
             case ('x'&0x1f):
                 goto END;
+                break;
+            case KEY_UP:
+            case ('c'&0x1f):
+                if (z > 0)
+                {
+                    z--;
+                    strcpy(History[size-1],History[z]);
+                    x = strlen(History[size-1]);
+                    while (x-off >= win->_maxx) off++;
+                }
+                break;
+            case KEY_DOWN:
+            case ('v'&0x1f):
+                if (z < size-1)
+                {
+                    z++;
+                    if (z == size-1)
+                    {
+                        memset(History[size-1],0,max);
+                        x = 0;
+                        off = 0;
+                        break;
+                    }
+                    strcpy(History[size-1],History[z]);
+                    x = strlen(History[size-1]);
+                    while (x-off >= win->_maxx) off++;
+                }
                 break;
             case ('l'&0x1f):
                 werase(win);
@@ -471,8 +497,8 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char* buffer, struct WinArgs args, 
                 off = 0;
                 break;
             case ('e'&0x1f):
-                x = strlen(buffer);
-                while (x-off >= win->_maxx) off++; 
+                x = strlen(History[size-1]);
+                while (x-off >= win->_maxx) off++;
                 break;
             case 27:
             case ('r'&0x1f):
@@ -487,8 +513,8 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char* buffer, struct WinArgs args, 
             case ('w'&0x1f):
                 if (x > 0)
                 {
-                    for (size_t i = x-1; i <= strlen(buffer); i++)
-                        buffer[i] = buffer[i+1];
+                    for (size_t i = x-1; i <= strlen(History[size-1]); i++)
+                        History[size-1][i] = History[size-1][i+1];
                     x--;
                     if (off != 0)
                         off--;
@@ -505,7 +531,7 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char* buffer, struct WinArgs args, 
                 break;
             case KEY_RIGHT:
             case ('f'&0x1f):
-                if (buffer[x])
+                if (History[size-1][x])
                 {
                     if (border+x+first_t-off >= (size_t)win->_maxx)
                         off++;
@@ -513,19 +539,19 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char* buffer, struct WinArgs args, 
                 }
                 break;
             case ('d'&0x1f):
-                while (buffer[x] && !isalnum(buffer[x])) x++;
-                while (isalnum(buffer[x])) x++;
-                while (buffer[x] && !isalnum(buffer[x])) x++;
+                while (History[size-1][x] && !isalnum(History[size-1][x])) x++;
+                while (isalnum(History[size-1][x])) x++;
+                while (History[size-1][x] && !isalnum(History[size-1][x])) x++;
                 break;
             case ('s'&0x1f):
-                while (buffer[x-1] && !isalnum(buffer[x-1])) x--;
-                while (isalnum(buffer[x-1])) x--;
-                while (buffer[x-1] && !isalnum(buffer[x-1])) x--;
+                while (History[size-1][x-1] && !isalnum(History[size-1][x-1])) x--;
+                while (isalnum(History[size-1][x-1])) x--;
+                while (History[size-1][x-1] && !isalnum(History[size-1][x-1])) x--;
                 break;
             default:
-                for (int i = strlen(buffer); i >= x; i--)
-                    buffer[i] = buffer[i-1];
-                buffer[x] = (char)Event;
+                for (int i = strlen(History[size-1]); i >= x; i--)
+                    History[size-1][i] = History[size-1][i-1];
+                History[size-1][x] = (char)Event;
                 x++;
                 if (border+x+first_t-off >= (size_t)win->_maxx)
                     off++;
@@ -1186,7 +1212,10 @@ void ___LOAD(const char* src, Basic* grf)
             } while (src[pos] && !isspace(src[pos]));
         }
 
-        pos += FindFirstCharacter(src+pos);
+        if (src[pos+1] == '\0')
+            break;
+        else
+            pos += FindFirstCharacter(src+pos);
     }
 
     GetDir(".",grf,grf->inW,1,mode
@@ -1330,7 +1359,7 @@ void ___BULK(const char* src, Basic* grf)
     size_t pos = 0;
     int workspace = grf->inW, selected = -1;
     bool full_path = 0;
-    char** temp = (char**)malloc(6*sizeof(char*)); 
+    char** temp = (char**)malloc(6*sizeof(char*));
     for (int i = 0; i < 6; i++)
     {
         temp[i] = (char*)malloc(PATH_MAX);
@@ -1405,7 +1434,7 @@ void ___BULK(const char* src, Basic* grf)
 
     if (!grf->Work[workspace].exists)
         return;
-    
+
     realpath(path,temp[0]);
     free(path);
     bulk(grf,workspace,selected,full_path,temp);
@@ -1416,15 +1445,196 @@ void ___BULK(const char* src, Basic* grf)
 
 void ___CONSOLE(const char* src, Basic* grf)
 {
-    char buffer[16384];
-    memset(buffer,0,16383);
+    size_t pos = 0;
+    char temp[1024];
+    temp[0] = '\0';
+
+    while (src[pos])
+    {
+        if (src[pos] && src[pos] == '-')
+        {
+            do {
+                pos++;
+                switch (src[pos])
+                {
+                    case 'a':
+                        pos++;
+                        pos += FindFirstCharacter(src+pos);
+                        pos += StrToPath(temp,src+pos);
+                        break;
+                }
+
+            } while (src[pos] && !isspace(src[pos]));
+        }
+        pos++;
+    }
+
+    if (grf->ConsoleHistory.size == grf->ConsoleHistory.max_size)
+    {
+        memset(grf->ConsoleHistory.History[0],0,grf->ConsoleHistory.alloc_r-1);
+        char* temp = grf->ConsoleHistory.History[0];
+        for (size_t i = 0; i < grf->ConsoleHistory.size-1; i++)
+            grf->ConsoleHistory.History[i] = grf->ConsoleHistory.History[i+1];
+        grf->ConsoleHistory.History[grf->ConsoleHistory.size-1] = temp;
+        grf->ConsoleHistory.size--;
+    }
+
+    if (grf->ConsoleHistory.size == grf->ConsoleHistory.allocated)
+    {
+        grf->ConsoleHistory.History = (char**)realloc(grf->ConsoleHistory.History,(grf->ConsoleHistory.allocated += grf->ConsoleHistory.inc_r)*sizeof(char*));
+        for (size_t i = grf->ConsoleHistory.allocated-grf->ConsoleHistory.inc_r; i < grf->ConsoleHistory.allocated; i++)
+            grf->ConsoleHistory.History[i] = (char*)calloc(sizeof(char),grf->ConsoleHistory.alloc_r);
+    }
+    grf->ConsoleHistory.size++;
+
     struct WinArgs args = {stdscr,
     {-1,1},{1,-1},{-1,-1},{-1,-1},
     {-1,-1},{-1,1},{-1,-1},{-1,-1},
     0};
-    ConsoleGetLine(grf->win[5],grf,buffer,args,":",NULL);
-    RunCommand(buffer,grf);
+    ConsoleGetLine(grf->win[5],grf,grf->ConsoleHistory.History,grf->ConsoleHistory.size,grf->ConsoleHistory.alloc_r-1,args,":",temp[0] ? temp : NULL);
+    RunCommand(grf->ConsoleHistory.History[grf->ConsoleHistory.size-1],grf);
 }
+
+void ___SEARCH(char* src, Basic* grf)
+{
+    if (GET_DIR(grf->inW,1).enable || GET_DIR(grf->inW,1).El_t < 1)
+        return;
+    size_t pos = 0, mul = 1;
+    int selected = -1;
+    int action = -1;
+    char temp[1024];
+
+    while (src[pos])
+    {
+        if (src[pos] && src[pos] == '-')
+        {
+            do {
+                pos++;
+                switch (src[pos])
+                {
+                    case 's':
+                        pos++;
+                        pos += FindFirstCharacter(src+pos);
+                        if (src[pos] == '-')
+                        {
+                            selected = -1;
+                            pos++;
+                        }
+                        else
+                        {
+                            selected = 1<<atoi(src+pos);
+                            while (isdigit(src[pos])) pos++;
+                        }
+                        break;
+                    case 'b':
+                    case 'n':
+                        action = (src[pos] == 'n' ? 2 : 1);
+                        pos++;
+                        pos += FindFirstCharacter(src+pos);
+                        mul = atoi(src+pos);
+                        while (isdigit(src[pos])) pos++;
+                        break;
+                    case 'N':
+                    case 'E':
+                        action = (src[pos] == 'E' ? 4 : 3);
+                        pos++;
+                        pos += FindFirstCharacter(src+pos);
+                        pos += StrToPath(temp,src+pos);
+                        break;
+                }
+
+            } while (src[pos] && !isspace(src[pos]));
+        }
+        pos++;
+    }
+
+    switch (action)
+    {
+        case 1:
+        case 2:
+            if (!grf->SearchList.size)
+                break;
+            for (size_t i = 0; i < mul; i++)
+            {
+                if (GET_ESELECTED(grf->inW,1).name == grf->SearchList.List[grf->SearchList.pos])
+                {
+                    if (action == 1)
+                    {
+                        if (grf->SearchList.pos == 0)
+                            grf->SearchList.pos = grf->SearchList.size-1;
+                        else
+                            grf->SearchList.pos--;
+                    }
+                    else
+                    {
+                        if (grf->SearchList.pos == grf->SearchList.size-1)
+                            grf->SearchList.pos = 0;
+                        else
+                            grf->SearchList.pos++;
+                    }
+                }
+
+                for (long long int j = 0; j < GET_DIR(grf->inW,1).El_t; j++)
+                {
+                    if (GET_DIR(grf->inW,1).El[j].name == grf->SearchList.List[grf->SearchList.pos])
+                    {
+                        if (j > (long long int)GET_SELECTED(grf->inW,1))
+                            for (size_t g = GET_SELECTED(grf->inW,1); (long long int)g < j; g++)
+                                MoveD(1,grf,grf->inW);
+                        else if (j < (long long int)GET_SELECTED(grf->inW,1))
+                            for (size_t g = GET_SELECTED(grf->inW,1); (long long int)g > j; g--)
+                                MoveD(2,grf,grf->inW);
+                        break;
+                    }
+                }
+            }
+            break;
+        case 3:
+        case 4:
+            free(grf->SearchList.List);
+            grf->SearchList.List = NULL;
+            grf->SearchList.allocated = 0;
+            grf->SearchList.size = 0;
+            grf->SearchList.pos = 0;
+            int reti;
+
+            for (long long int i = 0; i < GET_DIR(grf->inW,1).El_t; i++)
+            {
+                if (selected == -1 ? 1 : (GET_DIR(grf->inW,1).El[i].List[grf->inW]&selected))
+                {
+                    if (action == 4)
+                    {
+                        regex_t regex;
+                        reti = 0;
+                        reti = regcomp(&regex,temp,0);
+                        if (reti) continue;
+                        reti = regexec(&regex,GET_DIR(grf->inW,1).El[i].name,0,NULL,0);
+                        if (reti) continue;
+                        regfree(&regex);
+                    }
+                    else if (!strstr(GET_DIR(grf->inW,1).El[i].name,temp))
+                        continue;
+
+                    if (grf->SearchList.size == grf->SearchList.allocated)
+                        grf->SearchList.List = (char**)realloc(grf->SearchList.List,(grf->SearchList.allocated+=grf->SearchList.inc_r)*(sizeof(char*)));
+                    grf->SearchList.size++;
+                    grf->SearchList.List[grf->SearchList.size-1] = GET_DIR(grf->inW,1).El[i].name;
+                }
+            }
+            ___SEARCH("-n 1",grf);
+            break;
+    }
+
+}
+
+
+
+
+
+
+
+
+
 
 
 

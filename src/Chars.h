@@ -1,15 +1,3 @@
-#ifndef CHARS_H
-#define CHARS_H
-
-int UpdateEvent(Basic*);
-
-void ___SET(const char*, Basic*);
-#ifdef __LOAD_CONFIG_ENABLE__
-void ___INCLUDE(const char*, Basic*);
-#endif
-void ___MAP(const char*, Basic*);
-void ___MOVE(const char*, Basic*);
-void ___QUIT(const char*, Basic*);
 /*
     csas - terminal file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
@@ -28,6 +16,18 @@ void ___QUIT(const char*, Basic*);
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef CHARS_H
+#define CHARS_H
+
+int UpdateEvent(Basic*);
+
+void ___SET(const char*, Basic*);
+#ifdef __LOAD_CONFIG_ENABLE__
+void ___INCLUDE(const char*, Basic*);
+#endif
+void ___MAP(const char*, Basic*);
+void ___MOVE(const char*, Basic*);
+void ___QUIT(const char*, Basic*);
 void ___CD(const char*, Basic*);
 void ___GOTOP(const char*, Basic*);
 void ___GODOWN(const char*, Basic*);
@@ -41,6 +41,7 @@ void ___TOGGLEVISUAL(const char*, Basic*);
 void ___F_COPY(const char*, Basic*);
 void ___F_MOVE(const char*, Basic*);
 void ___F_DELETE(const char*, Basic*);
+void ___SEARCH(const char*, Basic*);
 void ___LOAD(const char*, Basic*);
 void ___SELECT(const char*, Basic*);
 void ___EXEC(const char*, Basic*);

@@ -169,6 +169,12 @@ void KeyInit()
     addKey((Key){"dd","f_delete ."});
     addKey((Key){"dD","f_delete -a"});
     addKey((Key){"dh","f_delete -s"});
+    addKey((Key){"R","load -tm 2"});
+    addKey((Key){"s","console"});
+    addKey((Key){"b","bulk -S sh -E nvim -b mv . -s 0"});
+    addKey((Key){"/","console -a \"search -N \""});
+    addKey((Key){"n","search -n 1"});
+    addKey((Key){"N","search -b 1"});
 }
 
 Settings* SettingsInit()
@@ -294,6 +300,19 @@ Basic* InitBasic()
     grf->cSF_E = false;
     grf->cSF = (char*)malloc(64);
 
+    grf->ConsoleHistory.allocated = 0;
+    grf->ConsoleHistory.size = 0;
+    grf->ConsoleHistory.History = NULL;
+    grf->ConsoleHistory.max_size = 32;
+    grf->ConsoleHistory.alloc_r = 8192;
+    grf->ConsoleHistory.inc_r = 8;
+
+    grf->SearchList.allocated = 0;
+    grf->SearchList.inc_r = 16;
+    grf->SearchList.pos = 0;
+    grf->SearchList.size = 0;
+    grf->SearchList.List = NULL;
+
     KeyInit();
     settings = SettingsInit();
 
@@ -377,7 +396,7 @@ void SetDelay(long int del)
 
 void RunBasic(Basic* grf, const int argc, char** argv)
 {
-    initscr();
+    refresh();
     noecho();
 
     curs_set(0);
@@ -559,5 +578,11 @@ void freeBasic(Basic* grf)
     }
 
     free(grf->Base);*/
+
+    for (size_t i = 0; i < grf->ConsoleHistory.allocated; i++)
+        free(grf->ConsoleHistory.History[i]);
+    free(grf->ConsoleHistory.History);
+    free(grf->SearchList.List);
+
     free(grf);
 }

@@ -244,9 +244,11 @@ void* LoadDir(void *arg)
         grf->El = (struct Element*)realloc(grf->El,(grf->El_t)*sizeof(struct Element));
 
     if (grf->El_t > 0)
+    {
         #ifdef __SORT_ELEMENTS_ENABLE__
         SortEl(grf->El,grf->El_t,grf->sort_m);
         #endif
+    }
 
     #ifdef __THREADS_FOR_DIR_ENABLE__
     grf->enable = false;

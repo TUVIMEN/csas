@@ -51,6 +51,7 @@ struct FunctTab FunctionsTable[] = {
     {"f_delete",&___F_DELETE},
     {"set",&___SET},
     {"map",&___MAP},
+    {"search",&___SEARCH},
     {"load",&___LOAD},
     {"exec",&___EXEC},
     {"quit",&___QUIT},
