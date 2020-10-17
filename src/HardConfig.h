@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#define __THREADS_ENABLE__
+//#define __THREADS_ENABLE__
 #ifdef __THREADS_ENABLE__
     #define __THREADS_FOR_DIR_ENABLE__
     #define __THREADS_FOR_FILE_ENABLE__

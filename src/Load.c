@@ -48,187 +48,8 @@ void* LoadDir(void *arg)
 {
     struct Dir* grf = (struct Dir*)arg;
 
-    DIR* d = opendir(grf->path);
-    struct dirent* dir;
-
-    long long int buffer_size = grf->El_t;
-    struct stat sFile;
-
-    int fd, typeOFF = 0;
-
-    if (d)
-    {
-        #ifdef __GET_DIR_SIZE_ENABLE__
-        int tfd;
-        #endif
-        fd = dirfd(d);
-
-        bool isOld = grf->El_t > 0;
-
-        #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
-        struct Element* oldEl = NULL;
-        long long int oldEl_t = 0;
-        size_t begin, end;
-
-        if (isOld)
-        {
-            begin = 0;
-            end = grf->El_t;
-            oldEl = grf->El;
-            oldEl_t = grf->El_t;
-            grf->El = NULL;
-            grf->El_t = 0;
-        }
-        #else
-        if (isOld)
-            freeEl(&grf->El,&grf->El_t);
-        #endif
-
-        buffer_size = 0;
-
-        while ((dir = readdir(d)))
-        {
-            #ifdef __SHOW_HIDDEN_FILES_ENABLE__
-            if(!ShowHiddenFiles)
-                if (dir->d_name[0] == '.')
-                    continue;
-            #endif
-            if (dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
-                continue;
-
-            if (grf->El_t == buffer_size)
-                grf->El = (struct Element*)realloc(grf->El,(buffer_size+=DIR_INC_RATE)*sizeof(struct Element));
-
-            #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-            grf->El[grf->El_t].SizErrToDisplay = NULL;
-            #endif
-            grf->El[grf->El_t].name = (char*)malloc(dir->d_reclen);
-
-            strcpy(grf->El[grf->El_t].name, dir->d_name);
-            if (fstatat(fd,dir->d_name,&sFile,0) != 0)
-            {
-                fstatat(fd,dir->d_name,&sFile,AT_SYMLINK_NOFOLLOW);
-                grf->El[grf->El_t].Type = 7;
-            }
-
-            if (grf->El[grf->El_t].Type != 7)
-            {
-                if (dir->d_type == 10)
-                    typeOFF = T_BLINK;
-
-                switch (sFile.st_mode & S_IFMT)
-                {
-                    case S_IFBLK:  grf->El[grf->El_t].Type = T_BDEV+typeOFF;     break;
-                    case S_IFCHR:  grf->El[grf->El_t].Type = T_DEV+typeOFF;      break;
-                    case S_IFDIR:  grf->El[grf->El_t].Type = T_DIR+typeOFF;      break;
-                    case S_IFIFO:  grf->El[grf->El_t].Type = T_FIFO+typeOFF;     break;
-                    case S_IFREG:  grf->El[grf->El_t].Type = T_REG+typeOFF;      break;
-                    case S_IFSOCK: grf->El[grf->El_t].Type = T_SOCK+typeOFF;     break;
-                    default:       grf->El[grf->El_t].Type = T_OTHER;            break;
-                }
-
-                typeOFF = 0;
-            }
-
-            #ifdef __INODE_ENABLE__
-            grf->El[grf->El_t].inode = dir->d_ino;
-            #endif
-
-            #ifdef __MTIME_ENABLE__
-            grf->El[grf->El_t].mtim = sFile.st_mtim;
-            #endif
-            #ifdef __ATIME_ENABLE__
-            grf->El[grf->El_t].atim = sFile.st_atim;
-            #endif
-            #ifdef __CTIME_ENABLE__
-            grf->El[grf->El_t].ctim = sFile.st_ctim;
-            #endif
-            #ifdef __MODE_ENABLE__
-            grf->El[grf->El_t].flags = sFile.st_mode;
-            #endif
-
-            #ifdef __GET_DIR_SIZE_ENABLE__
-            if ((settings->DirSizeMethod&D_F) != D_F && (sFile.st_mode & S_IFMT) == S_IFDIR)
-            {
-                if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
-                {
-                    grf->El[grf->El_t].size = GetDirSize(tfd,(settings->DirSizeMethod&D_R) == D_R,(settings->DirSizeMethod&D_C) == D_C);
-                    close(tfd);
-                }
-                else
-                    grf->El[grf->El_t].size = -1;
-            }
-            else
-            #endif
-            #ifdef __FILE_SIZE_ENABLE__
-                grf->El[grf->El_t].size = sFile.st_size*(grf->El[grf->El_t].Type != 7);
-            #endif
-
-            #ifdef __COLOR_FILES_BY_EXTENSION__
-            grf->El[grf->El_t].FType = 1;
-            #endif
-
-            grf->El[grf->El_t].List = calloc(WORKSPACE_N,1);
-            #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
-            if (isOld)
-            {
-                for (register size_t i = begin; i < end; i++)
-                {
-                    #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
-                        #ifdef __FAST_RESCUE__
-                        if (oldEl[i].inode == dir->d_ino)
-                        #else
-                        if (strcmp(oldEl[i].name,dir->d_name) == 0)
-                        #endif
-                    #endif
-                        #ifdef __CHECK_IF_FILE_HAS_THE_SAME_NAME__
-                        if (strcmp(oldEl[i].name,dir->d_name) == 0)
-                        #endif
-                        {
-                            begin += 1*(i == begin);
-                            end -= (i == end);
-                            memcpy(grf->El[grf->El_t].List,oldEl[i].List,WORKSPACE_N);
-                            break;
-                        }
-                }
-            }
-            #endif
-
-            #ifdef __FILE_OWNERS_ENABLE__
-            grf->El[grf->El_t].pw = sFile.st_uid;
-            #endif
-            #ifdef __FILE_GROUPS_ENABLE__
-            grf->El[grf->El_t].gr = sFile.st_gid;
-            #endif
-
-            #ifdef __DEV_ENABLE__
-            grf->El[grf->El_t].dev = sFile.st_dev;
-            #endif
-            #ifdef __NLINK_ENABLE__
-            grf->El[grf->El_t].nlink = sFile.st_nlink;
-            #endif
-            #ifdef __RDEV_ENABLE__
-            grf->El[grf->El_t].rdev = sFile.st_rdev;
-            #endif
-            #ifdef __BLK_SIZE_ENABLE__
-            grf->El[grf->El_t].blksize = sFile.st_blksize;
-            #endif
-            #ifdef __BLOCKS_ENABLE__
-            grf->El[grf->El_t].blocks = sFile.st_blocks;
-            #endif
-
-            grf->El_t++;
-        }
-
-        #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
-        if (isOld)
-            freeEl(&oldEl,&oldEl_t);
-        #endif
-
-        closedir(d);
-        close(fd);
-    }
-    else
+    DIR* d;
+    if ((d = opendir(grf->path)) == NULL)
     {
         grf->El_t = -1;
         #ifdef __THREADS_FOR_DIR_ENABLE__
@@ -239,6 +60,183 @@ void* LoadDir(void *arg)
         return NULL;
         #endif
     }
+
+    struct dirent* dir;
+
+    long long int buffer_size = grf->El_t;
+    struct stat sFile;
+
+    int fd, typeOFF = 0;
+
+    #ifdef __GET_DIR_SIZE_ENABLE__
+    int tfd;
+    #endif
+    fd = dirfd(d);
+
+    bool isOld = grf->El_t > 0;
+
+    #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
+    struct Element* oldEl = NULL;
+    long long int oldEl_t = 0;
+    size_t begin, end;
+
+    if (isOld)
+    {
+        begin = 0;
+        end = grf->El_t;
+        oldEl = grf->El;
+        oldEl_t = grf->El_t;
+        grf->El = NULL;
+        grf->El_t = 0;
+    }
+    #else
+    if (isOld)
+        freeEl(&grf->El,&grf->El_t);
+    #endif
+
+    buffer_size = 0;
+
+    while ((dir = readdir(d)))
+    {
+        #ifdef __SHOW_HIDDEN_FILES_ENABLE__
+        if(!ShowHiddenFiles)
+            if (dir->d_name[0] == '.')
+                continue;
+        #endif
+        if (dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
+            continue;
+
+        if (grf->El_t == buffer_size)
+            grf->El = (struct Element*)realloc(grf->El,(buffer_size+=DIR_INC_RATE)*sizeof(struct Element));
+
+        #ifdef __HUMAN_READABLE_SIZE_ENABLE__
+        grf->El[grf->El_t].SizErrToDisplay = NULL;
+        #endif
+        grf->El[grf->El_t].name = (char*)malloc(dir->d_reclen);
+
+        strcpy(grf->El[grf->El_t].name, dir->d_name);
+        if (fstatat(fd,dir->d_name,&sFile,0) != 0)
+        {
+            fstatat(fd,dir->d_name,&sFile,AT_SYMLINK_NOFOLLOW);
+            grf->El[grf->El_t].Type = 7;
+        }
+
+        if (grf->El[grf->El_t].Type != 7)
+        {
+            if (dir->d_type == 10)
+                typeOFF = T_BLINK;
+
+            switch (sFile.st_mode & S_IFMT)
+            {
+                case S_IFBLK:  grf->El[grf->El_t].Type = T_BDEV+typeOFF;     break;
+                case S_IFCHR:  grf->El[grf->El_t].Type = T_DEV+typeOFF;      break;
+                case S_IFDIR:  grf->El[grf->El_t].Type = T_DIR+typeOFF;      break;
+                case S_IFIFO:  grf->El[grf->El_t].Type = T_FIFO+typeOFF;     break;
+                case S_IFREG:  grf->El[grf->El_t].Type = T_REG+typeOFF;      break;
+                case S_IFSOCK: grf->El[grf->El_t].Type = T_SOCK+typeOFF;     break;
+                default:       grf->El[grf->El_t].Type = T_OTHER;            break;
+            }
+
+            typeOFF = 0;
+        }
+
+        #ifdef __INODE_ENABLE__
+        grf->El[grf->El_t].inode = dir->d_ino;
+        #endif
+
+        #ifdef __MTIME_ENABLE__
+        grf->El[grf->El_t].mtim = sFile.st_mtim;
+        #endif
+        #ifdef __ATIME_ENABLE__
+        grf->El[grf->El_t].atim = sFile.st_atim;
+        #endif
+        #ifdef __CTIME_ENABLE__
+        grf->El[grf->El_t].ctim = sFile.st_ctim;
+        #endif
+        #ifdef __MODE_ENABLE__
+        grf->El[grf->El_t].flags = sFile.st_mode;
+        #endif
+
+        #ifdef __GET_DIR_SIZE_ENABLE__
+        if ((settings->DirSizeMethod&D_F) != D_F && (sFile.st_mode & S_IFMT) == S_IFDIR)
+        {
+            if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
+            {
+                grf->El[grf->El_t].size = GetDirSize(tfd,(settings->DirSizeMethod&D_R) == D_R,(settings->DirSizeMethod&D_C) == D_C);
+                close(tfd);
+            }
+            else
+                grf->El[grf->El_t].size = -1;
+        }
+        else
+        #endif
+        #ifdef __FILE_SIZE_ENABLE__
+            grf->El[grf->El_t].size = sFile.st_size*(grf->El[grf->El_t].Type != 7);
+        #endif
+
+        #ifdef __COLOR_FILES_BY_EXTENSION__
+        grf->El[grf->El_t].FType = 1;
+        #endif
+
+        grf->El[grf->El_t].List = calloc(WORKSPACE_N,1);
+        #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
+        if (isOld)
+        {
+            for (register size_t i = begin; i < end; i++)
+            {
+                #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
+                    #ifdef __FAST_RESCUE__
+                    if (oldEl[i].inode == dir->d_ino)
+                    #else
+                    if (strcmp(oldEl[i].name,dir->d_name) == 0)
+                    #endif
+                #endif
+                    #ifdef __CHECK_IF_FILE_HAS_THE_SAME_NAME__
+                    if (strcmp(oldEl[i].name,dir->d_name) == 0)
+                    #endif
+                    {
+                        begin += 1*(i == begin);
+                        end -= (i == end);
+                        memcpy(grf->El[grf->El_t].List,oldEl[i].List,WORKSPACE_N);
+                        break;
+                    }
+            }
+        }
+        #endif
+
+        #ifdef __FILE_OWNERS_ENABLE__
+        grf->El[grf->El_t].pw = sFile.st_uid;
+        #endif
+        #ifdef __FILE_GROUPS_ENABLE__
+        grf->El[grf->El_t].gr = sFile.st_gid;
+        #endif
+
+        #ifdef __DEV_ENABLE__
+        grf->El[grf->El_t].dev = sFile.st_dev;
+        #endif
+        #ifdef __NLINK_ENABLE__
+        grf->El[grf->El_t].nlink = sFile.st_nlink;
+        #endif
+        #ifdef __RDEV_ENABLE__
+        grf->El[grf->El_t].rdev = sFile.st_rdev;
+        #endif
+        #ifdef __BLK_SIZE_ENABLE__
+        grf->El[grf->El_t].blksize = sFile.st_blksize;
+        #endif
+        #ifdef __BLOCKS_ENABLE__
+        grf->El[grf->El_t].blocks = sFile.st_blocks;
+        #endif
+
+        grf->El_t++;
+    }
+
+    #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
+    if (isOld)
+        freeEl(&oldEl,&oldEl_t);
+    #endif
+
+    closedir(d);
+    close(fd);
 
     if (buffer_size != grf->El_t)
         grf->El = (struct Element*)realloc(grf->El,(grf->El_t)*sizeof(struct Element));

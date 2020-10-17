@@ -259,7 +259,6 @@ char* lsperms(const int mode, const int type)
 
 void RunFile(char* path)
 {
-
     if (strcmp(settings->FileOpener,"NULL") != 0)
         spawn(settings->FileOpener,path,NULL,F_NORMAL|F_WAIT);
     else
@@ -354,91 +353,6 @@ void DeleteFile(const int fd, const char* name)
     }
 }
 
-void DeleteGroup(Basic* grf, const bool here)
-{
-    int count = 0;
-
-    if (here)
-    {
-        for (long long int i = 0; i < grf->Base[grf->Work[grf->inW].win[1]].El_t; i++)
-            if ((grf->Base[grf->Work[grf->inW].win[1]].El[i].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup)
-                count++;
-    }
-    else
-    {
-        for (size_t i = 0; i < grf->ActualSize; i++)
-            for (long long int j = 0; j < grf->Base[i].El_t; j++)
-                if ((grf->Base[i].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup)
-                    count++;
-    }
-
-    int Event = -1;
-
-    do {
-        if (Event == KEY_RESIZE)
-        {
-            DrawBasic(grf,-1);
-            UpdateSizeBasic(grf);
-        }
-
-        if (settings->Bar2Enable)
-        {
-            werase(grf->win[4]);
-            if (count > 0)
-                mvwprintw(grf->win[4],0,0,"Confirm deletion of %d files (y/N)",count);
-            else if (
-                #ifdef __THREADS_FOR_DIR_ENABLE__
-                !grf->Base[grf->Work[grf->inW].win[1]].enable &&
-                #endif
-                grf->Base[grf->Work[grf->inW].win[1]].El_t > 0)
-                mvwprintw(grf->win[4],0,0,"Confirm deletion of %s (y/N)",grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].name);
-            wrefresh(grf->win[4]);
-        }
-        Event = getch();
-    } while (Event == -1 || Event == 410);
-
-    if (Event == 'y' || Event == 'Y')
-    {
-        int fd;
-        if (count == 0 &&
-        #ifdef __THREADS_FOR_DIR_ENABLE__
-        !grf->Base[grf->Work[grf->inW].win[1]].enable &&
-        #endif
-        grf->Base[grf->Work[grf->inW].win[1]].El_t > 0)
-        {
-            if ((fd = open(grf->Base[grf->Work[grf->inW].win[1]].path,O_DIRECTORY)) != -1)
-            {
-                DeleteFile(fd,grf->Base[grf->Work[grf->inW].win[1]].El[grf->Base[grf->Work[grf->inW].win[1]].selected[grf->inW]].name);
-                close(fd);
-            }
-        }
-        else if (here)
-        {
-            if ((fd = open(grf->Base[grf->Work[grf->inW].win[1]].path,O_DIRECTORY)) != -1)
-            {
-                for (long long int i = 0; i < grf->Base[grf->Work[grf->inW].win[1]].El_t; i++)
-                    if ((grf->Base[grf->Work[grf->inW].win[1]].El[i].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup)
-                        DeleteFile(fd,grf->Base[grf->Work[grf->inW].win[1]].El[i].name);
-                close(fd);
-            }
-
-        }
-        else
-        {
-            for (size_t i = 0; i < grf->ActualSize; i++)
-            {
-                if ((fd = open(grf->Base[i].path,O_DIRECTORY)) != -1)
-                {
-                    for (long long int j = 0; j < grf->Base[i].El_t; j++)
-                        if ((grf->Base[i].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup)
-                            DeleteFile(fd,grf->Base[i].El[j].name);
-                    close(fd);
-                }
-            }
-        }
-    }
-}
-
 void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, const mode_t arg)
 {
     struct stat sFile;
@@ -455,7 +369,7 @@ void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, cons
         {
             while (faccessat(fd1,temp,F_OK,0) == 0)
             {
-                if (snprintf(temp,NAME_MAX-1,"%s_%lld",name,num) == NAME_MAX-1)
+                if (snprintf(temp,NAME_MAX-1,"%s_%lld",name,num) == NAME_MAX)
                 {
                     free(temp);
                     return;
@@ -516,46 +430,6 @@ void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, cons
     }
 
     free(temp);
-}
-
-void CopyGroup(Basic* grf, const char* target, const mode_t arg)
-{
-    int fd1, fd2;
-    struct stat sFile1, sFile2;
-    char* buffer = (char*)malloc(settings->CopyBufferSize);
-
-    if ((fd1 = open(target,O_DIRECTORY)) != -1)
-    {
-        if (fstat(fd1,&sFile1) == -1)
-        {
-            close(fd1);
-            free(buffer);
-            return;
-        }
-
-        for (size_t i = 0; i < grf->ActualSize; i++)
-        {
-            if ((fd2 = open(grf->Base[i].path,O_DIRECTORY)) != -1)
-            {
-                if (fstat(fd2,&sFile2) == -1)
-                {
-                    close(fd2);
-                    continue;
-                }
-
-                for (long long int j = 0; j < grf->Base[i].El_t; j++)
-                {
-                    if ((grf->Base[i].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup)
-                    {
-                        CopyFile(fd1,fd2,grf->Base[i].El[j].name,buffer,arg);
-                    }
-                }
-                close(fd2);
-            }
-        }
-        close(fd1);
-    }
-    free(buffer);
 }
 
 void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, const mode_t arg)
@@ -637,64 +511,6 @@ void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, cons
     }
 
     free(temp);
-}
-
-void MoveGroup(Basic* grf, const char* target, const mode_t arg)
-{
-    int fd1, fd2;
-    struct stat sFile1, sFile2;
-    char* buffer = (char*)malloc(settings->CopyBufferSize);
-
-    if ((fd1 = open(target,O_DIRECTORY)) != -1)
-    {
-        if (fstat(fd1,&sFile1) == -1)
-        {
-            close(fd1);
-            free(buffer);
-            return;
-        }
-
-        for (size_t i = 0; i < grf->ActualSize; i++)
-        {
-            if ((fd2 = open(grf->Base[i].path,O_DIRECTORY)) != -1)
-            {
-                if (fstat(fd2,&sFile2) == -1)
-                {
-                    close(fd2);
-                    continue;
-                }
-
-                for (long long int j = 0; j < grf->Base[i].El_t; j++)
-                {
-                    if ((grf->Base[i].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup)
-                    {
-                        if (sFile1.st_dev == sFile2.st_dev)
-                        {
-                            char* temp = (char*)malloc(NAME_MAX);
-                            strcpy(temp,grf->Base[i].El[j].name);
-                            unsigned long long int num = 0;
-
-                            while (faccessat(fd1,temp,F_OK,0) != -1)
-                            {
-                                if (snprintf(temp,NAME_MAX-1,"%s_%lld",grf->Base[i].El[j].name,num) == NAME_MAX-1)
-                                {
-                                    free(temp);
-                                    return;
-                                }
-                                num++;
-                            }
-                            renameat(fd2,grf->Base[i].El[j].name,fd1,temp);
-                        }
-                        else
-                            MoveFile(fd1,fd2,grf->Base[i].El[j].name,buffer,arg);
-                    }
-                }
-                close(fd2);
-            }
-        }
-        close(fd1);
-    }
-    free(buffer);
 }
 
 size_t TimeToStr(const time_t *time, char* result)

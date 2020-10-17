@@ -40,9 +40,9 @@ size_t TimeToStr(const time_t *, char*);
 void RunFile(char*);
 void MakePathShorter(char*, const int);
 
-void DeleteGroup(Basic*, const bool);
-void MoveGroup(Basic*, const char*, const mode_t);
-void CopyGroup(Basic*, const char*, const mode_t);
+void DeleteFile(const int, const char*);
+void CopyFile(const int, const int, const char*, char*, const mode_t);
+void MoveFile(const int, const int, const char*, char*, const mode_t);
 
 char* MakePathRunAble(char*);
 char* MakePath(const char*, const char*);

@@ -226,7 +226,7 @@ void ExitBasic(Basic* grf, const bool force)
     grf->ExitTime = true;
 }
 
-static void bulk(Basic* grf, const int workspace, const int selected, const bool full_path, char** args)
+static void bulk(Basic* grf, const int workspace, const int selected, char** args, const unsigned char flag)
 {
     int fd[2];
     char buf[2][PATH_MAX];
@@ -239,8 +239,8 @@ static void bulk(Basic* grf, const int workspace, const int selected, const bool
         for (int i = 0; i < 2; i++)
         {
             try[i] = 0;
-            while(try[i] < 50 && (fd[i] = mkstemp(buf[i])) == -1) try[i]++;
-            if (try[i] > 49)
+            while(try[i] < 5 && (fd[i] = mkstemp(buf[i])) == -1) try[i]++;
+            if (try[i] > 4)
             {
                 if (i == 1)
                     unlink(buf[0]);
@@ -250,22 +250,43 @@ static void bulk(Basic* grf, const int workspace, const int selected, const bool
     }
 
     size_t path_t = strlen(args[0]);
+    bool CommentWrite;
 
     for (size_t i = 0; i < grf->ActualSize; i++)
     {
-        if (path_t == 0 ? 1 : (strcmp(grf->Base[i].path,args[0]) == 0))
+        if (!(
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        !grf->Base[i].enable &&
+        #endif
+        grf->Base[i].El_t > 0))
+            continue;
+            
+        if (path_t)
         {
-            write(fd[0],"//\t",3);
-            write(fd[0],grf->Base[i].path,strlen(grf->Base[i].path));
-            write(fd[0],"\n",1);
-            for (long long int j = 0; j < grf->Base[i].El_t; j++)
+            if (flag & 0x2)
             {
-                if (selected == -1 ? 1 : (grf->Base[i].El[j].List[workspace]&selected))
+                if (!strstr(grf->Base[i].path,args[0]))
+                    continue;
+            }
+            else if ((strcmp(grf->Base[i].path,args[0]) == 0))
+                continue;
+        }
+        
+        CommentWrite = 0;
+        for (long long int j = 0; j < grf->Base[i].El_t; j++)
+        {
+            if (selected == -1 ? 1 : (grf->Base[i].El[j].List[workspace]&selected))
+            {
+                if (!CommentWrite)
                 {
-                    char* temp = full_path ? MakePath(grf->Base[i].path,grf->Base[i].El[j].name) : grf->Base[i].El[j].name;
-                    write(fd[0],temp,strlen(temp));
+                    write(fd[0],"//\t",3);
+                    write(fd[0],grf->Base[i].path,strlen(grf->Base[i].path));
                     write(fd[0],"\n",1);
+                    CommentWrite = 1;
                 }
+                char* temp = (flag & 0x1) ? MakePath(grf->Base[i].path,grf->Base[i].El[j].name) : grf->Base[i].El[j].name;
+                write(fd[0],temp,strlen(temp));
+                write(fd[0],"\n",1);
             }
         }
     }
@@ -290,57 +311,72 @@ static void bulk(Basic* grf, const int workspace, const int selected, const bool
     {
         for (size_t i = 0; i < grf->ActualSize; i++)
         {
-            if (path_t == 0 ? 1 : (strcmp(grf->Base[i].path,args[0]) == 0))
+            if (!(
+            #ifdef __THREADS_FOR_DIR_ENABLE__
+            !grf->Base[i].enable &&
+            #endif
+            grf->Base[i].El_t > 0))
+                continue;
+                
+            if (path_t)
             {
-                for (long long int j = 0; j < grf->Base[i].El_t; j++)
+                if (flag & 0x2)
                 {
-                    if (selected == -1 ? 1 : (grf->Base[i].El[j].List[workspace]&selected))
+                    if (!strstr(grf->Base[i].path,args[0]))
+                        continue;
+                }
+                else if ((strcmp(grf->Base[i].path,args[0]) == 0))
+                    continue;
+            }
+            
+            for (long long int j = 0; j < grf->Base[i].El_t; j++)
+            {
+                if (selected == -1 ? 1 : (grf->Base[i].El[j].List[workspace]&selected))
+                {
+                    while (file[pos] == '\n')
                     {
-                        while (file[pos] == '\n')
-                        {
-                            pos++;
-                            j--;
-                        }
-                        if (!file[pos])
-                            break;
-
-                        if (file[pos] == '/' && file[pos+1] && file[pos+1] == '/')
-                        {
-                            while (file[pos] && file[pos] != '\n') pos++;
-                            j--;
-                        }
-                        else
-                        {
-                            x = 0;
-                            while (file[pos] && file[pos] != '\n') buffer[x++] = file[pos++];
-                            buffer[x] = '\0';
-                            char* temp = full_path ? MakePath(grf->Base[i].path,grf->Base[i].El[j].name) : grf->Base[i].El[j].name;
-                            char stemp[PATH_MAX];
-                            if (x > 0 && strcmp(temp,buffer) != 0)
-                            {
-                                write(fd[1],args[3],strlen(args[3]));
-                                write(fd[1]," ",1);
-
-                                strcpy(stemp,temp);
-                                MakePathRunAble(stemp);
-                                write(fd[1],stemp,strlen(stemp));
-                                write(fd[1]," ",1);
-
-                                write(fd[1],args[4],strlen(args[4]));
-                                write(fd[1]," ",1);
-
-                                strcpy(stemp,buffer);
-                                MakePathRunAble(stemp);
-                                write(fd[1],stemp,strlen(stemp));
-                                write(fd[1]," ",1);
-
-                                write(fd[1],args[5],strlen(args[5]));
-                                write(fd[1],"\n",1);
-                            }
-                        }
-
                         pos++;
+                        j--;
                     }
+                    if (!file[pos])
+                        break;
+
+                    if (file[pos] == '/' && file[pos+1] && file[pos+1] == '/')
+                    {
+                        while (file[pos] && file[pos] != '\n') pos++;
+                        j--;
+                    }
+                    else
+                    {
+                        x = 0;
+                        while (file[pos] && file[pos] != '\n') buffer[x++] = file[pos++];
+                        buffer[x] = '\0';
+                        char* temp = (flag & 0x1) ? MakePath(grf->Base[i].path,grf->Base[i].El[j].name) : grf->Base[i].El[j].name;
+                        char stemp[PATH_MAX];
+                        if (x > 0 && strcmp(temp,buffer) != 0)
+                        {
+                            write(fd[1],args[3],strlen(args[3]));
+                            write(fd[1]," ",1);
+
+                            strcpy(stemp,temp);
+                            MakePathRunAble(stemp);
+                            write(fd[1],stemp,strlen(stemp));
+                            write(fd[1]," ",1);
+
+                            write(fd[1],args[4],strlen(args[4]));
+                            write(fd[1]," ",1);
+
+                            strcpy(stemp,buffer);
+                            MakePathRunAble(stemp);
+                            write(fd[1],stemp,strlen(stemp));
+                            write(fd[1]," ",1);
+
+                            write(fd[1],args[5],strlen(args[5]));
+                            write(fd[1],"\n",1);
+                        }
+                    }
+
+                    pos++;
                 }
             }
         }
@@ -350,6 +386,7 @@ static void bulk(Basic* grf, const int workspace, const int selected, const bool
 
     spawn(args[2],buf[1],NULL,F_NORMAL|F_WAIT);
     spawn(args[1],buf[1],NULL,F_NORMAL|F_WAIT|F_CONFIRM);
+
 
     for (int i = 0; i < 2; i++)
     {
@@ -700,16 +737,17 @@ void ___MOVE(const char* src, Basic* grf)
                         rot = 4;
                         break;
                     case 'c':
-                        pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        mul1 = atoi(src+pos);
-                        while (isdigit(src[pos])) pos++;
-                        break;
                     case 'w':
-                        pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        workspace = atoi(src+pos);
-                        while (isdigit(src[pos])) pos++;
+                        {
+                            char ctemp = src[pos];
+                            pos++;
+                            pos += FindFirstCharacter(src+pos);
+                            if (ctemp == 'c')
+                                mul1 = atoi(src+pos);
+                            else
+                                workspace = atoi(src+pos);
+                            while (isdigit(src[pos])) pos++;
+                        }
                         break;
                 }
 
@@ -807,23 +845,19 @@ void ___GOTOP(const char* src, Basic* grf)
         {
             do {
                 pos++;
-
                 switch (src[pos])
                 {
                     case 't':
-                        pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        target = atol(src+pos);
-                        while (isdigit(src[pos])) pos++;
-                        break;
                     case 'w':
                         pos++;
                         pos += FindFirstCharacter(src+pos);
-                        workspace = atoi(src+pos);
+                        if (src[pos] == 't')
+                            target = atol(src+pos);
+                        else
+                            workspace = atoi(src+pos);
                         while (isdigit(src[pos])) pos++;
                         break;
                 }
-
             } while (src[pos] && !isspace(src[pos]));
         }
 
@@ -866,29 +900,24 @@ void ___GODOWN(const char* src, Basic* grf)
         {
             do {
                 pos++;
-
                 switch (src[pos])
                 {
                     case 't':
-                        pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        target = atol(src+pos);
-                        while (isdigit(src[pos])) pos++;
-                        break;
                     case 'w':
                         pos++;
                         pos += FindFirstCharacter(src+pos);
-                        workspace = atoi(src+pos);
+                        if (src[pos] == 't')
+                            target = atol(src+pos);
+                        else
+                            workspace = atoi(src+pos);
                         while (isdigit(src[pos])) pos++;
                         break;
                 }
-
             } while (src[pos] && !isspace(src[pos]));
         }
 
         pos += FindFirstCharacter(src+pos);
-        if (src[pos+1] == '\0')
-            break;
+        if (src[pos+1] == '\0') break;
     }
 
     if (
@@ -920,122 +949,163 @@ void ___CHANGEWORKSPACE(const char* src, Basic* grf)
 }
 
 #ifdef __GET_DIR_SIZE_ENABLE__
+
+static void GETSIZE(struct Element* El, const int fd, const unsigned char flag)
+{
+    if (El->Type == T_DIR ||
+        El->Type == T_LDIR)
+    {
+        int tfd;
+        if ((tfd = openat(fd,El->name,O_DIRECTORY)) != -1)
+        {
+            #ifdef __GET_DIR_SIZE_ENABLE__
+            if ((flag&0x8) != 0x8)
+                El->size = GetDirSize(tfd,(flag&0x2) == 0x2,(flag&0x4) == 0x4);
+            else
+            #endif
+            {
+                struct stat sFile;
+                stat(El->name,&sFile);
+                El->size = sFile.st_size;
+            }
+            #ifdef __HUMAN_READABLE_SIZE_ENABLE__
+            if (El->SizErrToDisplay == NULL)
+                El->SizErrToDisplay = (char*)malloc(16);
+            MakeHumanReadAble(El->SizErrToDisplay
+                ,El->size,(flag&0x10) != 0x10);
+            #endif
+            close(tfd);
+        }
+    }
+}
+
 void ___GETSIZE(const char* src, Basic* grf)
 {
     size_t pos = 0;
-    bool File = 0
-        ,Count = 0
-        #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-        ,HumanReadAble = 0
-        #endif
-        ,Recursive = 0;
+    unsigned char flag = 0;
+    int selected = -1, workspace = grf->inW;
+    char* path = (char*)calloc(sizeof(char),PATH_MAX);
 
     while (src[pos])
     {
+        pos += FindFirstCharacter(src+pos);
+     
         if (src[pos] == '-')
         {
             do {
                 pos++;
                 switch (src[pos])
                 {
-                    case 'r':
-                        Recursive = 1;
+                    case 'w':
+                    case 's':
+                        {
+                            int itemp = (src[pos] == 'w' ? 1 : 0); 
+                            pos++;
+                            pos += FindFirstCharacter(src+pos);
+                            if (itemp)
+                                workspace = atoi(src+pos);
+                            else
+                            {
+                                switch (src[pos])
+                                {
+                                    case '-': selected = -1; pos++; break;
+                                    case '.': selected = -2; pos++; break;
+                                    case 's': selected = -3; pos++; break;
+                                    default: selected = 1<<atoi(src+pos); break;
+                                }
+                            }
+                            while (isdigit(src[pos])) pos++;
+                        }
                         break;
-                    case 'c':
-                        Count = 1;
-                        break;
-                    case 'f':
-                        File = 1;
-                        break;
+                    case 'R': flag |= 0x1; break;
+                    case 'r': flag |= 0x2; break;
+                    case 'c': flag |= 0x4; break;
+                    case 'f': flag |= 0x8; break;
                     #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-                    case 'h':
-                        HumanReadAble = 1;
-                        break;
+                    case 'h': flag |= 0x10; break;
                     #endif
                 }
             } while (src[pos] && !isspace(src[pos]));
         }
+        else
+            pos += StrToPath(path,src+pos);
 
-        pos += FindFirstCharacter(src+pos);
         if (src[pos+1] == '\0')
             break;
     }
 
-    int temp;
-    if (
-        #ifdef __THREADS_FOR_DIR_ENABLE__
-        !GET_DIR(grf->inW,1).enable &&
-        #endif
-        GET_DIR(grf->inW,1).El_t > 0 && (temp = open(GET_DIR(grf->inW,1).path,O_DIRECTORY)) != -1)
+    if (!grf->Work[grf->inW].exists)
     {
-        int tfd;
-        int counter = 0;
+        free(path);
+        return;
+    }
 
-        for (long long int i = 0; i < GET_DIR(grf->inW,1).El_t; i++)
+    if (workspace != grf->inW)
+        chdir(GET_DIR(workspace,1).path);
+
+    if (selected == -2)
+        selected = grf->Work[workspace].SelectedGroup;
+    if (selected == -3)
+    {
+        int fd;
+        if (
+            #ifdef __THREADS_FOR_DIR_ENABLE__
+            !GET_DIR(workspace,1).enable &&
+            #endif
+            GET_DIR(workspace,1).El_t > 0 && (fd = open(GET_DIR(workspace,1).path,O_DIRECTORY)) != -1)
+        GETSIZE(&GET_ESELECTED(workspace,1),fd,flag);
+        if (!(flag&0x1))
         {
-            if ((GET_DIR(grf->inW,1).El[i].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup)
+            free(path);
+            return;
+        }
+        else
+            strcpy(path,MakePath(GET_DIR(workspace,1).path,GET_ESELECTED(workspace,1).name));
+    }
+
+    if (path[0])
+    {
+        char* stemp = (char*)malloc(PATH_MAX);
+        realpath(path,stemp);
+        free(path);
+        path = stemp;
+    }
+
+    int temp;
+    
+    for (size_t i = 0; i < grf->ActualSize; i++)
+    {
+        if (
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        grf->Base[i].enable ||
+        #endif
+        grf->Base[i].El_t < 1)
+            continue;
+        if (path[0])
+        {
+            if (flag&0x1)
             {
-                counter++;
-                if (GET_DIR(grf->inW,1).El[i].Type == T_DIR ||
-                    GET_DIR(grf->inW,1).El[i].Type == T_LDIR)
-                {
-                    if (faccessat(temp,GET_DIR(grf->inW,1).El[i].name,R_OK,0) == 0)
-                    {
-                        if ((tfd = openat(temp,GET_DIR(grf->inW,1).El[i].name,O_DIRECTORY)) != -1)
-                        {
-                            #ifdef __GET_DIR_SIZE_ENABLE__
-                            if (!File)
-                                GET_DIR(grf->inW,1).El[i].size = GetDirSize(tfd,Recursive,Count);
-                            else
-                            #endif
-                            {
-                                struct stat sFile;
-                                stat(GET_DIR(grf->inW,1).El[i].name,&sFile);
-                                GET_DIR(grf->inW,1).El[i].size = sFile.st_size;
-                            }
-                            #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-                            if (GET_DIR(grf->inW,1).El[i].SizErrToDisplay == NULL)
-                                GET_DIR(grf->inW,1).El[i].SizErrToDisplay = (char*)malloc(16);
-                            MakeHumanReadAble(GET_DIR(grf->inW,1).El[i].SizErrToDisplay
-                                ,GET_DIR(grf->inW,1).El[i].size,HumanReadAble);
-                            #endif
-                            close(tfd);
-                        }
-                    }
-                }
+                if (!strstr(grf->Base[i].path,path))
+                    continue;
             }
+            else if (strcmp(grf->Base[i].path,path) != 0)
+                continue;
         }
 
-        if (counter == 0 && (GET_ESELECTED(grf->inW,1).Type == T_DIR ||
-            GET_ESELECTED(grf->inW,1).Type == T_LDIR))
-        {
-            if (faccessat(temp,GET_ESELECTED(grf->inW,1).name,R_OK,0) == 0)
-            {
-                if ((tfd = openat(temp,GET_ESELECTED(grf->inW,1).name,O_DIRECTORY)) != -1)
-                {
-                    #ifdef __GET_DIR_SIZE_ENABLE__
-                    if (!File)
-                        GET_ESELECTED(grf->inW,1).size = GetDirSize(tfd,Recursive,Count);
-                    else
-                    #endif
-                    {
-                        struct stat sFile;
-                        stat(GET_ESELECTED(grf->inW,1).name,&sFile);
-                        GET_ESELECTED(grf->inW,1).size = sFile.st_size;
-                    }
-                    #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-                    if (GET_ESELECTED(grf->inW,1).SizErrToDisplay == NULL)
-                        GET_ESELECTED(grf->inW,1).SizErrToDisplay = (char*)malloc(16);
-                    MakeHumanReadAble(GET_ESELECTED(grf->inW,1).SizErrToDisplay
-                        ,GET_ESELECTED(grf->inW,1).size,HumanReadAble);
-                    #endif
-                    close(tfd);
-                }
-            }
-        }
+        if ((temp = open(grf->Base[i].path,O_DIRECTORY)) == -1)
+            continue;
+
+        for (long long int j = 0; j < grf->Base[i].El_t; j++)
+            if (selected < 0 ? 1 : (grf->Base[i].El[j].List[workspace]&selected))
+                GETSIZE(&grf->Base[i].El[j],temp,flag);
         close(temp);
     }
+    
+    free(path);
+    if (workspace != grf->inW)
+        chdir(GET_DIR(grf->inW,1).path);
 }
+
 #endif
 
 void ___SETGROUP(const char* src, Basic* grf)
@@ -1069,123 +1139,458 @@ void ___TOGGLEVISUAL(const char* src, Basic* grf)
 
 void ___F_COPY(const char* src, Basic* grf)
 {
-    size_t pos = 0;
     mode_t arg = 0;
+    size_t pos = 0;
+    int selected = -1, workspace = grf->inW;
+    char* path = (char*)calloc(sizeof(char),PATH_MAX);
+    char* target = (char*)calloc(sizeof(char),PATH_MAX);
+    int fd1, fd2;
+    char* buffer = (char*)malloc(settings->CopyBufferSize);
 
     while (src[pos])
     {
+        pos += FindFirstCharacter(src+pos);
+     
         if (src[pos] == '-')
         {
             do {
                 pos++;
-
                 switch (src[pos])
                 {
-                    case 'c':
-                        arg |= M_CHNAME;
+                    case 'o':
+                        pos++;
+                        pos += FindFirstCharacter(src+pos);
+                        pos += StrToPath(target,src+pos);
                         break;
-                    case 'r':
-                        arg |= M_REPLACE;
+                    case 'w':
+                    case 's':
+                        {
+                            int itemp = (src[pos] == 'w' ? 1 : 0); 
+                            pos++;
+                            pos += FindFirstCharacter(src+pos);
+                            if (itemp)
+                                workspace = atoi(src+pos);
+                            else
+                            {
+                                switch (src[pos])
+                                {
+                                    case '-': selected = -1; pos++; break;
+                                    case '.': selected = -2; pos++; break;
+                                    case 's': selected = -3; pos++; break;
+                                    default: selected = 1<<atoi(src+pos); break;
+                                }
+                            }
+                            while (isdigit(src[pos])) pos++;
+                        }
                         break;
-                    case 'd':
-                        arg |= M_DCPY;
-                        break;
-                    case 'm':
-                        arg |= M_MERGE;
-                        break;
+                    case 'c': arg |= M_CHNAME; break;
+                    case 'r': arg |= M_REPLACE; break;
+                    case 'd': arg |= M_DCPY; break;
+                    case 'm': arg |= M_MERGE; break;
                 }
-
             } while (src[pos] && !isspace(src[pos]));
         }
+        else
+            pos += StrToPath(path,src+pos);
 
-        pos += FindFirstCharacter(src+pos);
         if (src[pos+1] == '\0')
             break;
     }
 
-    CopyGroup(grf,".",arg);
+    if (!grf->Work[grf->inW].exists)
+        goto END;
+
+    if (workspace != grf->inW)
+        chdir(GET_DIR(workspace,1).path);
+
+    if (selected == -2)
+        selected = grf->Work[workspace].SelectedGroup;
+
+    if (!target[0])
+        strcpy(target,".");
+
+    if ((fd1 = open(target,O_DIRECTORY)) == -1)
+        goto END;
+
+    if (selected == -3)
+    {
+        if (
+            #ifdef __THREADS_FOR_DIR_ENABLE__
+            !GET_DIR(workspace,1).enable &&
+            #endif
+            GET_DIR(workspace,1).El_t > 0 && (fd2 = open(GET_DIR(workspace,1).path,O_DIRECTORY)) != -1)
+        {
+            CopyFile(fd1,fd2,GET_ESELECTED(workspace,1).name,buffer,arg);
+            close(fd2);
+        }
+        close(fd1);
+        goto END;
+    }
+
+    if (path[0])
+    {
+        char* stemp = (char*)malloc(PATH_MAX);
+        realpath(path,stemp);
+        free(path);
+        path = stemp;
+    }
+
+    for (size_t i = 0; i < grf->ActualSize; i++)
+    {
+        if (
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        grf->Base[i].enable ||
+        #endif
+        grf->Base[i].El_t < 1)
+            continue;
+        if (path[0] && strcmp(grf->Base[i].path,path) != 0)
+                continue;
+
+        if ((fd2 = open(grf->Base[i].path,O_DIRECTORY)) == -1)
+            continue;
+
+        for (long long int j = 0; j < grf->Base[i].El_t; j++)
+            if (selected < 0 ? 1 : (grf->Base[i].El[j].List[workspace]&selected))
+                CopyFile(fd1,fd2,grf->Base[i].El[j].name,buffer,arg);
+        close(fd2);
+    }
+    close(fd1);
+
     UpdateSizeBasic(grf);
     CD(".",grf->inW,grf);
+
+    END: ;
+    free(buffer);
+    free(path);
+    free(target);
+    if (workspace != grf->inW)
+        chdir(GET_DIR(grf->inW,1).path);
 }
 
 void ___F_MOVE(const char* src, Basic* grf)
 {
-    size_t pos = 0;
     mode_t arg = 0;
+    size_t pos = 0;
+    int selected = -1, workspace = grf->inW;
+    char* path = (char*)calloc(sizeof(char),PATH_MAX);
+    char* target = (char*)calloc(sizeof(char),PATH_MAX);
+    int fd1, fd2;
+    struct stat sFile1, sFile2;
+    char* buffer = (char*)malloc(settings->CopyBufferSize);
 
     while (src[pos])
     {
+        pos += FindFirstCharacter(src+pos);
+     
         if (src[pos] == '-')
         {
             do {
                 pos++;
-
                 switch (src[pos])
                 {
-                    case 'c':
-                        arg |= M_CHNAME;
+                    case 'o':
+                        pos++;
+                        pos += FindFirstCharacter(src+pos);
+                        pos += StrToPath(target,src+pos);
                         break;
-                    case 'r':
-                        arg |= M_REPLACE;
+                    case 'w':
+                    case 's':
+                        {
+                            int itemp = (src[pos] == 'w' ? 1 : 0); 
+                            pos++;
+                            pos += FindFirstCharacter(src+pos);
+                            if (itemp)
+                                workspace = atoi(src+pos);
+                            else
+                            {
+                                switch (src[pos])
+                                {
+                                    case '-': selected = -1; pos++; break;
+                                    case '.': selected = -2; pos++; break;
+                                    case 's': selected = -3; pos++; break;
+                                    default: selected = 1<<atoi(src+pos); break;
+                                }
+                            }
+                            while (isdigit(src[pos])) pos++;
+                        }
                         break;
-                    case 'd':
-                        arg |= M_DCPY;
-                        break;
-                    case 'm':
-                        arg |= M_MERGE;
-                        break;
+                    case 'c': arg |= M_CHNAME; break;
+                    case 'r': arg |= M_REPLACE; break;
+                    case 'd': arg |= M_DCPY; break;
+                    case 'm': arg |= M_MERGE; break;
                 }
-
             } while (src[pos] && !isspace(src[pos]));
         }
+        else
+            pos += StrToPath(path,src+pos);
 
-        pos += FindFirstCharacter(src+pos);
         if (src[pos+1] == '\0')
             break;
     }
 
-    MoveGroup(grf,".",arg);
+    if (!grf->Work[grf->inW].exists)
+        goto END;
+
+    if (workspace != grf->inW)
+        chdir(GET_DIR(workspace,1).path);
+
+    if (selected == -2)
+        selected = grf->Work[workspace].SelectedGroup;
+
+    if (!target[0])
+        strcpy(target,".");
+
+    if ((fd1 = open(target,O_DIRECTORY)) == -1)
+        goto END;
+
+    if (fstat(fd1,&sFile1) == -1)
+    {
+        close(fd1);
+        goto END;
+    }
+
+    if (selected == -3)
+    {
+        if (
+            #ifdef __THREADS_FOR_DIR_ENABLE__
+            !GET_DIR(workspace,1).enable &&
+            #endif
+            GET_DIR(workspace,1).El_t > 0 && (fd2 = open(GET_DIR(workspace,1).path,O_DIRECTORY)) != -1)
+        {
+            MoveFile(fd1,fd2,GET_ESELECTED(workspace,1).name,buffer,arg);
+            close(fd2);
+        }
+        close(fd1);
+        goto END;
+    }
+
+    if (path[0])
+    {
+        char* stemp = (char*)malloc(PATH_MAX);
+        realpath(path,stemp);
+        free(path);
+        path = stemp;
+    }
+
+    for (size_t i = 0; i < grf->ActualSize; i++)
+    {
+        if (
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        grf->Base[i].enable ||
+        #endif
+        grf->Base[i].El_t < 1)
+            continue;
+        
+        if (path[0] && strcmp(grf->Base[i].path,path) != 0)
+            continue;
+
+        if ((fd2 = open(grf->Base[i].path,O_DIRECTORY)) == -1)
+            continue;
+        
+        if (fstat(fd2,&sFile2) == -1)
+        {
+            close(fd2);
+            continue;
+        }
+
+        for (long long int j = 0; j < grf->Base[i].El_t; j++)
+            if (selected < 0 ? 1 : (grf->Base[i].El[j].List[workspace]&selected))
+            {
+                if (sFile1.st_dev == sFile2.st_dev)
+                {
+                    char* temp = (char*)malloc(NAME_MAX);
+                    strcpy(temp,grf->Base[i].El[j].name);
+                    unsigned long long int num = 0;
+
+                    while (faccessat(fd1,temp,F_OK,0) != -1)
+                    {
+                        if (snprintf(temp,NAME_MAX-1,"%s_%lld",grf->Base[i].El[j].name,num) == NAME_MAX-1)
+                        {
+                            free(temp);
+                            close(fd1);
+                            close(fd2);
+                            goto END;
+                        }
+                        num++;
+                    }
+                    renameat(fd2,grf->Base[i].El[j].name,fd1,temp);
+                }
+                else
+                    MoveFile(fd1,fd2,grf->Base[i].El[j].name,buffer,arg);
+            }
+        close(fd2);
+    }
+    close(fd1);
+
     UpdateSizeBasic(grf);
     CD(".",grf->inW,grf);
+
+    END: ;
+    free(buffer);
+    free(path);
+    free(target);
+    if (workspace != grf->inW)
+        chdir(GET_DIR(grf->inW,1).path);
 }
 
 void ___F_DELETE(const char* src, Basic* grf)
 {
     size_t pos = 0;
-    bool here = 1;
+    int selected = -1, workspace = grf->inW;
+    char* path = (char*)calloc(sizeof(char),PATH_MAX);
 
     while (src[pos])
     {
+        pos += FindFirstCharacter(src+pos);
+     
         if (src[pos] == '-')
         {
             do {
                 pos++;
-
                 switch (src[pos])
                 {
-                    case 'a':
-                        here = 0;
+                    case 'w':
+                    case 's':
+                        {
+                            int itemp = (src[pos] == 'w' ? 1 : 0); 
+                            pos++;
+                            pos += FindFirstCharacter(src+pos);
+                            if (itemp)
+                                workspace = atoi(src+pos);
+                            else
+                            {
+                                switch (src[pos])
+                                {
+                                    case '-': selected = -1; pos++; break;
+                                    case '.': selected = -2; pos++; break;
+                                    case 's': selected = -3; pos++; break;
+                                    default: selected = 1<<atoi(src+pos); break;
+                                }
+                            }
+                            while (isdigit(src[pos])) pos++;
+                        }
                         break;
                 }
-
             } while (src[pos] && !isspace(src[pos]));
         }
+        else
+            pos += StrToPath(path,src+pos);
 
-        pos += FindFirstCharacter(src+pos);
         if (src[pos+1] == '\0')
             break;
     }
 
-    DeleteGroup(grf,here);
+    if (!grf->Work[grf->inW].exists)
+    {
+        free(path);
+        return;
+    }
+
+    if (workspace != grf->inW)
+        chdir(GET_DIR(workspace,1).path);
+
+    if (selected == -2)
+        selected = grf->Work[workspace].SelectedGroup;
+    if (selected == -3)
+    {
+        int fd;
+        if (
+            #ifdef __THREADS_FOR_DIR_ENABLE__
+            !GET_DIR(workspace,1).enable &&
+            #endif
+            GET_DIR(workspace,1).El_t > 0 && (fd = open(GET_DIR(workspace,1).path,O_DIRECTORY)) != -1)
+        {
+            DeleteFile(fd,GET_ESELECTED(workspace,1).name);
+            close(fd);
+        }
+        free(path);
+        return;
+    }
+
+    if (path[0])
+    {
+        char* stemp = (char*)malloc(PATH_MAX);
+        realpath(path,stemp);
+        free(path);
+        path = stemp;
+    }
+
+    int temp;
+
+    for (size_t i = 0; i < grf->ActualSize; i++)
+    {
+        if (
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        grf->Base[i].enable ||
+        #endif
+        grf->Base[i].El_t < 1)
+            continue;
+
+        if (path[0] && strcmp(grf->Base[i].path,path) != 0)
+            continue;
+
+
+        if ((temp = open(grf->Base[i].path,O_DIRECTORY)) == -1)
+            continue;
+
+        for (long long int j = 0; j < grf->Base[i].El_t; j++)
+            if (selected < 0 ? 1 : (grf->Base[i].El[j].List[workspace]&selected))
+            {
+                DeleteFile(temp,grf->Base[i].El[j].name);
+            }
+
+        close(temp);
+    }
+
+    free(path);
+    if (workspace != grf->inW)
+        chdir(GET_DIR(grf->inW,1).path);
+
     UpdateSizeBasic(grf);
     CD(".",grf->inW,grf);
+}
+
+
+static void GETDIR(char* path, Basic* grf, unsigned char mode
+#ifdef __THREADS_FOR_DIR_ENABLE__
+, bool threads
+#endif
+)
+{
+    DIR* d;
+    if ((d = opendir(path)) == NULL)
+        return;
+    struct dirent* dir;
+    while ((dir = readdir(d)))
+    {
+        if (dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
+            continue;
+        if (dir->d_type == 4 || dir->d_type == 10)
+        {
+            char path1[PATH_MAX];
+            strcpy(path1,path);
+            strcat(path1,"/");
+            strcat(path1,dir->d_name);
+            GetDir(path1,grf,grf->inW,1,mode
+            #ifdef __THREADS_FOR_DIR_ENABLE__
+            ,threads
+            #endif
+            );
+            GETDIR(path1,grf,mode
+            #ifdef __THREADS_FOR_DIR_ENABLE__
+            ,threads
+            #endif
+            );
+       }
+    }
+    closedir(d);
 }
 
 void ___LOAD(const char* src, Basic* grf)
 {
     size_t pos = 0;
     int mode = 2;
-    bool threaded = 0;
+    unsigned char flag = 0;
 
     while (src[pos])
     {
@@ -1203,10 +1608,9 @@ void ___LOAD(const char* src, Basic* grf)
                         while (isdigit(src[pos])) pos++;
                         break;
                     #ifdef __THREADS_FOR_DIR_ENABLE__
-                    case 't':
-                        threaded = 1;
-                        break;
+                    case 't': flag |= 0x1; break;
                     #endif
+                    case 'R': flag |= 0x2; break;
                 }
 
             } while (src[pos] && !isspace(src[pos]));
@@ -1220,7 +1624,14 @@ void ___LOAD(const char* src, Basic* grf)
 
     GetDir(".",grf,grf->inW,1,mode
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    ,threaded
+    ,(flag&0x1)
+    #endif
+    );
+    char path[PATH_MAX];
+    strcpy(path,".");
+    GETDIR(path,grf,mode
+    #ifdef __THREADS_FOR_DIR_ENABLE__
+    ,(flag&0x1)
     #endif
     );
 }
@@ -1229,10 +1640,14 @@ void ___SELECT(const char* src, Basic* grf)
 {
     size_t pos = 0;
     int mode = 1;
-    bool here = 1;
+    bool recursive = 0;
+    int selected = -1, workspace1 = grf->inW, workspace2 = grf->inW, toselected = -1;
+    char* path = (char*)calloc(sizeof(char),PATH_MAX);
 
     while (src[pos])
     {
+        pos += FindFirstCharacter(src+pos);
+
         if (src[pos] == '-')
         {
             do {
@@ -1240,67 +1655,148 @@ void ___SELECT(const char* src, Basic* grf)
 
                 switch (src[pos])
                 {
-                    case 'a':
-                        here = 0;
+                    case 'R':
+                        recursive = 1;
                         break;
-                    case 'e':
-                        mode = 1;
+                    case 'o':
+                        pos++;
+                        pos+= FindFirstCharacter(src+pos);
+                        switch(src[pos])
+                        {
+                            case '.':
+                                toselected = -1;
+                                pos++;
+                                break;
+                            default:
+                                toselected = atoi(src+pos);
+                                while (isdigit(src[pos])) pos++;
+                                break;
+                        }
                         break;
-                    case 'd':
-                        mode = 0;
+                    case 'w':
+                    case 'W':
+                        {
+                            int itemp = (src[pos] == 'w' ? 1 : 0); 
+                            pos++;
+                            pos += FindFirstCharacter(src+pos);
+                            if (itemp)
+                                workspace1 = atoi(src+pos);
+                            else
+                                workspace2 = atoi(src+pos);
+                            while (isdigit(src[pos])) pos++;
+                        }
                         break;
-                    case 't':
-                        mode = -1;
+                    case 's':
+                        pos++;
+                        pos += FindFirstCharacter(src+pos);
+                        switch (src[pos])
+                        {
+                            case '-':
+                                selected = -1;
+                                pos++;
+                                break;
+                            case '.':
+                                selected = -2;
+                                pos++;
+                                break;
+                            case 's':
+                                selected = -3;
+                                pos++;
+                                break;
+                            default:
+                                selected = 1<<atoi(src+pos);
+                                while (isdigit(src[pos])) pos++;
+                                break;
+                        }
                         break;
+                    case 'e': mode = 1; break;
+                    case 'd': mode = 0; break;
+                    case 't': mode = -1; break;
                 }
 
             } while (src[pos] && !isspace(src[pos]));
         }
+        else
+            pos += StrToPath(path,src+pos);
 
-        pos += FindFirstCharacter(src+pos);
         if (src[pos+1] == '\0')
             break;
     }
 
-    if (!here)
+    if (!grf->Work[grf->inW].exists)
     {
-        if (mode == -1)
+        free(path);
+        return;
+    }
+
+    if (workspace1 != grf->inW)
+        chdir(GET_DIR(workspace1,1).path);
+
+    if (selected == -2)
+        selected = grf->Work[workspace1].SelectedGroup;
+    if (toselected == -1)
+        toselected = grf->Work[workspace2].SelectedGroup;
+    if (selected == -3)
+    {
+        if (!recursive)
         {
-            for (size_t i = 0; i < grf->ActualSize; i++)
-                for (long long int j = 0; j < grf->Base[i].El_t; j++)
-                    grf->Base[i].El[j].List[grf->inW] ^= grf->Work[grf->inW].SelectedGroup;
+            free(path);
+            return;
         }
-        else if (mode == 0)
+        
+        strcpy(path,MakePath(GET_DIR(workspace1,1).path,GET_ESELECTED(workspace1,1).name));
+        switch (mode)
         {
-            for (size_t i = 0; i < grf->ActualSize; i++)
-                for (long long int j = 0; j < grf->Base[i].El_t; j++)
-                    grf->Base[i].El[j].List[grf->inW] ^= grf->Work[grf->inW].SelectedGroup*((grf->Base[i].El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup);
-        }
-        else
-        {
-            for (size_t i = 0; i < grf->ActualSize; i++)
-                for (long long int j = 0; j < grf->Base[i].El_t; j++)
-                    grf->Base[i].El[j].List[grf->inW] |= grf->Work[grf->inW].SelectedGroup;
+            case -1: GET_ESELECTED(workspace1,1).List[workspace2] ^= toselected; break;
+            case 0: GET_ESELECTED(workspace1,1).List[workspace2] ^= toselected*((GET_ESELECTED(workspace1,1).List[workspace2]&toselected) == toselected); break;
+            case 1: GET_ESELECTED(workspace1,1).List[workspace2] |= toselected; break;
         }
     }
-    else
+
+    if (path[0])
     {
-        if (mode == -1)
+        char* stemp = (char*)malloc(PATH_MAX);
+        realpath(path,stemp);
+        free(path);
+        path = stemp;
+    }
+
+    for (size_t i = 0; i < grf->ActualSize; i++)
+    {
+        if (
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        grf->Base[i].enable ||
+        #endif
+        grf->Base[i].El_t < 1)
+            continue;
+        if (path[0])
         {
-            for (long long int i = 0; i < GET_DIR(grf->inW,1).El_t; i++)
-                GET_DIR(grf->inW,1).El[i].List[grf->inW] ^= grf->Work[grf->inW].SelectedGroup;
+            if (recursive)
+            {
+                if (!strstr(grf->Base[i].path,path))
+                    continue;
+            }
+            else if (strcmp(grf->Base[i].path,path) != 0)
+                continue;
         }
-        else if (mode == 0)
+
+        for (long long int j = 0; j < grf->Base[i].El_t; j++)
         {
-            for (long long int i = 0; i < GET_DIR(grf->inW,1).El_t; i++)
-                GET_DIR(grf->inW,1).El[i].List[grf->inW] ^= grf->Work[grf->inW].SelectedGroup*((GET_DIR(grf->inW,1).El[i].List[grf->inW]&grf->Work[grf->inW].SelectedGroup) == grf->Work[grf->inW].SelectedGroup);
-        }
-        else
-        {
-            for (long long int i = 0; i < GET_DIR(grf->inW,1).El_t; i++)
-                GET_DIR(grf->inW,1).El[i].List[grf->inW] |= grf->Work[grf->inW].SelectedGroup;
+            if (selected < 0 ? 1 : (grf->Base[i].El[j].List[workspace1]&selected))
+            {
+                switch (mode)
+                {
+                    case -1: grf->Base[i].El[j].List[workspace2] ^= toselected; break;
+                    case 0: grf->Base[i].El[j].List[workspace2] ^= toselected*((grf->Base[i].El[j].List[workspace2]&toselected) == toselected); break;
+                    case 1: grf->Base[i].El[j].List[workspace2] |= toselected; break;
+                }
+            }
         }
     }
+
+    free(path);
+    if (workspace1 != grf->inW)
+        chdir(GET_DIR(grf->inW,1).path);
 }
 
 void ___EXEC(const char* src, Basic* grf)
@@ -1358,14 +1854,11 @@ void ___BULK(const char* src, Basic* grf)
 {
     size_t pos = 0;
     int workspace = grf->inW, selected = -1;
-    bool full_path = 0;
+    unsigned char flag = 0;
     char** temp = (char**)malloc(6*sizeof(char*));
     for (int i = 0; i < 6; i++)
-    {
-        temp[i] = (char*)malloc(PATH_MAX);
-        memset(temp[i],0,PATH_MAX-1);
-    }
-    char* path = (char*)malloc(PATH_MAX);
+        temp[i] = (char*)calloc(sizeof(char),PATH_MAX);
+    char* path = (char*)calloc(sizeof(char),PATH_MAX);
 
     while (src[pos])
     {
@@ -1376,7 +1869,7 @@ void ___BULK(const char* src, Basic* grf)
                 switch (src[pos])
                 {
                     case 'f':
-                        full_path = 1;
+                        flag |= 0x1;
                         break;
                     case 'w':
                         pos++;
@@ -1398,30 +1891,28 @@ void ___BULK(const char* src, Basic* grf)
                             while (isdigit(src[pos])) pos++;
                         }
                         break;
+                    case 'R':
+                        flag |= 0x2;
+                        break;
                     case 'S':
-                        pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        pos += StrToPath(temp[1],src+pos);
-                        break;
                     case 'E':
-                        pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        pos += StrToPath(temp[2],src+pos);
-                        break;
                     case 'b':
-                        pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        pos += StrToPath(temp[3],src+pos);
-                        break;
                     case 'm':
-                        pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        pos += StrToPath(temp[4],src+pos);
-                        break;
                     case 'e':
-                        pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        pos += StrToPath(temp[5],src+pos);
+                        {
+                            int itemp;
+                            switch (src[pos])
+                            {
+                                case 'S': itemp = 1; break;
+                                case 'E': itemp = 2; break;
+                                case 'b': itemp = 3; break;
+                                case 'm': itemp = 4; break;
+                                default: itemp = 5; break;
+                            }
+                            pos++;
+                            pos += FindFirstCharacter(src+pos);
+                            pos += StrToPath(temp[itemp],src+pos);
+                        }
                         break;
                 }
 
@@ -1434,13 +1925,19 @@ void ___BULK(const char* src, Basic* grf)
 
     if (!grf->Work[workspace].exists)
         return;
+    
+    if (grf->inW != workspace)
+        chdir(GET_DIR(workspace,1).path);
 
-    realpath(path,temp[0]);
+    if (path[0])
+        realpath(path,temp[0]);
     free(path);
-    bulk(grf,workspace,selected,full_path,temp);
+    bulk(grf,workspace,selected,temp,flag);
     for (int i = 0; i < 6; i++)
         free(temp[i]);
     free(temp);
+    if (grf->inW != workspace)
+        chdir(GET_DIR(grf->inW,1).path);
 }
 
 void ___CONSOLE(const char* src, Basic* grf)
@@ -1497,7 +1994,11 @@ void ___CONSOLE(const char* src, Basic* grf)
 
 void ___SEARCH(char* src, Basic* grf)
 {
-    if (GET_DIR(grf->inW,1).enable || GET_DIR(grf->inW,1).El_t < 1)
+    if (
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        GET_DIR(workspace,1).enable ||
+        #endif
+        GET_DIR(grf->inW,1).El_t < 1)
         return;
     size_t pos = 0, mul = 1;
     int selected = -1;
@@ -1536,7 +2037,13 @@ void ___SEARCH(char* src, Basic* grf)
                         break;
                     case 'N':
                     case 'E':
-                        action = (src[pos] == 'E' ? 4 : 3);
+                    case 'e':
+                        switch (src[pos])
+                        {
+                            case 'N': action = 3; break;
+                            case 'e': action = 4; break;
+                            case 'E': action = 5; break;
+                        }
                         pos++;
                         pos += FindFirstCharacter(src+pos);
                         pos += StrToPath(temp,src+pos);
@@ -1591,6 +2098,7 @@ void ___SEARCH(char* src, Basic* grf)
             break;
         case 3:
         case 4:
+        case 5:
             free(grf->SearchList.List);
             grf->SearchList.List = NULL;
             grf->SearchList.allocated = 0;
@@ -1602,13 +2110,13 @@ void ___SEARCH(char* src, Basic* grf)
             {
                 if (selected == -1 ? 1 : (GET_DIR(grf->inW,1).El[i].List[grf->inW]&selected))
                 {
-                    if (action == 4)
+                    if (action == 4 || action == 5)
                     {
                         regex_t regex;
                         reti = 0;
                         reti = regcomp(&regex,temp,0);
                         if (reti) continue;
-                        reti = regexec(&regex,GET_DIR(grf->inW,1).El[i].name,0,NULL,0);
+                        reti = regexec(&regex,GET_DIR(grf->inW,1).El[i].name,0,NULL,action == 5 ? REG_EXTENDED : 0);
                         if (reti) continue;
                         regfree(&regex);
                     }
@@ -1626,20 +2134,6 @@ void ___SEARCH(char* src, Basic* grf)
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
