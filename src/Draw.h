@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -19,8 +19,8 @@
 #ifndef DRAW_H
 #define DRAW_H
 
-void DrawText(WINDOW*, int, char*, off_t, int, bool);
-void DrawBasic(Basic*,const int);
-void SetBorders(Basic*, const int);
+void DrawText(WINDOW* grf, int fd, char* buffer, off_t offset, int whence, bool wrap);
+void DrawBasic(Basic* grf,const int which);
+void SetBorders(Basic* grf, const int which);
 
 #endif

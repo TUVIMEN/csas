@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -20,10 +20,7 @@
 #define LOADING_H
 
 #ifdef __LOAD_CONFIG_ENABLE__
-void LoadConfig(const char*, Basic*);
-
-size_t FindEndOf(const char*, const char);
-
+void LoadConfig(const char* dest, Basic* src);
 #endif
 
 #endif

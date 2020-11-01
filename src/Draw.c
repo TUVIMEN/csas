@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -116,7 +116,7 @@ static int ColorEl(const struct Element* src, const bool Select)
 }
 
 #ifdef __FILESYSTEM_INFORMATION_ENABLE__
-static char* fsName(const long int ftype)
+static char* fsName(const li ftype)
 {
     switch (ftype)
     {
@@ -223,13 +223,10 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
     #ifdef __HUMAN_READABLE_SIZE_ENABLE__
     if (Settings&DP_HSIZE)
     {
-        if (grf->SizErrToDisplay == NULL)
-        {
-            grf->SizErrToDisplay = (char*)malloc(16);
-            MakeHumanReadAble(grf->SizErrToDisplay,grf->size,
-            ((settings->DirSizeMethod&D_H) != D_H)&&(grf->Type == T_DIR || grf->Type == T_LDIR));
-        }
-        *size += sprintf(result+*size,"%s ",grf->SizErrToDisplay);
+        if ((ll)grf->size < 1024)
+            *size += sprintf(result+*size," %lld ",grf->size);
+        else
+            *size += sprintf(result+*size," %s ",MakeHumanReadAble(grf->size));
     }
     #endif
     #ifdef __BLOCKS_ENABLE__
@@ -251,9 +248,8 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
         *size += sprintf(result+*size,"%ld ",grf->inode);
     #endif
     #ifdef __FILE_OWNERS_ENABLE__
-    if (grf->pw != 1001) //!
+    if ((pw = getpwuid(grf->pw)) != NULL)
     {
-        pw = getpwuid(grf->pw);
         if (Settings&DP_PWDIR)
             *size += sprintf(result+*size,"%s ",pw->pw_dir);
         if (Settings&DP_PWGECOS)
@@ -272,10 +268,8 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
     #endif
 
     #ifdef __FILE_GROUPS_ENABLE__
-    if (grf->gr != 1001)
+    if ((gr = getgrgid(grf->gr)) != NULL)
     {
-        gr = getgrgid(grf->gr);
-
         if (Settings&DP_GRGID)
             *size += sprintf(result+*size,"%d ",gr->gr_gid);
         if (Settings&DP_GRNAME)
@@ -315,7 +309,13 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
     if (Settings&DP_RDEV)
         *size += sprintf(result+*size,"%ld ",grf->rdev);
     #endif
-
+    if (Settings&DP_LINK_PATH)
+    {
+        ssize_t temp = readlink(grf->name,result+*size,PATH_MAX);
+        *size += (temp != -1)*temp;
+        result[(*size)++] = ' ';
+        result[(*size)++] = '\0';
+    }
 }
 
 void DrawBasic(Basic* grf, const int which)
@@ -339,7 +339,7 @@ void DrawBasic(Basic* grf, const int which)
             continue;
         if (i == 2 && (!settings->Win3Enable
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        || GET_DIR(grf->inW,1).enable
+        || GET_DIR(grf->inW,1)->enable
         #endif
         ))
             continue;
@@ -356,7 +356,7 @@ void DrawBasic(Basic* grf, const int which)
 
         wattron(grf->win[i],settings->C_Error);
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        if (GET_DIR(grf->inW,i).enable)
+        if (GET_DIR(grf->inW,i)->enable)
         {
             snprintf(NameTemp,grf->win[i]->_maxx-((settings->Borders+1)+2),"LOADING");
             mvwaddstr(grf->win[i],settings->Borders,settings->Borders+3,NameTemp);
@@ -365,7 +365,7 @@ void DrawBasic(Basic* grf, const int which)
             continue;
         }
         #endif
-        if ((long long int)GET_DIR(grf->inW,i).El_t == (long long int)-1)
+        if ((ll)GET_DIR(grf->inW,i)->El_t == (ll)-1)
         {
             snprintf(NameTemp,grf->win[i]->_maxx-((settings->Borders+1)+2),"NOT ACCESSIBLE");
             mvwaddstr(grf->win[i],settings->Borders,settings->Borders+3,NameTemp);
@@ -373,7 +373,7 @@ void DrawBasic(Basic* grf, const int which)
             wrefresh(grf->win[i]);
             continue;
         }
-        if ((long long int)GET_DIR(grf->inW,i).El_t == (long long int)0)
+        if ((ll)GET_DIR(grf->inW,i)->El_t == (ll)0)
         {
             snprintf(NameTemp,grf->win[i]->_maxx-((settings->Borders+1)+2),"EMPTY");
             mvwaddstr(grf->win[i],settings->Borders,settings->Borders+3,NameTemp);
@@ -385,27 +385,27 @@ void DrawBasic(Basic* grf, const int which)
 
         line_off1 = 0;
 
-        for (long long int j = GET_DIR(grf->inW,i).Ltop[grf->inW]; j-GET_DIR(grf->inW,i).Ltop[grf->inW] < (size_t)grf->win[i]->_maxy-(settings->Borders*2)+1 && j < GET_DIR(grf->inW,i).El_t; j++)
+        for (ll j = GET_DIR(grf->inW,i)->Ltop[grf->inW]; j-GET_DIR(grf->inW,i)->Ltop[grf->inW] < (size_t)grf->win[i]->_maxy-(settings->Borders*2)+1 && j < GET_DIR(grf->inW,i)->El_t; j++)
         {
             #ifdef __COLOR_FILES_BY_EXTENSION__
-            if (GET_DIR(grf->inW,i).El[j].FType == 1)
-                GET_DIR(grf->inW,i).El[j].FType = CheckFileExtension(GET_DIR(grf->inW,i).El[j].name);
+            if (GET_DIR(grf->inW,i)->El[j].FType == 1)
+                GET_DIR(grf->inW,i)->El[j].FType = CheckFileExtension(GET_DIR(grf->inW,i)->El[j].name);
             #endif
-            color = ColorEl(&GET_DIR(grf->inW,i).El[j],(j == (long long int)GET_SELECTED(grf->inW,i)));
+            color = ColorEl(&GET_DIR(grf->inW,i)->El[j],(j == (ll)GET_SELECTED(grf->inW,i)));
 
             #ifdef __SORT_ELEMENTS_ENABLE__
-            if (GET_DIR(grf->inW,i).sort_m != settings->SortMethod)
+            if (GET_DIR(grf->inW,i)->sort_m != settings->SortMethod)
             {
-                GET_DIR(grf->inW,i).sort_m = settings->SortMethod;
-                if (GET_DIR(grf->inW,i).El_t > 0)
-                    SortEl(GET_DIR(grf->inW,i).El,GET_DIR(grf->inW,i).El_t,settings->SortMethod);
+                GET_DIR(grf->inW,i)->sort_m = settings->SortMethod;
+                if (GET_DIR(grf->inW,i)->El_t > 0)
+                    SortEl(GET_DIR(grf->inW,i)->El,GET_DIR(grf->inW,i)->El_t,settings->SortMethod);
             }
             #endif
 
             if (settings->FillBlankSpace)
                 wattron(grf->win[i],color);
             for (int g = settings->Borders+1; g < grf->win[i]->_maxx-settings->Borders-1+((i == 2)*2)*!settings->Borders+(((i == 1)*2)*!settings->Win3Enable)*!settings->Borders; g++)
-                mvwaddch(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i).Ltop[grf->inW],g+settings->Borders,' ');
+                mvwaddch(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i)->Ltop[grf->inW],g+settings->Borders,' ');
             if (!settings->FillBlankSpace)
                 wattron(grf->win[i],color);
 
@@ -418,15 +418,15 @@ void DrawBasic(Basic* grf, const int which)
             {
                 if (settings->DisplayingC != 0)
                 {
-                    ByIntToStr(&cont_s[0],settings->DisplayingC,MainTemp,&GET_DIR(grf->inW,i).El[j]);
+                    ByIntToStr(&cont_s[0],settings->DisplayingC,MainTemp,&GET_DIR(grf->inW,i)->El[j]);
 
-                    mvwaddstr(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i).Ltop[grf->inW],grf->win[i]->_maxx-cont_s[0]-1+(((i == 1)*2)*!settings->Win3Enable)*!settings->Borders,MainTemp);
+                    mvwaddstr(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i)->Ltop[grf->inW],grf->win[i]->_maxx-cont_s[0]-1+(((i == 1)*2)*!settings->Win3Enable)*!settings->Borders,MainTemp);
                 }
 
                 if (settings->NumberLinesOff)
                 {
                     line_off1 = 0;
-                    cont_s[1] = GET_DIR(grf->inW,i).El_t;
+                    cont_s[1] = GET_DIR(grf->inW,i)->El_t;
                     while (cont_s[1] > 9) { cont_s[1] /= 10; line_off1++; }
 
                     line_off2 = 0;
@@ -441,10 +441,10 @@ void DrawBasic(Basic* grf, const int which)
                 }
             }
 
-            strcat(NameTemp,GET_DIR(grf->inW,i).El[j].name);
+            strcat(NameTemp,GET_DIR(grf->inW,i)->El[j].name);
             cont_s[1] = strlen(NameTemp);
 
-            if ((long long int)grf->win[i]->_maxx < (long long int)(4+cont_s[0]+settings->Borders+1))
+            if ((ll)grf->win[i]->_maxx < (ll)(4+cont_s[0]+settings->Borders+1))
                 NameTemp[0] = '\0';
             else if ((size_t)cont_s[1] > grf->win[i]->_maxx-cont_s[0]-2-((settings->Borders+1)+1)-settings->Borders)
             {
@@ -452,45 +452,17 @@ void DrawBasic(Basic* grf, const int which)
                 NameTemp[grf->win[i]->_maxx-cont_s[0]-1-((settings->Borders+1)+1)-settings->Borders] = '\0';
             }
 
-            mvwaddstr(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i).Ltop[grf->inW],(settings->Borders*2)+2+(line_off1-line_off2),NameTemp);
+            mvwaddstr(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i)->Ltop[grf->inW],(settings->Borders*2)+2+(line_off1-line_off2),NameTemp);
 
             wattroff(grf->win[i],color);
 
-            if (GET_DIR(grf->inW,i).El[j].List[grf->inW]&grf->Work[grf->inW].SelectedGroup)
-            {
-                switch (grf->Work[grf->inW].SelectedGroup)
-                {
-                    case 1<<0:
-                        color = settings->C_Group_0;
-                        break;
-                    case 1<<1:
-                        color = settings->C_Group_1;
-                        break;
-                    case 1<<2:
-                        color = settings->C_Group_2;
-                        break;
-                    case 1<<3:
-                        color = settings->C_Group_3;
-                        break;
-                    case 1<<4:
-                        color = settings->C_Group_4;
-                        break;
-                    case 1<<5:
-                        color = settings->C_Group_5;
-                        break;
-                    case 1<<6:
-                        color = settings->C_Group_6;
-                        break;
-                    case 1<<7:
-                        color = settings->C_Group_7;
-                        break;
-                }
-            }
+            if (GET_DIR(grf->inW,i)->El[j].List[grf->inW]&(1<<grf->Work[grf->inW].SelectedGroup))
+                color = settings->C_Group[grf->Work[grf->inW].SelectedGroup];
             else
                 color = 0;
 
             wattron(grf->win[i],(color|A_REVERSE)*(color > 0));
-            mvwaddch(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i).Ltop[grf->inW],(settings->Borders*2),' ');
+            mvwaddch(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i)->Ltop[grf->inW],(settings->Borders*2),' ');
             wattroff(grf->win[i],(color|A_REVERSE)*(color > 0));
         }
 
@@ -530,14 +502,16 @@ void DrawBasic(Basic* grf, const int which)
 
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !GET_DIR(grf->inW,1).enable &&
+            !GET_DIR(grf->inW,1)->enable &&
             #endif
-            GET_DIR(grf->inW,1).El_t > 0)
+            GET_DIR(grf->inW,1)->El_t > 0)
         {
+            if (GET_DIR(grf->inW,1)->El_t <= (ll)GET_SELECTED(grf->inW,1))
+                GET_SELECTED(grf->inW,1) = GET_DIR(grf->inW,1)->El_t-1;
             if ((settings->Bar1Settings & B_DIR) == B_DIR)
             {
-                strcpy(MainTemp,GET_DIR(grf->inW,1).path);
-                if (!(GET_DIR(grf->inW,1).path[0] == '/' && GET_DIR(grf->inW,1).path[1] == '\0'))
+                strcpy(MainTemp,GET_DIR(grf->inW,1)->path);
+                if (!(GET_DIR(grf->inW,1)->path[0] == '/' && GET_DIR(grf->inW,1)->path[1] == '\0'))
                 {
                     strcat(MainTemp,"/");
                     MakePathShorter(MainTemp,grf->win[3]->_maxx-(cont_s[3]+1+cont_s[2]+strlen(GET_ESELECTED(grf->inW,1).name)));
@@ -596,9 +570,9 @@ void DrawBasic(Basic* grf, const int which)
         // 4
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !GET_DIR(grf->inW,1).enable &&
+            !GET_DIR(grf->inW,1)->enable &&
             #endif
-            GET_DIR(grf->inW,1).El_t > 0)
+            GET_DIR(grf->inW,1)->El_t > 0)
         {
             ByIntToStr(&cont_s[0],settings->Bar2Settings,MainTemp,&GET_ESELECTED(grf->inW,1));
             wattron(grf->win[4],settings->C_Bar_F);
@@ -614,13 +588,14 @@ void DrawBasic(Basic* grf, const int which)
             cont_s[0] += sprintf(MainTemp+cont_s[0],"%s",grf->cSF);
         if (settings->Bar1Settings & B_MODES)
         {
-            #ifdef __INOTIFY_ENABLE__
-            if (GET_DIR(grf->inW,1).Changed)
+            if (GET_DIR(grf->inW,1)->Changed)
                 cont_s[0] += sprintf(MainTemp+cont_s[0]," C");
-            #endif
 
             if (grf->Work[grf->inW].Visual)
                 cont_s[0] += sprintf(MainTemp+cont_s[0]," VISUAL");
+        
+            if (GET_DIR(grf->inW,1)->filter_set)
+                cont_s[0] += sprintf(MainTemp+cont_s[0]," f=\"%s\"",GET_DIR(grf->inW,1)->filter);
         }
         if (settings->Bar1Settings & B_FGROUP)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %dW",grf->Work[grf->inW].SelectedGroup);
@@ -635,20 +610,11 @@ void DrawBasic(Basic* grf, const int which)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld",grf->fs.f_blocks);
         #ifdef __HUMAN_READABLE_SIZE_ENABLE__
         if (settings->Bar1Settings & B_FHBLOCKS)
-        {
-            MakeHumanReadAble(temp,grf->fs.f_blocks*grf->fs.f_bsize,false);
-            cont_s[0] += sprintf(MainTemp+cont_s[0],"%s",temp);
-        }
+            cont_s[0] += sprintf(MainTemp+cont_s[0]," %s",MakeHumanReadAble(grf->fs.f_blocks*grf->fs.f_bsize));
         if (settings->Bar1Settings & B_FHBFREE)
-        {
-            MakeHumanReadAble(temp,grf->fs.f_bfree*grf->fs.f_bsize,false);
-            cont_s[0] += sprintf(MainTemp+cont_s[0],"%s",temp);
-        }
+            cont_s[0] += sprintf(MainTemp+cont_s[0]," %s",MakeHumanReadAble(grf->fs.f_bfree*grf->fs.f_bsize));
         if (settings->Bar1Settings & B_FHBAVAIL)
-        {
-            MakeHumanReadAble(temp,grf->fs.f_bavail*grf->fs.f_bsize,false);
-            cont_s[0] += sprintf(MainTemp+cont_s[0],"%s",temp);
-        }
+            cont_s[0] += sprintf(MainTemp+cont_s[0]," %s",MakeHumanReadAble(grf->fs.f_bavail*grf->fs.f_bsize));
         #endif
         if (settings->Bar1Settings & B_FBFREE)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld",grf->fs.f_bfree);
@@ -669,12 +635,12 @@ void DrawBasic(Basic* grf, const int which)
         #endif
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !GET_DIR(grf->inW,1).enable &&
+            !GET_DIR(grf->inW,1)->enable &&
             #endif
-            GET_DIR(grf->inW,1).El_t > 0)
+            GET_DIR(grf->inW,1)->El_t > 0)
         {
             if (settings->Bar1Settings & B_POSITION)
-                cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld/%lld",GET_SELECTED(grf->inW,1)+1,GET_DIR(grf->inW,1).El_t);
+                cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld/%lld",GET_SELECTED(grf->inW,1)+1,GET_DIR(grf->inW,1)->El_t);
         }
 
         wattron(grf->win[4],settings->C_Bar_E);

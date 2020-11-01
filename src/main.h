@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -47,9 +47,6 @@
 #include <linux/limits.h>
 #include <signal.h>
 #include <sys/types.h>
-#ifdef __INOTIFY_ENABLE__
-#include <sys/inotify.h>
-#endif
 #ifdef __FILE_OWNERS_ENABLE__
 #include <pwd.h>
 #endif
@@ -60,6 +57,13 @@
 #include <sys/statfs.h>
 #endif
 
+typedef long int li;
+typedef long long int ll;
+typedef long double ldb;
+typedef unsigned char uchar;
+typedef unsigned long int uli;
+typedef unsigned long long int ull;
+
 #ifndef NAME_MAX
 #define NAME_MAX 256
 #endif
@@ -68,18 +72,14 @@
 #define PATH_MAX 4096
 #endif
 
-#ifdef __HUMAN_READABLE_SIZE_ENABLE__
-    #define MAX_END_READABLE 4
-#endif
-
-#define DIR_INC_RATE 64
-#define DIR_BASE_STABLE_RATE 32
+#define DIR_INC_RATE 128
+#define DIR_BASE_STABLE_RATE 64
 
 #define TEMPTEMP "/tmp/CSAS-XXXXXX"
 
 #define GET_DIR(x,y) grf->Base[grf->Work[x].win[y]]
-#define GET_SELECTED(x,y) GET_DIR(x,y).selected[x]
-#define GET_ESELECTED(x,y) GET_DIR(x,y).El[GET_SELECTED(x,y)]
+#define GET_SELECTED(x,y) GET_DIR(x,y)->selected[x]
+#define GET_ESELECTED(x,y) GET_DIR(x,y)->El[GET_SELECTED(x,y)]
 
 #define F_SILENT 0x1
 #define F_NORMAL 0x2
@@ -152,6 +152,7 @@
 #define DP_DEV          0x1000000
 #define DP_RDEV         0x2000000
 #define DP_INODE        0x4000000
+#define DP_LINK_PATH    0x8000000
 
 #define B_UHNAME        0x1
 #define B_DIR           0x2
@@ -177,15 +178,7 @@
 #define B_MODES         0x200000
 #define B_CSF           0x400000
 
-#define GROUP_0 0x1
-#define GROUP_1 0x2
-#define GROUP_2 0x4
-#define GROUP_3 0x8
-#define GROUP_4 0x10
-#define GROUP_5 0x20
-#define GROUP_6 0x40
-#define GROUP_7 0x80
-
+#define GROUP(x) 1<<x
 #define M_REPLACE 0x1 //replace file
 #define M_MERGE   0x2 //merge directory
 #define M_DCPY    0x4 //don't copy if file exists
@@ -194,17 +187,17 @@
 struct Element
 {
     char* name;
-    unsigned char Type;
+    uchar Type;
     #ifdef __MODE_ENABLE__
     unsigned int flags;
     #endif
-    unsigned char *List;
+    uchar *List;
     #ifdef __INODE_ENABLE__
     ino_t inode;
     #endif
 
     #ifdef __FILE_SIZE_ENABLE__
-    unsigned long long int size;
+    ull size;
     #endif
 
     #ifdef __ATIME_ENABLE__
@@ -218,7 +211,7 @@ struct Element
     #endif
 
     #ifdef __COLOR_FILES_BY_EXTENSION__
-    unsigned char FType;
+    uchar FType;
     #endif
 
     #ifdef __FILE_GROUPS_ENABLE__
@@ -242,10 +235,6 @@ struct Element
     #endif
     #ifdef __BLOCKS_ENABLE__
     blkcnt_t blocks;
-    #endif
-
-    #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-    char* SizErrToDisplay;
     #endif
 };
 
@@ -273,7 +262,8 @@ typedef struct
 struct Dir
 {
     char* path;
-    long long int El_t;
+    ll El_t;
+    ll oldEl_t;
     struct Element* El;
     #ifdef __THREADS_FOR_DIR_ENABLE__
     pthread_t thread;
@@ -281,18 +271,18 @@ struct Dir
     #endif
     size_t *selected;
     size_t *Ltop;
-    #ifdef __INOTIFY_ENABLE__
-    int fd;
-    int wd;
+    uchar sort_m;
+    struct timespec ctime;
+    ino_t inode;
     bool Changed;
-    #endif
-    unsigned char sort_m;
+    bool filter_set;
+    char* filter;
 };
 
 typedef struct
 {
     bool Visual;
-    unsigned char SelectedGroup;
+    uchar SelectedGroup;
     bool exists;
     int win[3];
 } WorkSpace;
@@ -300,64 +290,65 @@ typedef struct
 typedef struct
 {
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    long int ThreadsForDir;
+    li ThreadsForDir;
     #endif
     #ifdef __THREADS_FOR_FILE_ENABLE__
-    long int ThreadsForFile;
+    li ThreadsForFile;
     #endif
     #ifdef __LOAD_CONFIG_ENABLE__
-    long int LoadConfig;
+    li LoadConfig;
     #endif
     char* shell;
     char* Values;
     char* editor;
     char* FileOpener;
     char* UserHostPattern;
-    long int Bar1Settings;
-    long int Bar2Settings;
-    long int CopyBufferSize;
-    #ifdef __INOTIFY_ENABLE__
-    long int INOTIFY_MASK;
-    #endif
+    li Bar1Settings;
+    li Bar2Settings;
+    li CopyBufferSize;
     double MoveOffSet;
-    long int WrapScroll;
-    long int JumpScroll;
+    li WrapScroll;
+    li JumpScroll;
     double JumpScrollValue;
-    long int UserRHost;
-    long int StatusBarOnTop;
-    long int Win1Enable;
-    long int Win1Display;
-    long int Win3Enable;
-    long int Win3Display;
-    long int Bar1Enable;
-    long int Bar2Enable;
+    li UserRHost;
+    li StatusBarOnTop;
+    li Win1Enable;
+    li Win1Display;
+    li Win3Enable;
+    li Win3Display;
+    li Bar1Enable;
+    li Bar2Enable;
     double* WinSizeMod;
-    long int Borders;
-    long int FillBlankSpace;
-    long int* WindowBorder;
-    long int EnableColor;
-    long int DelayBetweenFrames;
-    long int SDelayBetweenFrames;
-    long int DirLoadingMode;
-    long int NumberLines;
-    long int NumberLinesOff;
-    long int NumberLinesFromOne;
-    long int DisplayingC;
+    li Borders;
+    li FillBlankSpace;
+    li* WindowBorder;
+    li EnableColor;
+    li DelayBetweenFrames;
+    li SDelayBetweenFrames;
+    li DirLoadingMode;
+    li NumberLines;
+    li NumberLinesOff;
+    li NumberLinesFromOne;
+    li DisplayingC;
     #ifdef __SHOW_HIDDEN_FILES_ENABLE__
-    long int ShowHiddenFiles;
+    li ShowHiddenFiles;
     #endif
     #ifdef __SORT_ELEMENTS_ENABLE__
-    long int SortMethod;
-    long int* BetterFiles;
+    li SortMethod;
+    li* BetterFiles;
     #endif
-    long int DirSizeMethod;
-    long int C_Error;
+    li DirSizeMethod;
+    li C_Error;
     #ifdef __COLOR_FILES_BY_EXTENSION__
-    long int C_FType_A;
-    long int C_FType_I;
-    long int C_FType_V;
+    li C_FType_A;
+    li C_FType_I;
+    li C_FType_V;
     #endif
-    long int C_Selected,C_Exec_set,C_Exec,C_BLink,C_Dir,C_Reg,C_Fifo,C_Sock,C_Dev,C_BDev,C_LDir,C_LReg,C_LFifo,C_LSock,C_LDev,C_LBDev,C_Other,C_User_S_D,C_Bar_Dir,C_Bar_Name,C_Bar_WorkSpace,C_Bar_WorkSpace_Selected,C_Group_0,C_Group_1,C_Group_2,C_Group_3,C_Group_4,C_Group_5,C_Group_6,C_Group_7,C_Bar_F,C_Bar_E,C_Borders;
+    li C_Selected,C_Exec_set,C_Exec,C_BLink,C_Dir,
+        C_Reg,C_Fifo,C_Sock,C_Dev,C_BDev,C_LDir,C_LReg,
+        C_LFifo,C_LSock,C_LDev,C_LBDev,C_Other,C_User_S_D,
+        C_Bar_Dir,C_Bar_Name,C_Bar_WorkSpace,C_Bar_WorkSpace_Selected,
+        *C_Group,C_Bar_F,C_Bar_E,C_Borders;
 } Settings;
 
 #define F_TEXT 0x1
@@ -369,7 +360,7 @@ typedef struct
     WINDOW *win[6];
     size_t ActualSize;
     size_t AllocatedSize;
-    struct Dir* Base;
+    struct Dir** Base;
     int inW;
     WorkSpace Work[WORKSPACE_N];
     #ifdef __USER_NAME_ENABLE__
@@ -400,7 +391,7 @@ typedef struct
         char** List;
     } SearchList;
     int preview_fd;
-    long int FastRunSettings;
+    li FastRunSettings;
 } Basic;
 
 typedef struct {
@@ -415,7 +406,5 @@ struct SetEntry {
 
 struct AliasesT {
     char* name;
-    long long int v;
+    ll v;
 };
-
-

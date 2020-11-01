@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -102,14 +102,14 @@ struct AliasesT aliases[] = {
     {"M_MERGE",M_MERGE},
     {"M_DCPY",M_DCPY},
     {"M_CHNAME",M_CHNAME},
-    {"GROUP_0",GROUP_0},
-    {"GROUP_1",GROUP_1},
-    {"GROUP_2",GROUP_2},
-    {"GROUP_3",GROUP_3},
-    {"GROUP_4",GROUP_4},
-    {"GROUP_5",GROUP_5},
-    {"GROUP_6",GROUP_6},
-    {"GROUP_7",GROUP_7},
+    {"GROUP_0",GROUP(0)},
+    {"GROUP_1",GROUP(1)},
+    {"GROUP_2",GROUP(2)},
+    {"GROUP_3",GROUP(3)},
+    {"GROUP_4",GROUP(4)},
+    {"GROUP_5",GROUP(5)},
+    {"GROUP_6",GROUP(6)},
+    {"GROUP_7",GROUP(7)},
     #ifdef __FILE_SIZE_ENABLE__
     {"DP_SIZE",DP_SIZE},
     #endif
@@ -190,32 +190,6 @@ struct AliasesT aliases[] = {
     {"B_MODES",B_MODES},
     {"B_FGROUP",B_FGROUP},
     {"B_CSF",B_CSF},
-    #ifdef __INOTIFY_ENABLE__
-    {"IN_ALL_EVENTS",IN_ALL_EVENTS},
-    {"IN_ATTRIB",IN_ATTRIB},
-    {"IN_CLOEXEC",IN_CLOEXEC},
-    {"IN_CLOSE",IN_CLOSE},
-    {"IN_CLOSE_NOWRITE",IN_CLOSE_NOWRITE},
-    {"IN_CLOSE_WRITE",IN_CLOSE_WRITE},
-    {"IN_Q_OVERFLOW",IN_Q_OVERFLOW},
-    {"IN_UNMOUNT",IN_UNMOUNT},
-    {"IN_OPEN",IN_OPEN},
-    {"IN_ONLYDIR",IN_ONLYDIR},
-    {"IN_ONESHOT",IN_ONESHOT},
-    {"IN_NONBLOCK",IN_NONBLOCK},
-    {"IN_MOVED_TO",IN_MOVED_TO},
-    {"IN_MOVED_FROM",IN_MOVED_FROM},
-    {"IN_MOVE_SELF",IN_MOVE_SELF},
-    {"IN_MOVE",IN_MOVE},
-    {"IN_MODIFY",IN_MODIFY},
-    {"IN_MASK_CREATE",IN_MASK_CREATE},
-    {"IN_MASK_ADD",IN_MASK_ADD},
-    {"IN_ISDIR",IN_ISDIR},
-    {"IN_IGNORED",IN_IGNORED},
-    {"IN_DELETE_SELF",IN_DELETE_SELF},
-    {"IN_DELETE",IN_DELETE},
-    {"IN_CREATE",IN_CREATE},
-    #endif
     {NULL,0}
 };
 

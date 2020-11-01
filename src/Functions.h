@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -19,10 +19,10 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-void addKey(const Key);
+void addKey(const Key src);
 Basic* InitBasic();
-void RunBasic(Basic*,const int,char**);
-void UpdateSizeBasic(Basic*);
-void freeBasic(Basic*);
+void RunBasic(Basic* grf, const int argc, char** argv);
+void UpdateSizeBasic(Basic* grf);
+void freeBasic(Basic* grf);
 
 #endif

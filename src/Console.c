@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -60,6 +60,8 @@ struct FunctTab FunctionsTable[] = {
     #ifdef __LOAD_CONFIG_ENABLE__
     {"include",&___INCLUDE},
     #endif
+    {"rename",&___RENAME},
+    {"filter",&___FILTER},
     {NULL,NULL}
 };
 

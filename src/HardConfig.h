@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//#define __THREADS_ENABLE__
+#define __THREADS_ENABLE__
 #ifdef __THREADS_ENABLE__
     #define __THREADS_FOR_DIR_ENABLE__
     #define __THREADS_FOR_FILE_ENABLE__
@@ -24,7 +24,6 @@
 
 #define __COLOR_FILES_BY_EXTENSION__
 //#define __SHOW_HIDDEN_FILES_ENABLE__
-#define __INOTIFY_ENABLE__
 #define __USER_NAME_ENABLE__
 #define __LOAD_CONFIG_ENABLE__
 #define __INODE_ENABLE__
@@ -39,17 +38,17 @@
     #endif
 #endif
 
-//#define __FILE_GROUPS_ENABLE__
-//#define __FILE_OWNERS_ENABLE__
-//#define __BLOCKS_ENABLE__
+#define __FILE_GROUPS_ENABLE__
+#define __FILE_OWNERS_ENABLE__
+#define __BLOCKS_ENABLE__
 #define __MODE_ENABLE__
-//#define __BLK_SIZE_ENABLE__
-//#define __DEV_ENABLE__
-//#define __NLINK_ENABLE__
-//#define __RDEV_ENABLE__
+#define __BLK_SIZE_ENABLE__
+#define __DEV_ENABLE__
+#define __NLINK_ENABLE__
+#define __RDEV_ENABLE__
 #define __MTIME_ENABLE__
-//#define __ATIME_ENABLE__
-//#define __CTIME_ENABLE__
+#define __ATIME_ENABLE__
+#define __CTIME_ENABLE__
 
 #define __FILE_SIZE_ENABLE__
 #ifdef __FILE_SIZE_ENABLE__

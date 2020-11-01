@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -71,7 +71,7 @@ void* FileRun(void* arg)
         {
             close(pipes[0]);
             dup2(pipes[1],1);
-            execl("/bin/file","file","-b",GET_ESELECTED(grf->inW,1).name,NULL);
+            execlp("file","file","-b",GET_ESELECTED(grf->inW,1).name,NULL);
             _exit(1);
         }
         else
@@ -99,9 +99,9 @@ void FastRun(Basic* grf)
 {
     if (grf->Work[grf->inW].win[1] == -1 ||
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    grf->Base[grf->Work[grf->inW].win[1]].enable ||
+    GET_DIR(grf->inW,1)->enable ||
     #endif
-    grf->Base[grf->Work[grf->inW].win[1]].El_t < 1)
+    GET_DIR(grf->inW,1)->El_t < 1)
         return;
 
     werase(grf->win[2]);

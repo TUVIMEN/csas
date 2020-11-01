@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -19,6 +19,6 @@
 #ifndef FASTRUN_H
 #define FASTRUN_H
 
-void FastRun(Basic*);
+void FastRun(Basic* grf);
 
 #endif

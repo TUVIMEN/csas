@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -19,12 +19,12 @@
 #ifndef LOAD_H
 #define LOAD_H
 
-void* LoadDir(void*);
-void GetDir(const char*, Basic*, const int, const int, const char
+void* LoadDir(void* arg);
+void GetDir(const char* path, Basic* grc, const int workspace, const int which, const char mode
 #ifdef __THREADS_FOR_DIR_ENABLE__
-, const bool
+, const bool threaded
 #endif
 );
-void CD(const char*, const int, Basic*);
+void CD(const char* path, const int workspace, Basic* grf);
 
 #endif

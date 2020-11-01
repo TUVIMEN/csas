@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -20,6 +20,7 @@
 #include "Loading.h"
 #include "Functions.h"
 #include "Console.h"
+#include "Usefull.h"
 
 #ifdef __LOAD_CONFIG_ENABLE__
 extern struct AliasesT aliases[];
@@ -28,7 +29,6 @@ extern Settings* settings;
 void GetFullLine(char* dest, const char* src, size_t* n)
 {
     size_t x = 0;
-    size_t temp = 0;
 
     while (src[*n])
     {
@@ -64,42 +64,11 @@ void GetFullLine(char* dest, const char* src, size_t* n)
             }
         }
 
-        if (src[*n] == '"' && src[*n-1] != '\\')
+        if ((src[*n] == '\'' || src[*n] == '"') && src[*n-1] != '\\')
         {
-            dest[x++] = '\'';
-            (*n)++;
-            while (src[*n])
-            {
-                if (src[*n] == '"' && src[*n-1] != '\\')
-                    break;
-                if (src[*n] == '$' && src[*n-1] != '\\' && src[*n+1] == '{')
-                {
-                    *n += 2;
-                    char temp1[NAME_MAX];
-                    temp += FindEndOf(src+*n,'}');
-                    strncpy(temp1,src+*n,temp);
-                    temp1[temp] = '\0';
-                    char* temp2 = getenv(temp1);
-                    if (temp2)
-                    {
-                        memcpy(dest+x,temp2,strlen(temp2));
-                        x += strlen(temp2);
-                    }
-                    (*n) += temp+1;
-                    continue;
-                }
-                
-                dest[x++] = src[(*n)++];
-            }
-            dest[x++] = '\'';
-            (*n)++;
-            continue;
-        }
-
-        if (src[*n] == '\'' && src[*n-1] != '\\')
-        {
+            char temp = src[*n];
             dest[x++] = src[(*n)++];
-            temp = FindEndOf(src+*n,'\'');
+            temp = FindEndOf(src+*n,temp == '"' ? '"' : '\'');
             strncpy(dest+x,src+*n,temp);
             dest[x+temp] = '\0';
             (*n) += temp;

@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -29,15 +29,12 @@
 
 extern Settings* settings;
 
-void freeEl(struct Element** El, long long int* El_t)
+void freeEl(struct Element** El, ll* El_t)
 {
-    for (long long int i = 0; i < *El_t; i++)
+    for (ll i = 0; i < *El_t; i++)
     {
         free((*El)[i].List);
         free((*El)[i].name);
-        #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-        free((*El)[i].SizErrToDisplay);
-        #endif
     }
     free(*El);
     *El = NULL;
@@ -63,7 +60,7 @@ void* LoadDir(void *arg)
 
     struct dirent* dir;
 
-    long long int buffer_size = grf->El_t;
+    ll buffer_size = grf->El_t;
     struct stat sFile;
 
     int fd, typeOFF = 0;
@@ -77,7 +74,7 @@ void* LoadDir(void *arg)
 
     #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
     struct Element* oldEl = NULL;
-    long long int oldEl_t = 0;
+    ll oldEl_t = 0;
     size_t begin, end;
 
     if (isOld)
@@ -95,6 +92,7 @@ void* LoadDir(void *arg)
     #endif
 
     buffer_size = 0;
+    size_t temp_name_lenght;
 
     while ((dir = readdir(d)))
     {
@@ -109,12 +107,10 @@ void* LoadDir(void *arg)
         if (grf->El_t == buffer_size)
             grf->El = (struct Element*)realloc(grf->El,(buffer_size+=DIR_INC_RATE)*sizeof(struct Element));
 
-        #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-        grf->El[grf->El_t].SizErrToDisplay = NULL;
-        #endif
-        grf->El[grf->El_t].name = (char*)malloc(dir->d_reclen);
+        temp_name_lenght = strlen(dir->d_name)+1;
+        grf->El[grf->El_t].name = (char*)malloc(temp_name_lenght);
 
-        strcpy(grf->El[grf->El_t].name, dir->d_name);
+        memcpy(grf->El[grf->El_t].name,dir->d_name,temp_name_lenght);
         if (fstatat(fd,dir->d_name,&sFile,0) != 0)
         {
             fstatat(fd,dir->d_name,&sFile,AT_SYMLINK_NOFOLLOW);
@@ -268,20 +264,21 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     // 1 - if doesn't exist or was changed load
     // 2 - always load
 
-    char* temp = (char*)malloc(PATH_MAX);
+    char temp[PATH_MAX];
 
     if (realpath(path,temp) == NULL)
-    {
-        free(temp);
         return;
-    }
+
+    struct stat sFile1;
+    if (stat(temp,&sFile1) != 0)
+        return;
 
     bool exists = false;
 
     int found = -1;
     for (size_t i = 0; i < grf->ActualSize; i++)
     {
-        if (strcmp(grf->Base[i].path,temp) == 0)
+        if (strcmp(grf->Base[i]->path,temp) == 0)
         {
             found = i;
             exists = true;
@@ -293,76 +290,66 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     {
         if (grf->ActualSize == grf->AllocatedSize)
         {
-            grf->Base = (struct Dir*)realloc(grf->Base,(grf->AllocatedSize+=DIR_BASE_STABLE_RATE)*sizeof(struct Dir));
+            grf->Base = (struct Dir**)realloc(grf->Base,(grf->AllocatedSize+=DIR_BASE_STABLE_RATE)*sizeof(struct Dir*));
             for (size_t i = grf->AllocatedSize-DIR_BASE_STABLE_RATE; i < grf->AllocatedSize; i++)
             {
-                grf->Base[i].El = NULL;
-                grf->Base[i].El_t = 0;
+                grf->Base[i] = (struct Dir*)malloc(sizeof(struct Dir));
+                grf->Base[i]->El = NULL;
+                grf->Base[i]->El_t = 0;
                 #ifdef __THREADS_FOR_DIR_ENABLE__
-                grf->Base[i].enable = false;
+                grf->Base[i]->enable = false;
                 #endif
-                grf->Base[i].path = NULL;
-                grf->Base[i].Ltop = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
-                grf->Base[i].selected = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
-                #ifdef __INOTIFY_ENABLE__
-                grf->Base[i].fd = -1;
-                grf->Base[i].wd = -1;
-                grf->Base[i].Changed = false;
-                #endif
+                grf->Base[i]->path = NULL;
+                grf->Base[i]->Ltop = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
+                grf->Base[i]->selected = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
+                grf->Base[i]->Changed = false;
+                grf->Base[i]->oldEl_t = 0;
+                grf->Base[i]->filter_set = false;
+                grf->Base[i]->filter = NULL;
             }
         }
         found = grf->ActualSize++;
     }
 
     grf->Work[workspace].win[Which] = found;
+    
     if (!exists)
     {
-        grf->Base[found].path = (char*)malloc(PATH_MAX);
-        strcpy(grf->Base[found].path,temp);
-    }
-    free(temp);
-
-    #ifdef __INOTIFY_ENABLE__
-    if (!exists)
-    {
-        grf->Base[found].fd = inotify_init1(IN_NONBLOCK);
-        grf->Base[found].wd = inotify_add_watch(grf->Base[found].fd,grf->Base[found].path,settings->INOTIFY_MASK);
-        grf->Base[found].Changed = true;
+        grf->Base[found]->inode = sFile1.st_ino;
+        grf->Base[found]->ctime = sFile1.st_ctim;
+        grf->Base[found]->path = (char*)malloc(PATH_MAX);
+        strcpy(grf->Base[found]->path,temp);
     }
     else
     {
-        char buf[sizeof(struct inotify_event)+NAME_MAX+1] __attribute__ ((aligned(8)));
-        if (read(grf->Base[found].fd,buf,sizeof(struct inotify_event)+NAME_MAX+1) > 0)
-            grf->Base[found].Changed = true;
+        if (sFile1.st_ctim.tv_sec != grf->Base[found]->ctime.tv_sec || sFile1.st_ctim.tv_nsec != grf->Base[found]->ctime.tv_nsec)
+        {
+            grf->Base[found]->ctime = sFile1.st_ctim;
+            grf->Base[found]->Changed = true;
+        }
     }
-    #endif
 
-    if (exists && mode == 0)
+    if (mode == 0 && exists)
         return;
 
-    #ifdef __INOTIFY_ENABLE__
-    if (!grf->Base[found].Changed && mode == 1)
+    if (mode == 1 && exists && !grf->Base[found]->Changed)
         return;
-    #endif
 
     #ifdef __SORT_ELEMENTS_ENABLE__
-    grf->Base[found].sort_m = settings->SortMethod;
+    grf->Base[found]->sort_m = settings->SortMethod;
     #endif
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    if (grf->Base[found].enable)
-        pthread_join(grf->Base[found].thread,NULL);
-    grf->Base[found].enable = true;
+    if (grf->Base[found]->enable)
+        pthread_join(grf->Base[found]->thread,NULL);
+    grf->Base[found]->enable = true;
 
-    pthread_create(&grf->Base[found].thread,NULL,LoadDir,&grf->Base[found]);
+    pthread_create(&grf->Base[found]->thread,NULL,LoadDir,grf->Base[found]);
     if (!threaded)
-        pthread_join(grf->Base[found].thread,NULL);
+        pthread_join(grf->Base[found]->thread,NULL);
     #else
-    LoadDir(&grf->Base[found]);
+    LoadDir(grf->Base[found]);
     #endif
-
-    #ifdef __INOTIFY_ENABLE__
-    grf->Base[found].Changed = false;
-    #endif
+    grf->Base[found]->Changed = false;
 }
 
 void CD(const char* path, const int workspace, Basic* grf)
@@ -389,7 +376,7 @@ void CD(const char* path, const int workspace, Basic* grf)
             SetBorders(grf,0);
         wrefresh(grf->win[0]);
 
-        if (GET_DIR(workspace,1).path[0] == '/' && GET_DIR(workspace,1).path[1] == '\0')
+        if (GET_DIR(workspace,1)->path[0] == '/' && GET_DIR(workspace,1)->path[1] == '\0')
             settings->Win1Display = false;
         else
         {
@@ -404,7 +391,7 @@ void CD(const char* path, const int workspace, Basic* grf)
 
     if (grf->inW == workspace && settings->Win3Enable)
     {
-        if (GET_DIR(workspace,1).El_t == 0)
+        if (GET_DIR(workspace,1)->El_t == 0)
         {
             werase(grf->win[2]);
             if (settings->Borders)
@@ -413,9 +400,9 @@ void CD(const char* path, const int workspace, Basic* grf)
         }
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !GET_DIR(workspace,1).enable &&
+            !GET_DIR(workspace,1)->enable &&
             #endif
-            GET_DIR(grf->inW,1).El_t > 0)
+            GET_DIR(grf->inW,1)->El_t > 0)
             FastRun(grf);
     }
 }

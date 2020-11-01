@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -19,34 +19,36 @@
 #ifndef CHARS_H
 #define CHARS_H
 
-int UpdateEvent(Basic*);
+int UpdateEvent(Basic* grf);
+void ExitBasic(Basic* grf, const bool force);
 
-void ___SET(const char*, Basic*);
+void ___SET(const char* src, Basic* grf);
 #ifdef __LOAD_CONFIG_ENABLE__
-void ___INCLUDE(const char*, Basic*);
+void ___INCLUDE(const char* src, Basic* grf);
 #endif
-void ___MAP(const char*, Basic*);
-void ___MOVE(const char*, Basic*);
-void ___QUIT(const char*, Basic*);
-void ___CD(const char*, Basic*);
-void ___GOTOP(const char*, Basic*);
-void ___GODOWN(const char*, Basic*);
-void ___CHANGEWORKSPACE(const char*, Basic*);
+void ___MAP(const char* src, Basic* grf);
+void ___MOVE(const char* src, Basic* grf);
+void ___QUIT(const char* src, Basic* grf);
+void ___CD(const char* src, Basic* grf);
+void ___GOTOP(const char* src, Basic* grf);
+void ___GODOWN(const char* src, Basic* grf);
+void ___CHANGEWORKSPACE(const char* src, Basic* grf);
 #ifdef __GET_DIR_SIZE_ENABLE__
-void ___GETSIZE(const char*,Basic*);
+void ___GETSIZE(const char* src,Basic* grf);
 #endif
-void ___SETGROUP(const char*, Basic*);
-void ___FASTSELECT(const char*, Basic*);
-void ___TOGGLEVISUAL(const char*, Basic*);
-void ___F_COPY(const char*, Basic*);
-void ___F_MOVE(const char*, Basic*);
-void ___F_DELETE(const char*, Basic*);
-void ___SEARCH(const char*, Basic*);
-void ___LOAD(const char*, Basic*);
-void ___SELECT(const char*, Basic*);
-void ___EXEC(const char*, Basic*);
-void ___BULK(const char*, Basic*);
-void ___CONSOLE(const char*, Basic*);
-
+void ___SETGROUP(const char* src, Basic* grf);
+void ___FASTSELECT(const char* src, Basic* grf);
+void ___TOGGLEVISUAL(const char* src, Basic* grf);
+void ___F_COPY(const char* src, Basic* grf);
+void ___F_MOVE(const char* src, Basic* grf);
+void ___F_DELETE(const char* src, Basic* grf);
+void ___SEARCH(const char* src, Basic* grf);
+void ___LOAD(const char* src, Basic* grf);
+void ___SELECT(const char* src, Basic* grf);
+void ___EXEC(const char* src, Basic* grf);
+void ___BULK(const char* src, Basic* grf);
+void ___CONSOLE(const char* src, Basic* grf);
+void ___RENAME(const char* src, Basic* grf);
+void ___FILTER(const char* src, Basic* grf);
 
 #endif

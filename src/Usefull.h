@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -19,38 +19,38 @@
 #ifndef USEFULL_H
 #define USEFULL_H
 
-int spawn(char*, char*, char*, const unsigned char);
+int spawn(char* file, char* arg1, char* arg2, const uchar mode);
 
 #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-void MakeHumanReadAble(char*, const unsigned long long int, const bool);
+char* MakeHumanReadAble(ull value);
 #endif
 
 #ifdef __GET_DIR_SIZE_ENABLE__
-unsigned long long int GetDirSize(int, bool, bool);
+ull GetDirSize(int fd, bool Recursive, bool Count);
 #endif
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
-unsigned char CheckFileExtension(const char*);
+uchar CheckFileExtension(const char* name);
 #endif
 
-char* lsperms(const int, const int);
+char* lsperms(const int mode, const int type);
 
-size_t TimeToStr(const time_t *, char*);
+size_t TimeToStr(const time_t* time, char* result);
 
-void RunFile(char*);
-void MakePathShorter(char*, const int);
+void RunFile(char* path);
+void MakePathShorter(char* path, const int max_size);
 
-void DeleteFile(const int, const char*);
-void CopyFile(const int, const int, const char*, char*, const mode_t);
-void MoveFile(const int, const int, const char*, char*, const mode_t);
+void DeleteFile(const int fd, const char* name);
+void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, const mode_t arg);
+void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, const mode_t arg);
 
-char* MakePathRunAble(char*);
-char* MakePath(const char*, const char*);
-size_t FindFirstCharacter(const char*);
-size_t StrToValue(void*, const char*);
-char* StrConv(char*);
-size_t StrToPath(char*, const char*);
-char* StrToKeys(char*);
-size_t FindEndOf(const char*, const char);
+char* MakePathRunAble(char* temp);
+char* MakePath(const char* dir, const char* name);
+size_t FindFirstCharacter(const char* srd);
+size_t StrToValue(void* dest, const char* src);
+char CharConv(const char dest);
+size_t StrToPath(char* dest, const char* src);
+char* StrToKeys(char* dest);
+size_t FindEndOf(const char* src, const char res);
 
 #endif

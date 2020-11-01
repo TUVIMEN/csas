@@ -1,6 +1,6 @@
 SHELL	=	/bin/bash
 CC	=	gcc -std=gnu17
-LINK	=	-lpthread -lncurses
+LINK	=	-lpthread -lncurses -ltinfo
 CFLAGS	=	-O2 -pipe -march=native -Wall -Wextra
 TARGET	=	csas
 

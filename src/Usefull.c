@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ extern FileSignatures signatures[];
 
 extern Settings* settings;
 
-int spawn(char* file, char* arg1, char* arg2, const unsigned char flag)
+int spawn(char* file, char* arg1, char* arg2, const uchar flag)
 {
     if (!file || !*file) return -1;
 
@@ -89,49 +89,92 @@ int spawn(char* file, char* arg1, char* arg2, const unsigned char flag)
 }
 
 #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-void MakeHumanReadAble(char* pointer, const unsigned long long int rvalue, const bool isDir)
+char* MakeHumanReadAble(ull value)
 {
-    if (rvalue == 0)
+    static char ret[8];
+    if (value == 0)
     {
-        pointer[0] = '0';
-        pointer[1] = '\0';
-        return;
+        ret[0] = '0';
+        ret[1] = '\0';
+        return ret;
     }
 
-    if (isDir)
-    {
-        sprintf(pointer," %lld",rvalue);
-        return;
-    }
+    off_t rem;
 
-    long double value = (long double)rvalue;
-    unsigned char Too = 0;
-    while (value > 1024)
+    uchar Too = 0;
+    while (value >= 1024)
     {
-        value /= 1024;
+        rem = value & 0x3ff;
+        value >>= 10;
         Too++;
     }
 
-    sprintf(pointer," %Lf",value);
-    if (pointer[MAX_END_READABLE] == '.')
+    uchar i;
+
+    for (i = 0; value != 0; i++)
     {
-        pointer[MAX_END_READABLE] = ' ';
-        pointer[MAX_END_READABLE+1] = settings->Values[Too];
-        pointer[MAX_END_READABLE+2] = '\0';
+        ret[i] = value%10+48;
+        value /= 10;
     }
-    else
+    for (uchar temp, j = 0, g = i-1; j < g; j++, g--)
     {
-        pointer[MAX_END_READABLE+1] = ' ';
-        pointer[MAX_END_READABLE+2] = settings->Values[Too];
-        pointer[MAX_END_READABLE+3] = '\0';
+        temp = ret[j];
+        ret[j] = ret[g];
+        ret[g] = temp;
     }
+
+    if (rem != 0 && i < 3)
+    {
+        rem = (rem * 1000) >> 10;
+        if (i == 2)
+        {
+            rem /= 10;
+            if (rem%10 >= 5)
+            {
+                rem = (rem/10) + 1;
+                rem = rem*(rem != 10);
+            }
+            else
+                rem /= 10;
+        }
+        else
+        {
+            if (rem%10 >= 5)
+            {
+                rem = (rem/10) + 1;
+                rem = rem*(rem != 100);
+            }
+            else
+                rem /= 10;
+        }
+        
+        ret[i++] = '.';
+        for (; rem != 0; i++)
+        {
+            ret[i] = rem%10+48;
+            rem /= 10;
+        }
+        if (ret[i-3] == '.')
+        {
+            uchar temp = ret[i-1];
+            ret[i-1] = ret[i-2];
+            ret[i-2] = temp;
+        }
+    }
+
+    if (Too != 0)
+        ret[i++] = settings->Values[Too-1];
+
+    ret[i] = '\0';
+
+    return ret;
 }
 #endif
 
 #ifdef __GET_DIR_SIZE_ENABLE__
-unsigned long long int GetDirSize(const int fd, const bool Recursive, const bool Count)
+ull GetDirSize(const int fd, const bool Recursive, const bool Count)
 {
-    unsigned long long int size = 0;
+    ull size = 0;
 
     DIR* d = fdopendir(fd);
     struct dirent *dir;
@@ -172,7 +215,7 @@ unsigned long long int GetDirSize(const int fd, const bool Recursive, const bool
 #endif
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
-unsigned char CheckFileExtension(const char* name)
+uchar CheckFileExtension(const char* name)
 {
     static char stemp[NAME_MAX];
     static size_t tse, nse;
@@ -208,18 +251,6 @@ unsigned char CheckFileExtension(const char* name)
     return 0;
 }
 #endif
-
-size_t xstrsncpy(char *dst, const char *src, size_t n)
-{
-	char *end = memccpy(dst, src, '\0', n);
-
-	if (!end) {
-		dst[n - 1] = '\0';
-		end = dst + n;
-	}
-
-	return end - dst;
-}
 
 char* lsperms(const int mode, const int type)
 {
@@ -361,7 +392,7 @@ void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, cons
 
     char* temp = (char*)malloc(NAME_MAX);
     strcpy(temp,name);
-    unsigned long long int num = 0;
+    ull num = 0;
 
     if (!(arg&M_MERGE && (sFile.st_mode&S_IFMT) == S_IFDIR))
     {
@@ -440,7 +471,7 @@ void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, cons
 
     char* temp = (char*)malloc(NAME_MAX);
     strcpy(temp,name);
-    unsigned long long int num = 0;
+    ull num = 0;
 
     if (!(arg&M_MERGE && (sFile.st_mode&S_IFMT) == S_IFDIR))
     {
@@ -557,7 +588,7 @@ char* MakePath(const char* dir, const char* name)
 size_t FindFirstCharacter(const char* src)
 {
     size_t pos = 0;
-    while (src[pos] && isspace(src[pos])) pos++;
+    while (isspace(src[pos])) pos++;
     return pos;
 }
 
@@ -566,7 +597,7 @@ extern struct AliasesT aliases[];
 size_t StrToValue(void* dest, const char* src)
 {
     size_t PosBegin = 0, PosEnd = 0;
-    char temp[8192];
+    static char temp[8192];
     if (src[PosBegin] == '{')
     {
         for (int i = 0; src[PosBegin] != '}'; i++)
@@ -583,22 +614,57 @@ size_t StrToValue(void* dest, const char* src)
             PosBegin += PosEnd;
             PosBegin += FindFirstCharacter(src+PosBegin);
 
-            StrToValue(&(*(long int**)dest)[i],temp);
+            StrToValue(&(*(li**)dest)[i],temp);
         }
         PosBegin++;
     }
     else if (src[PosBegin] == '\'')
     {
         PosBegin++;
-        PosEnd += FindEndOf(src+PosBegin,'\'');
+        PosEnd = FindEndOf(src+PosBegin,'\'');
         strncpy(*(char**)dest,src+PosBegin,PosEnd);
         (*(char**)dest)[PosEnd] = '\0';
-        PosBegin += PosEnd+1;
+        PosBegin += PosEnd+2;
+    }
+    else if (src[PosBegin] == '"')
+    {
+        PosBegin++;
+        PosEnd = FindEndOf(src+PosBegin,'"');
+        for (size_t i = PosBegin, x = 0; i <= PosEnd; i++, x++)
+        {
+            if (src[i] == '\\' && src[i+1])
+            {
+                i++;
+                (*(char**)dest)[x] = CharConv(src[i]);
+                continue;
+            }
+
+            if (src[i] == '$' && src[i+1] == '{')
+            {
+                i += 2;
+                size_t end = FindEndOf(src+i,'}');
+                char temp1[NAME_MAX];
+                strncpy(temp1,src+i,end);
+                char* temp2 = getenv(temp1);
+                if (temp2)
+                {
+                    size_t end1 = strlen(temp2);
+                    memcpy(*((char**)dest)+x,temp2,end1);
+                    x += end1;
+                }
+
+                i += end;
+                continue;
+            }
+
+            (*(char**)dest)[x] = src[i];
+        }
+        PosBegin += PosEnd+2;
     }
     else
     {
         int type;
-        *(long int*)dest = 0;
+        *(li*)dest = 0;
 
         do {
             PosEnd = 0;
@@ -614,7 +680,7 @@ size_t StrToValue(void* dest, const char* src)
             memcpy(temp,src+PosBegin,PosEnd);
             temp[PosEnd] = '\0';
 
-            if (type == 0) { *(long int*)dest |= atol(temp); }
+            if (type == 0) { *(li*)dest |= atol(temp); }
             else if (type == 1)
             {
                 *(double*)dest = atof(temp);
@@ -626,7 +692,7 @@ size_t StrToValue(void* dest, const char* src)
                 for (int i = 0; aliases[i].name; i++)
                     if (strlen(aliases[i].name) == PosEnd && strncmp(temp,aliases[i].name,PosEnd) == 0)
                     {
-                        *(long int*)dest |= aliases[i].v;
+                        *(li*)dest |= aliases[i].v;
                         break;
                     }
             
@@ -637,109 +703,25 @@ size_t StrToValue(void* dest, const char* src)
     return PosBegin;
 }
 
-
-char* StrConv(char* dest)
+char CharConv(const char dest)
 {
-    for (int i = 0; dest[i]; i++)
+    char ret;
+    switch (dest)
     {
-        if (dest[i] == '\\' && dest[i+1])
-        {
-            for (int j = i; dest[j]; j++)
-                dest[j] = dest[j+1];
-
-            switch (dest[i])
-            {
-                case '0':
-                    dest[i] = '\x0';
-                    break;
-                case 'a':
-                    dest[i] = '\x7';
-                    break;
-                case 'b':
-                    dest[i] = '\x8';
-                    break;
-                case 't':
-                    dest[i] = '\x9';
-                    break;
-                case 'n':
-                    dest[i] = '\xA';
-                    break;
-                case 'v':
-                    dest[i] = '\xB';
-                    break;
-                case 'f':
-                    dest[i] = '\xC';
-                    break;
-                case 'r':
-                    dest[i] = '\xD';
-                    break;
-            }
-        }
+        case '0': ret = '\x0'; break;
+        case 'a': ret = '\x7'; break;
+        case 'b': ret = '\x8'; break;
+        case 't': ret = '\x9'; break;
+        case 'n': ret = '\xA'; break;
+        case 'v': ret = '\xB'; break;
+        case 'f': ret = '\xC'; break;
+        case 'r': ret = '\xD'; break;
     }
-    return dest;
-}
-
-size_t StrToPath(char* dest, const char* src)
-{
-    size_t pos = 0, x, end;
-    if (src[pos] == '"')
-    {
-        pos++;
-        x = 0;
-        while (src[pos])
-        {
-            if (src[pos] == '"' && src[pos-1] != '\\')
-                break;
-            if (src[pos] == '$' && src[pos-1] != '\\' && src[pos+1] == '{')
-            {
-                pos += 2;
-                char temp1[NAME_MAX];
-                end = FindEndOf(src+pos,'}');
-                strncpy(temp1,src+pos,end);
-                temp1[end] = '\0';
-                char* temp2 = getenv(temp1);
-                if (temp2)
-                {
-                    memcpy(dest+x,temp2,strlen(temp2));
-                    x += strlen(temp2);
-                }
-                pos += end+1;
-                continue;
-            }
-            
-            dest[x++] = src[pos++];
-        }
-        pos++;
-    }
-    else if (src[pos] == '\'')
-    {
-        pos++;
-        end = FindEndOf(src+pos,'\'');
-        strncpy(dest,src+pos,end);
-        dest[end] = '\0';
-        pos += end+1;
-    }
-    else
-    {
-        x = 0;
-        while (src[pos] && !isspace(src[pos]))
-        {
-            if (src[pos] == '\\')
-                dest[x] = src[++pos];
-            else
-                dest[x] = src[pos];
-            x++;
-            pos++;
-        }
-        dest[x] = '\0';
-    }
-    StrConv(dest);
-    return pos;
+    return ret;
 }
 
 char* StrToKeys(char* dest)
 {
-    StrConv(dest);
     for (int i = 0; dest[i]; i++)
     {
         if (dest[i] == '<' && dest[i+1] == 'C' && dest[i+2] == '-' && dest[i+3] && dest[i+4] == '>')
@@ -763,8 +745,41 @@ char* StrToKeys(char* dest)
                     dest[j] = dest[j+1];
             dest[i] = 27;
         }
+        else if (dest[i] == '\\' && dest[i+1])
+        {
+            size_t j;
+            for (j = i; j < strlen(dest)-1; j++)
+                dest[j] = dest[j+1];
+            dest[j+1] = '\0';
+            dest[i] = CharConv(dest[i]);
+        }
     }
     return dest;
+}
+
+size_t StrToPath(char* dest, const char* src)
+{
+    size_t pos = 0, x;
+    if (src[pos] == '"' || src[pos] == '\'')
+    {
+        pos = StrToValue(&dest,src);
+    }
+    else
+    {
+        x = 0;
+        while (src[pos] && !isspace(src[pos]))
+        {
+            if (src[pos] == '\\')
+                dest[x] = src[++pos];
+            else
+                dest[x] = src[pos];
+            x++;
+            pos++;
+        }
+        dest[x] = '\0';
+    }
+
+    return pos;
 }
 
 size_t FindEndOf(const char* src, const char res)

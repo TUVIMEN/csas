@@ -1,5 +1,5 @@
 /*
-    csas - terminal file manager
+    csas - console file manager
     Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -19,6 +19,6 @@
 #ifndef SORT_H
 #define SORT_H
 
-void SortEl(struct Element*, const size_t, const unsigned char);
+void SortEl(struct Element* El, const size_t El_t, const uchar Method);
 
 #endif
