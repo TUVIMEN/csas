@@ -15,7 +15,7 @@ all: $(OBJECTS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-install:
+install: all
 	cp -f ${TARGET} ${BINDIR}
 	chmod 755 ${BINDIR}/${TARGET}
 	cp -f ${TARGET}.1 ${MANDIR}
@@ -24,3 +24,7 @@ install:
 clean:
 	find . -name "*.o" -exec rm "{}" \;
 	rm ${TARGET}
+
+uninstall:
+	rm ${BINDIR}/${TARGET}
+	rm ${MANDIR}/${TARGET}.1

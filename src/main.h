@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
@@ -285,6 +286,7 @@ typedef struct
     uchar SelectedGroup;
     bool exists;
     int win[3];
+    bool ShowMessage;
 } WorkSpace;
 
 typedef struct
@@ -408,3 +410,27 @@ struct AliasesT {
     char* name;
     ll v;
 };
+
+typedef struct {
+    int x;
+    int y;
+} Vector2i;
+
+typedef struct {
+    float x;
+    float y;
+} Vector2f;
+
+struct WinArgs {
+    WINDOW* place;
+    Vector2i S_Size;
+    Vector2f PercentSize;
+    Vector2i MinSize;
+    Vector2i MaxSize;
+    Vector2i S_Pos;
+    Vector2f PercentPos;
+    Vector2i MinPos;
+    Vector2i MaxPos;
+    int settings;
+};
+

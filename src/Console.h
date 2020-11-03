@@ -21,5 +21,7 @@
 #define CONSOLE_H
 
 void RunCommand(const char* src, Basic* grf);
+void ConsoleResize(WINDOW* win, const struct WinArgs args);
+void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t max, struct WinArgs args, char* first, char* add);
 
 #endif

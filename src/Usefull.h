@@ -21,12 +21,10 @@
 
 int spawn(char* file, char* arg1, char* arg2, const uchar mode);
 
-#ifdef __HUMAN_READABLE_SIZE_ENABLE__
 char* MakeHumanReadAble(ull value);
-#endif
 
 #ifdef __GET_DIR_SIZE_ENABLE__
-ull GetDirSize(int fd, bool Recursive, bool Count);
+void GetDirSize(const int fd, ull* count, ull* size, const bool recursive);
 #endif
 
 #ifdef __COLOR_FILES_BY_EXTENSION__

@@ -67,6 +67,7 @@ void* LoadDir(void *arg)
 
     #ifdef __GET_DIR_SIZE_ENABLE__
     int tfd;
+    ull size, count;
     #endif
     fd = dirfd(d);
 
@@ -158,7 +159,10 @@ void* LoadDir(void *arg)
         {
             if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
             {
-                grf->El[grf->El_t].size = GetDirSize(tfd,(settings->DirSizeMethod&D_R) == D_R,(settings->DirSizeMethod&D_C) == D_C);
+                count = 0;
+                size = 0;
+                GetDirSize(tfd,&count,&size,(settings->DirSizeMethod&D_R)==D_R);
+                grf->El[grf->El_t].size = (settings->DirSizeMethod&D_C)==D_C ? count : size;
                 close(tfd);
             }
             else

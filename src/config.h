@@ -162,9 +162,7 @@ struct AliasesT aliases[] = {
     {"DP_PWSHELL",DP_PWSHELL},
     {"DP_PWUID",DP_PWUID},
     #endif
-    #ifdef __HUMAN_READABLE_SIZE_ENABLE__
     {"DP_HSIZE",DP_HSIZE},
-    #endif
     {"B_UHNAME",B_UHNAME},
     {"B_DIR",B_DIR},
     {"B_NAME",B_NAME},

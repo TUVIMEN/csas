@@ -216,7 +216,7 @@ static int FindBorder(struct Element* El, size_t begin, size_t end)
 
 void SortEl(struct Element* El, const size_t El_t, const uchar Method)
 {
-    int (*Function)(const void*,const void*);
+    int (*Function)(const void*,const void*) = NULL;
     switch((Method > 128) ? Method-128 : Method)
     {
         case SORT_TYPE: Function = compType; break;
@@ -243,7 +243,7 @@ void SortEl(struct Element* El, const size_t El_t, const uchar Method)
         #endif
     }
 
-    qsort(El,El_t,sizeof(struct Element),Function);
+    if (Function) qsort(El,El_t,sizeof(struct Element),Function);
 
     if (Method&128) //reverse
     {

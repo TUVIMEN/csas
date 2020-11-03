@@ -52,7 +52,6 @@
 
 #define __FILE_SIZE_ENABLE__
 #ifdef __FILE_SIZE_ENABLE__
-    #define __HUMAN_READABLE_SIZE_ENABLE__
     #define __GET_DIR_SIZE_ENABLE__
 #endif
 

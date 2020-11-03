@@ -126,18 +126,16 @@ void KeyInit()
     addKey((Key){"oN","set SortMethod SORT_NAME|SORT_REVERSE"});
     #endif
     #ifdef __GET_DIR_SIZE_ENABLE__
-    addKey((Key){"dch","getsize -cs s"});
-    addKey((Key){"dCh","getsize -crs s"});
-    addKey((Key){"dsh","getsize -s s"});
-    addKey((Key){"dSh","getsize -rs s"});
-    addKey((Key){"dfh","getsize -fs s"});
-    #ifdef __HUMAN_READABLE_SIZE_ENABLE__
-    addKey((Key){"dcH","getsize -chs s"});
-    addKey((Key){"dCH","getsize -crhs s"});
-    addKey((Key){"dsH","getsize -hs s"});
-    addKey((Key){"dSH","getsize -rhs s"});
-    addKey((Key){"dfH","getsize -fhs s"});
-    #endif
+    addKey((Key){"dct","getsize -cs s"});
+    addKey((Key){"dCt","getsize -crs s"});
+    addKey((Key){"dst","getsize -s s"});
+    addKey((Key){"dSt","getsize -rs s"});
+    addKey((Key){"dft","getsize -fs s"});
+    addKey((Key){"dch","getsize -cs ."});
+    addKey((Key){"dCh","getsize -crs ."});
+    addKey((Key){"dsh","getsize -s ."});
+    addKey((Key){"dSh","getsize -rs ."});
+    addKey((Key){"dfh","getsize -fs ."});
     #endif
     addKey((Key){"x1","setgroup 0"});
     addKey((Key){"x2","setgroup 1"});
@@ -151,27 +149,27 @@ void KeyInit()
     addKey((Key){"V","togglevisual"});
     addKey((Key){"vta","select -ts - -o ."});
     addKey((Key){"vth","select -ts - -o . ."});
-    addKey((Key){"vda","select -ds - -o"});
+    addKey((Key){"vda","select -ds - -o ."});
     addKey((Key){"vdh","select -ds - -o . ."});
     addKey((Key){"vea","select -es - -o ."});
     addKey((Key){"veh","select -es - -o . ."});
-    addKey((Key){"mm","f_move -s . -c -o ."});
-    addKey((Key){"mr","f_move -s . -r -o ."});
-    addKey((Key){"md","f_move -s . -d -o ."});
-    addKey((Key){"mM","f_move -s . -cm -o ."});
-    addKey((Key){"mR","f_move -s . -rm -o ."});
-    addKey((Key){"mD","f_move -s . -dm -o ."});
-    addKey((Key){"pp","f_copy -s . -c -o ."});
-    addKey((Key){"pr","f_copy -s . -r -o ."});
-    addKey((Key){"pd","f_copy -s . -d -o ."});
-    addKey((Key){"pP","f_copy -s . -cm -o ."});
-    addKey((Key){"pR","f_copy -s . -rm -o ."});
-    addKey((Key){"pD","f_copy -s . -dm -o ."});
-    addKey((Key){"dd","f_delete -s . ."});
-    addKey((Key){"dD","f_delete -s ."});
-    addKey((Key){"dt","f_delete -s s"});
-    addKey((Key){"R","load -Rtm 2"});
-    addKey((Key){"s","console"});
+    addKey((Key){"mm","f_mod m -s . -c -o ."});
+    addKey((Key){"mr","f_mod m -s . -r -o ."});
+    addKey((Key){"md","f_mod m -s . -d -o ."});
+    addKey((Key){"mM","f_mod m -s . -cm -o ."});
+    addKey((Key){"mR","f_mod m -s . -rm -o ."});
+    addKey((Key){"mD","f_mod m -s . -dm -o ."});
+    addKey((Key){"pp","f_mod c -s . -c -o ."});
+    addKey((Key){"pr","f_mod c -s . -r -o ."});
+    addKey((Key){"pd","f_mod c -s . -d -o ."});
+    addKey((Key){"pP","f_mod c -s . -cm -o ."});
+    addKey((Key){"pR","f_mod c -s . -rm -o ."});
+    addKey((Key){"pD","f_mod c -s . -dm -o ."});
+    addKey((Key){"Dd","f_mod d -s . ."});
+    addKey((Key){"DD","f_mod d -s ."});
+    addKey((Key){"Dt","f_mod d -s s"});
+    addKey((Key){"R","load -tm 2"});
+    addKey((Key){":","console"});
     addKey((Key){"S","exec bash"});
     addKey((Key){"b","bulk -S sh -E nvim -b mv -s 0 -R ."});
     addKey((Key){"/","console -a \"search -N \""});
@@ -272,7 +270,7 @@ Settings* SettingsInit()
     grf->C_Bar_Name		                = A_NORMAL | A_BOLD;
     grf->C_Bar_WorkSpace		        = A_NORMAL | A_BOLD;
     grf->C_Bar_WorkSpace_Selected	    = COLOR_PAIR(6) | A_REVERSE | A_BOLD;
-    grf->C_Group                        = malloc(sizeof(ll)*sizeof(uchar)*8);
+    grf->C_Group                        = malloc(sizeof(ll)*8);
     grf->C_Group[0]		                = COLOR_PAIR(2);
     grf->C_Group[1]		                = COLOR_PAIR(1);
     grf->C_Group[2]		                = COLOR_PAIR(7);
@@ -380,6 +378,7 @@ Basic* InitBasic()
     grf->inW = 0;
 
     grf->Work[grf->inW].exists = 1;
+    grf->Work[grf->inW].ShowMessage = false;
 
     UpdateSizeBasic(grf);
 
@@ -438,8 +437,7 @@ void RunBasic(Basic* grf, const int argc, char** argv)
 
         DrawBasic(grf,-1);
 
-        si = UpdateEvent(grf);
-        if (si != -1)
+        if ((si = UpdateEvent(grf)) != -1)
             RunCommand(keys[si].value,grf);
 
         if (ActualTime != PastTime)
@@ -457,6 +455,8 @@ void RunBasic(Basic* grf, const int argc, char** argv)
                 #endif
                 );
         }
+
+
     } while (!grf->ExitTime);
 
     endwin();

@@ -20,9 +20,28 @@
 #include "Draw.h"
 #include "FastRun.h"
 #include "Sort.h"
+#include "Console.h"
 #include "Usefull.h"
 
 extern Settings* settings;
+
+void SetMessage(Basic* grf, const int attr, const char* fmt, ...)
+{
+    struct WinArgs args = {stdscr,
+    {-1,1},{1,-1},{-1,-1},{-1,-1},
+    {-1,-1},{-1,1},{-1,-1},{-1,-1},
+    0};
+    ConsoleResize(grf->win[5],args);
+    werase(grf->win[5]);
+    va_list va_args;
+    va_start(va_args,fmt);
+    wattron(grf->win[5],attr);
+    wmove(grf->win[5],0,0);
+    vw_printw(grf->win[5],fmt,va_args);
+    wattroff(grf->win[5],attr);
+    va_end(va_args);
+    grf->Work[grf->inW].ShowMessage = true;
+}
 
 void DrawText(WINDOW* grf, int fd, char* buffer, off_t offset, int whence, bool wrap)
 {
@@ -219,8 +238,6 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
     #ifdef __FILE_SIZE_ENABLE__
     if (Settings&DP_SIZE)
         *size += sprintf(result+*size,"%lld ",grf->size);
-    #endif
-    #ifdef __HUMAN_READABLE_SIZE_ENABLE__
     if (Settings&DP_HSIZE)
     {
         if ((ll)grf->size < 1024)
@@ -608,14 +625,12 @@ void DrawBasic(Basic* grf, const int which)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld",grf->fs.f_bsize);
         if (settings->Bar1Settings & B_FBLOCKS)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld",grf->fs.f_blocks);
-        #ifdef __HUMAN_READABLE_SIZE_ENABLE__
         if (settings->Bar1Settings & B_FHBLOCKS)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %s",MakeHumanReadAble(grf->fs.f_blocks*grf->fs.f_bsize));
         if (settings->Bar1Settings & B_FHBFREE)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %s",MakeHumanReadAble(grf->fs.f_bfree*grf->fs.f_bsize));
         if (settings->Bar1Settings & B_FHBAVAIL)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %s",MakeHumanReadAble(grf->fs.f_bavail*grf->fs.f_bsize));
-        #endif
         if (settings->Bar1Settings & B_FBFREE)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld",grf->fs.f_bfree);
         if (settings->Bar1Settings & B_FBAVAIL)
@@ -650,5 +665,11 @@ void DrawBasic(Basic* grf, const int which)
         wrefresh(grf->win[4]);
         werase(grf->win[4]);
         // 4
+    }
+    
+    if (grf->Work[grf->inW].ShowMessage)
+    {
+        grf->Work[grf->inW].ShowMessage = false;
+        wrefresh(grf->win[5]);
     }
 }

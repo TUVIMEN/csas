@@ -88,7 +88,6 @@ int spawn(char* file, char* arg1, char* arg2, const uchar flag)
     return 0;
 }
 
-#ifdef __HUMAN_READABLE_SIZE_ENABLE__
 char* MakeHumanReadAble(ull value)
 {
     static char ret[8];
@@ -99,7 +98,7 @@ char* MakeHumanReadAble(ull value)
         return ret;
     }
 
-    off_t rem;
+    off_t rem = 0;
 
     uchar Too = 0;
     while (value >= 1024)
@@ -125,7 +124,7 @@ char* MakeHumanReadAble(ull value)
 
     if (rem != 0 && i < 3)
     {
-        rem = (rem * 1000) >> 10;
+        rem = (rem*1000) >> 10;
         if (i == 2)
         {
             rem /= 10;
@@ -169,13 +168,10 @@ char* MakeHumanReadAble(ull value)
 
     return ret;
 }
-#endif
 
 #ifdef __GET_DIR_SIZE_ENABLE__
-ull GetDirSize(const int fd, const bool Recursive, const bool Count)
+void GetDirSize(const int fd, ull* count, ull* size, const bool recursive)
 {
-    ull size = 0;
-
     DIR* d = fdopendir(fd);
     struct dirent *dir;
 
@@ -188,29 +184,28 @@ ull GetDirSize(const int fd, const bool Recursive, const bool Count)
         {
             if (dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
                 continue;
-            if (Recursive && dir->d_type == 4 &&
+            if (recursive && dir->d_type == 4 &&
                 faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
             {
-                size += GetDirSize(tfd,Recursive,Count);
+                GetDirSize(tfd,count,size,recursive);
                 close(tfd);
             }
             else
             {
-                if (Count)
-                    size++;
-                else
+                (*count)++;
+                fstatat(fd,dir->d_name,&ST,AT_SYMLINK_NOFOLLOW);
+                switch (ST.st_mode & S_IFMT)
                 {
-                    fstatat(fd,dir->d_name,&ST,AT_SYMLINK_NOFOLLOW);
-                    if ((ST.st_mode & S_IFMT) == S_IFREG)
-                        size += ST.st_size;
+                    case S_IFREG:
+                    case S_IFDIR:
+                        *size += ST.st_size;
+                    break;
                 }
             }
         }
 
         closedir(d);
     }
-
-    return size;
 }
 #endif
 
@@ -705,7 +700,7 @@ size_t StrToValue(void* dest, const char* src)
 
 char CharConv(const char dest)
 {
-    char ret;
+    char ret = dest;
     switch (dest)
     {
         case '0': ret = '\x0'; break;
