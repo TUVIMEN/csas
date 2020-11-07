@@ -23,9 +23,7 @@ int spawn(char* file, char* arg1, char* arg2, const uchar mode);
 
 char* MakeHumanReadAble(ull value);
 
-#ifdef __GET_DIR_SIZE_ENABLE__
 void GetDirSize(const int fd, ull* count, ull* size, const bool recursive);
-#endif
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
 uchar CheckFileExtension(const char* name);

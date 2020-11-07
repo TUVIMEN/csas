@@ -134,7 +134,7 @@ static int ColorEl(const struct Element* src, const bool Select)
     return set | col;
 }
 
-#ifdef __FILESYSTEM_INFORMATION_ENABLE__
+#ifdef __FILESYSTEM_INFO_ENABLE__
 static char* fsName(const li ftype)
 {
     switch (ftype)
@@ -235,17 +235,6 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
     if (Settings&DP_LSPERMS)
         *size += sprintf(result+*size,"%s ",lsperms(grf->flags,grf->Type));
     #endif
-    #ifdef __FILE_SIZE_ENABLE__
-    if (Settings&DP_SIZE)
-        *size += sprintf(result+*size,"%lld ",grf->size);
-    if (Settings&DP_HSIZE)
-    {
-        if ((ll)grf->size < 1024)
-            *size += sprintf(result+*size," %lld ",grf->size);
-        else
-            *size += sprintf(result+*size," %s ",MakeHumanReadAble(grf->size));
-    }
-    #endif
     #ifdef __BLOCKS_ENABLE__
     if (Settings&DP_BLOCKS)
         *size += sprintf(result+*size,"%ld ",grf->blocks);
@@ -253,8 +242,13 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
     if (Settings&DP_TYPE)
         *size += sprintf(result+*size,"%d ",grf->Type);
     #ifdef __COLOR_FILES_BY_EXTENSION__
-    if (Settings&DP_FTYPE && grf->FType > 32)
-        *size += sprintf(result+*size,"%c ",grf->FType);
+    if (Settings&DP_FTYPE)
+    {
+        if (grf->FType > 32)
+            *size += sprintf(result+*size,"%c ",grf->FType);
+        else
+            *size += sprintf(result+*size,"%d ",grf->FType);
+    }
     #endif
     #ifdef __NLINK_ENABLE__
     if (Settings&DP_NLINK)
@@ -272,7 +266,7 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
         if (Settings&DP_PWGECOS)
             *size += sprintf(result+*size,"%s ",pw->pw_gecos);
         if (Settings&DP_PWGID)
-            *size += sprintf(result+*size,"%d ",pw->pw_gid);
+             *size += sprintf(result+*size,"%d ",pw->pw_gid);
         if (Settings&DP_PWNAME)
             *size += sprintf(result+*size,"%s ",pw->pw_name);
         if (Settings&DP_PWPASSWD)
@@ -326,6 +320,17 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
     if (Settings&DP_RDEV)
         *size += sprintf(result+*size,"%ld ",grf->rdev);
     #endif
+    #ifdef __FILE_SIZE_ENABLE__
+    if (Settings&DP_SIZE)
+        *size += sprintf(result+*size,"%lld ",grf->size);
+    if (Settings&DP_HSIZE)
+    {
+        if ((ll)grf->size < 1024)
+            *size += sprintf(result+*size,"%lld ",grf->size);
+        else
+            *size += sprintf(result+*size,"%s ",MakeHumanReadAble(grf->size));
+    }
+    #endif
     if (Settings&DP_LINK_PATH)
     {
         ssize_t temp = readlink(grf->name,result+*size,PATH_MAX);
@@ -338,7 +343,7 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
 void DrawBasic(Basic* grf, const int which)
 {
     static int color, line_off1, line_off2;;
-    static char NameTemp[NAME_MAX];
+    static char NameTemp[PATH_MAX];
     static char MainTemp[PATH_MAX];
     static char temp[96];
     static size_t cont_s[4];
@@ -402,6 +407,15 @@ void DrawBasic(Basic* grf, const int which)
 
         line_off1 = 0;
 
+        #ifdef __SORT_ELEMENTS_ENABLE__
+        if (GET_DIR(grf->inW,i)->sort_m != settings->SortMethod)
+        {
+            GET_DIR(grf->inW,i)->sort_m = settings->SortMethod;
+            if (GET_DIR(grf->inW,i)->El_t > 0)
+                SortEl(GET_DIR(grf->inW,i)->El,GET_DIR(grf->inW,i)->El_t,settings->SortMethod);
+        }
+        #endif
+
         for (ll j = GET_DIR(grf->inW,i)->Ltop[grf->inW]; j-GET_DIR(grf->inW,i)->Ltop[grf->inW] < (size_t)grf->win[i]->_maxy-(settings->Borders*2)+1 && j < GET_DIR(grf->inW,i)->El_t; j++)
         {
             #ifdef __COLOR_FILES_BY_EXTENSION__
@@ -409,15 +423,6 @@ void DrawBasic(Basic* grf, const int which)
                 GET_DIR(grf->inW,i)->El[j].FType = CheckFileExtension(GET_DIR(grf->inW,i)->El[j].name);
             #endif
             color = ColorEl(&GET_DIR(grf->inW,i)->El[j],(j == (ll)GET_SELECTED(grf->inW,i)));
-
-            #ifdef __SORT_ELEMENTS_ENABLE__
-            if (GET_DIR(grf->inW,i)->sort_m != settings->SortMethod)
-            {
-                GET_DIR(grf->inW,i)->sort_m = settings->SortMethod;
-                if (GET_DIR(grf->inW,i)->El_t > 0)
-                    SortEl(GET_DIR(grf->inW,i)->El,GET_DIR(grf->inW,i)->El_t,settings->SortMethod);
-            }
-            #endif
 
             if (settings->FillBlankSpace)
                 wattron(grf->win[i],color);
@@ -453,7 +458,7 @@ void DrawBasic(Basic* grf, const int which)
 
                 if (settings->NumberLines)
                 {
-                    sprintf(temp,"%lld ",j+settings->NumberLinesFromOne);
+					sprintf(temp,"%lld ",j+settings->NumberLinesFromOne);
                     strcat(NameTemp,temp);
                 }
             }
@@ -465,8 +470,8 @@ void DrawBasic(Basic* grf, const int which)
                 NameTemp[0] = '\0';
             else if ((size_t)cont_s[1] > grf->win[i]->_maxx-cont_s[0]-2-((settings->Borders+1)+1)-settings->Borders)
             {
-                NameTemp[grf->win[i]->_maxx-cont_s[0]-2-((settings->Borders+1)+1)-settings->Borders] = '~';
-                NameTemp[grf->win[i]->_maxx-cont_s[0]-1-((settings->Borders+1)+1)-settings->Borders] = '\0';
+                NameTemp[grf->win[i]->_maxx-cont_s[0]-3-((settings->Borders+1)+1)-settings->Borders] = '~';
+                NameTemp[grf->win[i]->_maxx-cont_s[0]-2-((settings->Borders+1)+1)-settings->Borders] = '\0';
             }
 
             mvwaddstr(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i)->Ltop[grf->inW],(settings->Borders*2)+2+(line_off1-line_off2),NameTemp);
@@ -527,8 +532,8 @@ void DrawBasic(Basic* grf, const int which)
                 GET_SELECTED(grf->inW,1) = GET_DIR(grf->inW,1)->El_t-1;
             if ((settings->Bar1Settings & B_DIR) == B_DIR)
             {
-                strcpy(MainTemp,GET_DIR(grf->inW,1)->path);
-                if (!(GET_DIR(grf->inW,1)->path[0] == '/' && GET_DIR(grf->inW,1)->path[1] == '\0'))
+                strcpy(MainTemp,grf->Work[grf->inW].path);
+                if (!(grf->Work[grf->inW].path[0] == '/' && grf->Work[grf->inW].path[1] == '\0'))
                 {
                     strcat(MainTemp,"/");
                     MakePathShorter(MainTemp,grf->win[3]->_maxx-(cont_s[3]+1+cont_s[2]+strlen(GET_ESELECTED(grf->inW,1).name)));
@@ -610,17 +615,17 @@ void DrawBasic(Basic* grf, const int which)
 
             if (grf->Work[grf->inW].Visual)
                 cont_s[0] += sprintf(MainTemp+cont_s[0]," VISUAL");
-        
+
             if (GET_DIR(grf->inW,1)->filter_set)
                 cont_s[0] += sprintf(MainTemp+cont_s[0]," f=\"%s\"",GET_DIR(grf->inW,1)->filter);
         }
         if (settings->Bar1Settings & B_FGROUP)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %dW",grf->Work[grf->inW].SelectedGroup);
-        #ifdef __FILESYSTEM_INFORMATION_ENABLE__
+        #ifdef __FILESYSTEM_INFO_ENABLE__
         if (settings->Bar1Settings & B_FTYPE)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %lx",grf->fs.f_type);
         if (settings->Bar1Settings & B_SFTYPE)
-            cont_s[0] += sprintf(MainTemp+cont_s[0],fsName(grf->fs.f_type));
+            cont_s[0] += sprintf(MainTemp+cont_s[0]," %s",fsName(grf->fs.f_type));
         if (settings->Bar1Settings & B_FBSIZE)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld",grf->fs.f_bsize);
         if (settings->Bar1Settings & B_FBLOCKS)
@@ -666,7 +671,7 @@ void DrawBasic(Basic* grf, const int which)
         werase(grf->win[4]);
         // 4
     }
-    
+
     if (grf->Work[grf->inW].ShowMessage)
     {
         grf->Work[grf->inW].ShowMessage = false;

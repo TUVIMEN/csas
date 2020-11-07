@@ -20,9 +20,11 @@
 #define FUNCTIONS_H
 
 void addKey(const Key src);
+int initcurs();
 Basic* InitBasic();
 void RunBasic(Basic* grf, const int argc, char** argv);
 void UpdateSizeBasic(Basic* grf);
+void freeEl(struct Element** El, ll* El_t);
 void freeBasic(Basic* grf);
 
 #endif

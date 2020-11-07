@@ -24,8 +24,8 @@ int main(int argc, char** argv)
     setlocale(LC_ALL, "");
     signal(SIGINT,SIG_IGN);
 
-    Basic* Armor = InitBasic();
-    RunBasic(Armor,argc,argv);
+    Basic* Main = InitBasic();
+    RunBasic(Main,argc,argv);
 
     return 0;
 }

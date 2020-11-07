@@ -26,27 +26,17 @@
 #include "Usefull.h"
 #include "Draw.h"
 #include "FastRun.h"
+#include "Functions.h"
+#include "Chars.h"
 
 extern Settings* settings;
-
-void freeEl(struct Element** El, ll* El_t)
-{
-    for (ll i = 0; i < *El_t; i++)
-    {
-        free((*El)[i].List);
-        free((*El)[i].name);
-    }
-    free(*El);
-    *El = NULL;
-    *El_t = 0;
-}
 
 void* LoadDir(void *arg)
 {
     struct Dir* grf = (struct Dir*)arg;
 
     DIR* d;
-    if ((d = opendir(grf->path)) == NULL)
+    if ((d = opendir(grf->rpath)) == NULL)
     {
         grf->El_t = -1;
         #ifdef __THREADS_FOR_DIR_ENABLE__
@@ -65,10 +55,8 @@ void* LoadDir(void *arg)
 
     int fd, typeOFF = 0;
 
-    #ifdef __GET_DIR_SIZE_ENABLE__
     int tfd;
     ull size, count;
-    #endif
     fd = dirfd(d);
 
     bool isOld = grf->El_t > 0;
@@ -154,7 +142,6 @@ void* LoadDir(void *arg)
         grf->El[grf->El_t].flags = sFile.st_mode;
         #endif
 
-        #ifdef __GET_DIR_SIZE_ENABLE__
         if ((settings->DirSizeMethod&D_F) != D_F && (sFile.st_mode & S_IFMT) == S_IFDIR)
         {
             if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
@@ -168,9 +155,8 @@ void* LoadDir(void *arg)
             else
                 grf->El[grf->El_t].size = -1;
         }
-        else
-        #endif
         #ifdef __FILE_SIZE_ENABLE__
+        else
             grf->El[grf->El_t].size = sFile.st_size*(grf->El[grf->El_t].Type != 7);
         #endif
 
@@ -265,13 +251,35 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
 {
     // mode
     // 0 - if exists exit
-    // 1 - if doesn't exist or was changed load
+    // 1 - if doesn't exist or changed load
     // 2 - always load
 
-    char temp[PATH_MAX];
+    static char temp[PATH_MAX];
+    strcpy(temp,grf->Work[workspace].path);
 
-    if (realpath(path,temp) == NULL)
-        return;
+    if (strcmp(path,".") != 0)
+    {
+        size_t end;
+        if (path[0] == '/')
+            strcpy(temp,path);
+        else if (strcmp(path,"..") == 0)
+        {
+            end = strlen(temp)-1;
+            for (; end != 1 && temp[end] != '/'; end--) temp[end] = 0;
+            temp[end] = 0;
+        }
+        else
+        {
+            end = strlen(temp);
+            if (temp[end-1] != '/')
+            {
+                temp[end] = '/';
+                strcpy(temp+end+1,path);
+            }
+            else
+                strcpy(temp+end,path);
+        }
+    }
 
     struct stat sFile1;
     if (stat(temp,&sFile1) != 0)
@@ -282,7 +290,7 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     int found = -1;
     for (size_t i = 0; i < grf->ActualSize; i++)
     {
-        if (strcmp(grf->Base[i]->path,temp) == 0)
+        if (strcmp(grf->Base[i]->rpath,temp) == 0)
         {
             found = i;
             exists = true;
@@ -304,6 +312,7 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
                 grf->Base[i]->enable = false;
                 #endif
                 grf->Base[i]->path = NULL;
+                grf->Base[i]->rpath = NULL;
                 grf->Base[i]->Ltop = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
                 grf->Base[i]->selected = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
                 grf->Base[i]->Changed = false;
@@ -316,13 +325,12 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     }
 
     grf->Work[workspace].win[Which] = found;
-    
+
     if (!exists)
     {
         grf->Base[found]->inode = sFile1.st_ino;
         grf->Base[found]->ctime = sFile1.st_ctim;
-        grf->Base[found]->path = (char*)malloc(PATH_MAX);
-        strcpy(grf->Base[found]->path,temp);
+        grf->Base[found]->rpath = strcpy(malloc(PATH_MAX),temp);
     }
     else
     {
@@ -331,6 +339,21 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
             grf->Base[found]->ctime = sFile1.st_ctim;
             grf->Base[found]->Changed = true;
         }
+    }
+
+    size_t begin = 0;
+    if (settings->Win1Enable)
+    {
+        strcpy(temp,grf->Work[workspace].path);
+        begin = strlen(temp)-1;
+        while (temp[begin] != '/') begin--;
+        begin++;
+    }
+
+    if (settings->Win1Enable && exists && strcmp(path,"..") == 0)
+    {
+        if (strcmp(temp+begin,GET_ESELECTED(workspace,Which).name) != 0)
+            move_to(grf,workspace,!settings->Win1Enable,temp+begin);
     }
 
     if (mode == 0 && exists)
@@ -354,24 +377,74 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     LoadDir(grf->Base[found]);
     #endif
     grf->Base[found]->Changed = false;
+
+    if (settings->Win1Enable && !exists && strcmp(path,"..") == 0)
+    {
+        if (strcmp(temp+begin,GET_ESELECTED(workspace,Which).name) != 0)
+            move_to(grf,workspace,!settings->Win1Enable,temp+begin);
+    }
 }
 
 void CD(const char* path, const int workspace, Basic* grf)
 {
+    if (chdir(grf->Work[workspace].path) != 0)
+		return;
     if (chdir(path) != 0)
         return;
 
-    #ifdef __FILESYSTEM_INFORMATION_ENABLE__
+    size_t end;
+
+    static char temp[PATH_MAX];
+    size_t begin = 0;
+    if (!settings->Win1Enable)
+    {
+        strcpy(temp,grf->Work[workspace].path);
+        begin = strlen(temp)-1;
+        while (temp[begin] != '/') begin--;
+        begin++;
+    }
+
+    if (strcmp(path,".") != 0)
+    {
+        if (path[0] == '/')
+            strcpy(grf->Work[workspace].path,path);
+        else if (strcmp(path,"..") == 0)
+        {
+            end = strlen(grf->Work[workspace].path)-1;
+            for (; end != 1 && grf->Work[workspace].path[end] != '/'; end--) grf->Work[workspace].path[end] = 0;
+            grf->Work[workspace].path[end] = 0;
+        }
+        else
+        {
+            end = strlen(grf->Work[workspace].path);
+            if (grf->Work[workspace].path[end-1] != '/')
+            {
+                grf->Work[workspace].path[end] = '/';
+                strcpy(grf->Work[workspace].path+end+1,path);
+            }
+            else
+                strcpy(grf->Work[workspace].path+end,path);
+        }
+    }
+
+    #ifdef __FILESYSTEM_INFO_ENABLE__
     statfs(".",&grf->fs);
     #endif
 
     werase(grf->win[1]);
     wrefresh(grf->win[1]);
+
     GetDir(".",grf,workspace,1,settings->DirLoadingMode
     #ifdef __THREADS_FOR_DIR_ENABLE__
     ,settings->ThreadsForDir
     #endif
     );
+
+    if (!settings->Win1Enable && strcmp(path,"..") == 0)
+    {
+        if (strcmp(temp+begin,GET_ESELECTED(workspace,1).name) != 0)
+            move_to(grf,workspace,1,temp+begin);
+    }
 
     if (settings->Win1Enable)
     {
@@ -380,7 +453,7 @@ void CD(const char* path, const int workspace, Basic* grf)
             SetBorders(grf,0);
         wrefresh(grf->win[0]);
 
-        if (GET_DIR(workspace,1)->path[0] == '/' && GET_DIR(workspace,1)->path[1] == '\0')
+        if (GET_DIR(workspace,1)->rpath[0] == '/' && GET_DIR(workspace,1)->rpath[1] == '\0')
             settings->Win1Display = false;
         else
         {
@@ -393,7 +466,7 @@ void CD(const char* path, const int workspace, Basic* grf)
         }
     }
 
-    if (grf->inW == workspace && settings->Win3Enable)
+    if (workspace == grf->inW && settings->Win3Enable)
     {
         if (GET_DIR(workspace,1)->El_t == 0)
         {
@@ -406,7 +479,7 @@ void CD(const char* path, const int workspace, Basic* grf)
             #ifdef __THREADS_FOR_DIR_ENABLE__
             !GET_DIR(workspace,1)->enable &&
             #endif
-            GET_DIR(grf->inW,1)->El_t > 0)
+            GET_DIR(workspace,1)->El_t > 0)
             FastRun(grf);
     }
 }

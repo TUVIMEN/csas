@@ -34,7 +34,7 @@ int spawn(char* file, char* arg1, char* arg2, const uchar flag)
 {
     if (!file || !*file) return -1;
 
-    char* argv[4] = {0};
+    char* argv[4] = {NULL};
 
     if (!arg1 && arg2)
     {
@@ -45,7 +45,6 @@ int spawn(char* file, char* arg1, char* arg2, const uchar flag)
     argv[0] = file;
     argv[1] = arg1;
     argv[2] = arg2;
-    argv[3] = NULL;
 
     if (flag&F_NORMAL) endwin();
 
@@ -146,7 +145,7 @@ char* MakeHumanReadAble(ull value)
             else
                 rem /= 10;
         }
-        
+
         ret[i++] = '.';
         for (; rem != 0; i++)
         {
@@ -169,7 +168,6 @@ char* MakeHumanReadAble(ull value)
     return ret;
 }
 
-#ifdef __GET_DIR_SIZE_ENABLE__
 void GetDirSize(const int fd, ull* count, ull* size, const bool recursive)
 {
     DIR* d = fdopendir(fd);
@@ -207,7 +205,6 @@ void GetDirSize(const int fd, ull* count, ull* size, const bool recursive)
         closedir(d);
     }
 }
-#endif
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
 uchar CheckFileExtension(const char* name)
@@ -242,14 +239,14 @@ uchar CheckFileExtension(const char* name)
             if (strcmp(stemp,extensions[j].Name) == 0)
                 return extensions[j].group;
     }
-    
+
     return 0;
 }
 #endif
 
 char* lsperms(const int mode, const int type)
 {
-    static const char* const rwx[] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
+    const char* const rwx[] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
 	static char bits[11] = {0};
 
     if (type == T_DIR)
@@ -273,12 +270,6 @@ char* lsperms(const int mode, const int type)
     memcpy(bits+4,rwx[(mode >> 3)&7],4);
     memcpy(bits+7,rwx[mode&7],4);
 
-	if (mode & S_ISUID)
-		bits[3] = (mode&0100) ? 's' : 'S';
-	if (mode & S_ISGID)
-		bits[6] = (mode&0010) ? 's' : 'l';
-	if (mode & S_ISVTX)
-		bits[9] = (mode&0001) ? 't' : 'T';
 
 	return bits;
 }
@@ -541,8 +532,8 @@ void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, cons
 
 size_t TimeToStr(const time_t *time, char* result)
 {
-    struct tm *tis = gmtime(time);
-    return sprintf(result,"%d-%.2d-%.2d %.2d:%.2d ",tis->tm_year+1900,tis->tm_mon+1,tis->tm_mday,tis->tm_hour+2,tis->tm_min);
+    struct tm *tis = localtime(time);
+    return sprintf(result,"%d-%02d-%.2d %02d:%02d ",tis->tm_year+1900,tis->tm_mon+1,tis->tm_mday,tis->tm_hour,tis->tm_min);
 }
 
 void MakePathShorter(char* path, const int max_size)
@@ -602,7 +593,7 @@ size_t StrToValue(void* dest, const char* src)
             PosBegin += FindFirstCharacter(src+PosBegin);
             while (src[PosBegin+PosEnd] && !isspace(src[PosBegin+PosEnd]) && src[PosBegin+PosEnd] != ',' && src[PosBegin+PosEnd] != '}')
                 PosEnd++;
-            
+
             strncpy(temp,src+PosBegin,PosEnd);
             temp[PosEnd] = '\0';
 
@@ -638,14 +629,14 @@ size_t StrToValue(void* dest, const char* src)
             {
                 i += 2;
                 size_t end = FindEndOf(src+i,'}');
-                char temp1[NAME_MAX];
-                strncpy(temp1,src+i,end);
-                char* temp2 = getenv(temp1);
+                strncpy(temp,src+i,end);
+                temp[end] = 0;
+                char* temp2 = getenv(temp);
                 if (temp2)
                 {
                     size_t end1 = strlen(temp2);
                     memcpy(*((char**)dest)+x,temp2,end1);
-                    x += end1;
+                    x += end1-1;
                 }
 
                 i += end;
@@ -690,10 +681,10 @@ size_t StrToValue(void* dest, const char* src)
                         *(li*)dest |= aliases[i].v;
                         break;
                     }
-            
+
             PosBegin += PosEnd;
         } while (src[PosBegin++] == '|');
-    
+
     }
     return PosBegin;
 }
@@ -731,7 +722,7 @@ char* StrToKeys(char* dest)
             for (int g = 0; g < 6; g++)
                 for (int j = i; dest[j]; j++)
                     dest[j] = dest[j+1];
-            dest[i] = ' ';  
+            dest[i] = ' ';
         }
         else if (strncmp(dest+i,"<esc>",5) == 0)
         {
@@ -802,4 +793,3 @@ char* MakePathRunAble(char* temp)
     }
     return temp;
 }
-

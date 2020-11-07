@@ -72,7 +72,7 @@ static int compSize(const void  *El1, const void *El2)
 static int compSName(const void *El1, const void *El2)
 {
     register bool g1 = 0, g2 = 0;
-    
+
     g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
     g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
 
@@ -81,24 +81,13 @@ static int compSName(const void *El1, const void *El2)
     if (g1 && !g2) return 0;
 
     Result: ;
-    register int j;
-    char tesm[2][NAME_MAX];
-    strcpy(tesm[0],((struct Element*)El1)->name);
-    strcpy(tesm[1],((struct Element*)El2)->name);
-
-    for (j = 0; tesm[0][j] != 0; j++)
-        tesm[0][j] ^= 32*(tesm[0][j] > 96 && tesm[0][j] < 123);
-    for (j = 0; tesm[1][j] != 0; j++)
-            tesm[1][j] ^= 32*(tesm[1][j] > 96 && tesm[1][j] < 123);
-
-    j = strcmp(tesm[0],tesm[1]);
-    return j;
+    return strcasecmp((((struct Element*)El1)->name),((struct Element*)El2)->name);
 }
 
 static int compLName(const void *El1, const void *El2)
 {
     register bool g1 = 0, g2 = 0;
-    
+
     g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
     g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
 
@@ -131,7 +120,7 @@ static int compMTime(const void *El1, const void *El2)
 static int compATime(const void *El1, const void *El2)
 {
     register bool g1 = 0, g2 = 0;
-    
+
     g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
     g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
 
@@ -147,7 +136,7 @@ static int compATime(const void *El1, const void *El2)
 static int compCTime(const void *El1, const void *El2)
 {
     register bool g1 = 0, g2 = 0;
-    
+
     g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
     g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
 
@@ -164,7 +153,7 @@ static int compCTime(const void *El1, const void *El2)
 static int compGid(const void *El1, const void *El2)
 {
     register bool g1 = 0, g2 = 0;
-    
+
     g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
     g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
 
@@ -181,14 +170,14 @@ static int compGid(const void *El1, const void *El2)
 static int compUid(const void *El1, const void *El2)
 {
     register bool g1 = 0, g2 = 0;
-    
+
     g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
     g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
 
     if (!g1 && !g2) goto Result;
     if (!g1 && g2) return 1;
     if (g1 && !g2) return 0;
-        
+
     Result: ;
     return (((struct Element*)El1)->pw) > (((struct Element*)El2)->pw);
 }

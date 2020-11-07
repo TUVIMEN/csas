@@ -74,7 +74,7 @@ void GetFullLine(char* dest, const char* src, size_t* n)
             (*n) += temp;
             x += temp;
         }
-        
+
         dest[x++] = src[(*n)++];
     }
 }
@@ -94,10 +94,11 @@ void LoadConfig(const char* path,Basic* grf)
 
     char* file = (char*)malloc(sFile.st_size+1);
     read(fd,file,sFile.st_size);
+
     close(fd);
     char line[16384];
 
-    size_t Pos;
+    size_t Pos = 0;
 
     while (file[Pos])
     {
@@ -105,10 +106,8 @@ void LoadConfig(const char* path,Basic* grf)
         RunCommand(line,grf);
         Pos++;
     }
-    
+
     free(file);
 }
 
 #endif
-
-

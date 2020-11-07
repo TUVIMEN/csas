@@ -41,9 +41,7 @@ struct FunctTab FunctionsTable[] = {
     {"ChangeWorkSpace",&___CHANGEWORKSPACE},
     {"gotop",&___GOTOP},
     {"godown",&___GODOWN},
-    #ifdef __GET_DIR_SIZE_ENABLE__
     {"getsize",&___GETSIZE},
-    #endif
     {"setgroup",&___SETGROUP},
     {"select",&___SELECT},
     {"togglevisual",&___TOGGLEVISUAL},
@@ -59,7 +57,7 @@ struct FunctTab FunctionsTable[] = {
     #ifdef __LOAD_CONFIG_ENABLE__
     {"include",&___INCLUDE},
     #endif
-    {"rename",&___RENAME},
+    {"shell",&___SHELL},
     {"filter",&___FILTER},
     {NULL,NULL}
 };
@@ -267,4 +265,3 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
     werase(win);
     wrefresh(win);
 }
-

@@ -36,12 +36,11 @@
 #include <sys/time.h>
 #include <pwd.h>
 #include <grp.h>
-#include <ncurses.h>
+#include <curses.h>
 #include <sys/types.h>
 #include <limits.h>
 #include <regex.h>
 #include <locale.h>
-#include <sys/mman.h>
 #ifdef __THREADS_ENABLE__
 #include <pthread.h>
 #endif
@@ -54,7 +53,7 @@
 #ifdef __FILE_GROUPS_ENABLE__
 #include <grp.h>
 #endif
-#ifdef __FILESYSTEM_INFORMATION_ENABLE__
+#ifdef __FILESYSTEM_INFO_ENABLE__
 #include <sys/statfs.h>
 #endif
 
@@ -263,6 +262,7 @@ typedef struct
 struct Dir
 {
     char* path;
+    char* rpath;
     ll El_t;
     ll oldEl_t;
     struct Element* El;
@@ -272,21 +272,22 @@ struct Dir
     #endif
     size_t *selected;
     size_t *Ltop;
-    uchar sort_m;
     struct timespec ctime;
     ino_t inode;
+    char* filter;
     bool Changed;
     bool filter_set;
-    char* filter;
+    uchar sort_m;
 };
 
 typedef struct
 {
-    bool Visual;
-    uchar SelectedGroup;
-    bool exists;
+    char* path;
     int win[3];
     bool ShowMessage;
+    bool Visual;
+    bool exists;
+    uchar SelectedGroup;
 } WorkSpace;
 
 typedef struct
@@ -372,7 +373,7 @@ typedef struct
     bool ExitTime;
     char* cSF;
     bool cSF_E;
-    #ifdef __FILESYSTEM_INFORMATION_ENABLE__
+    #ifdef __FILESYSTEM_INFO_ENABLE__
     struct statfs fs;
     #endif
     struct

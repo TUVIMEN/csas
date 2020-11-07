@@ -21,6 +21,7 @@
 
 int UpdateEvent(Basic* grf);
 void ExitBasic(Basic* grf, const bool force);
+void move_to(Basic* grf, const int workspace, const int which, char* name);
 
 void ___SET(const char* src, Basic* grf);
 #ifdef __LOAD_CONFIG_ENABLE__
@@ -33,9 +34,7 @@ void ___CD(const char* src, Basic* grf);
 void ___GOTOP(const char* src, Basic* grf);
 void ___GODOWN(const char* src, Basic* grf);
 void ___CHANGEWORKSPACE(const char* src, Basic* grf);
-#ifdef __GET_DIR_SIZE_ENABLE__
 void ___GETSIZE(const char* src,Basic* grf);
-#endif
 void ___SETGROUP(const char* src, Basic* grf);
 void ___FASTSELECT(const char* src, Basic* grf);
 void ___TOGGLEVISUAL(const char* src, Basic* grf);
@@ -46,7 +45,7 @@ void ___SELECT(const char* src, Basic* grf);
 void ___EXEC(const char* src, Basic* grf);
 void ___BULK(const char* src, Basic* grf);
 void ___CONSOLE(const char* src, Basic* grf);
-void ___RENAME(const char* src, Basic* grf);
+void ___SHELL(const char* src, Basic* grf);
 void ___FILTER(const char* src, Basic* grf);
 
 #endif

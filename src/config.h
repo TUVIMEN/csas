@@ -168,7 +168,7 @@ struct AliasesT aliases[] = {
     {"B_NAME",B_NAME},
     {"B_WORKSPACES",B_WORKSPACES},
     {"B_POSITION",B_POSITION},
-    #ifdef __FILESYSTEM_INFORMATION_ENABLE__
+    #ifdef __FILESYSTEM_INFO_ENABLE__
     {"B_FTYPE",B_FTYPE},
     {"B_SFTYPE",B_SFTYPE},
     {"B_FBSIZE",B_FBSIZE},
