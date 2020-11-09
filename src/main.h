@@ -276,7 +276,6 @@ typedef struct
 struct Dir
 {
     char* path;
-    char* rpath;
     ll El_t;
     ll oldEl_t;
     struct Element* El;

@@ -288,10 +288,10 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
         {
             if (flag & 0x2)
             {
-                if (!strstr(grf->Base[i]->rpath,args[0]))
+                if (!strstr(grf->Base[i]->path,args[0]))
                     continue;
             }
-            else if ((strcmp(grf->Base[i]->rpath,args[0]) != 0))
+            else if ((strcmp(grf->Base[i]->path,args[0]) != 0))
                 continue;
         }
 
@@ -303,11 +303,11 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
                 if (!CommentWrite)
                 {
                     write(fd[0],"//\t",3);
-                    write(fd[0],grf->Base[i]->rpath,strlen(grf->Base[i]->rpath));
+                    write(fd[0],grf->Base[i]->path,strlen(grf->Base[i]->path));
                     write(fd[0],"\n",1);
                     CommentWrite = 1;
                 }
-                temp = (flag & 0x1) ? MakePath(grf->Base[i]->rpath,grf->Base[i]->El[j].name) : grf->Base[i]->El[j].name;
+                temp = (flag & 0x1) ? MakePath(grf->Base[i]->path,grf->Base[i]->El[j].name) : grf->Base[i]->El[j].name;
                 write(fd[0],temp,strlen(temp));
                 write(fd[0],"\n",1);
             }
@@ -345,10 +345,10 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
             {
                 if (flag & 0x2)
                 {
-                    if (!strstr(grf->Base[i]->rpath,args[0]))
+                    if (!strstr(grf->Base[i]->path,args[0]))
                         continue;
                 }
-                else if ((strcmp(grf->Base[i]->rpath,args[0]) != 0))
+                else if ((strcmp(grf->Base[i]->path,args[0]) != 0))
                     continue;
             }
 
@@ -374,18 +374,18 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
                         x = 0;
                         while (file[pos] && file[pos] != '\n') buffer[x++] = file[pos++];
                         buffer[x] = '\0';
-                        temp = (flag & 0x1) ? MakePath(grf->Base[i]->rpath,grf->Base[i]->El[j].name) : grf->Base[i]->El[j].name;
+                        temp = (flag & 0x1) ? MakePath(grf->Base[i]->path,grf->Base[i]->El[j].name) : grf->Base[i]->El[j].name;
                         if (x > 0 && strcmp(temp,buffer) != 0)
                         {
                             if (write(fd[1],args[3],strlen(args[3])) > 0) write(fd[1]," ",1);
 
-                            if (!(flag & 0x1)) temp = MakePath(grf->Base[i]->rpath,temp);
+                            if (!(flag & 0x1)) temp = MakePath(grf->Base[i]->path,temp);
                             MakePathRunAble(temp);
                             if (write(fd[1],temp,strlen(temp)) > 0) write(fd[1]," ",1);
 
                             if (write(fd[1],args[4],strlen(args[4])) > 0) write(fd[1]," ",1);
 
-                            temp = MakePath(grf->Base[i]->rpath,buffer);
+                            temp = MakePath(grf->Base[i]->path,buffer);
                             MakePathRunAble(temp);
                             if (write(fd[1],temp,strlen(temp)) > 0) write(fd[1]," ",1);
 

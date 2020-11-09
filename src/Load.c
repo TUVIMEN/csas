@@ -36,7 +36,7 @@ void* LoadDir(void *arg)
     struct Dir* grf = (struct Dir*)arg;
 
     DIR* d;
-    if ((d = opendir(grf->rpath)) == NULL)
+    if ((d = opendir(grf->path)) == NULL)
     {
         grf->El_t = -1;
         #ifdef __THREADS_FOR_DIR_ENABLE__
@@ -290,7 +290,7 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     int found = -1;
     for (size_t i = 0; i < grf->ActualSize; i++)
     {
-        if (strcmp(grf->Base[i]->rpath,temp) == 0)
+        if (strcmp(grf->Base[i]->path,temp) == 0)
         {
             found = i;
             exists = true;
@@ -312,7 +312,7 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
                 grf->Base[i]->enable = false;
                 #endif
                 grf->Base[i]->path = NULL;
-                grf->Base[i]->rpath = NULL;
+                grf->Base[i]->path = NULL;
                 grf->Base[i]->Ltop = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
                 grf->Base[i]->selected = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
                 grf->Base[i]->Changed = false;
@@ -330,7 +330,8 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     {
         grf->Base[found]->inode = sFile1.st_ino;
         grf->Base[found]->ctime = sFile1.st_ctim;
-        grf->Base[found]->rpath = strcpy(malloc(PATH_MAX),temp);
+        grf->Base[found]->path = strcpy(malloc(PATH_MAX),temp);
+        realpath(temp,grf->Base[found]->path);
     }
     else
     {
@@ -453,7 +454,7 @@ void CD(const char* path, const int workspace, Basic* grf)
             SetBorders(grf,0);
         wrefresh(grf->win[0]);
 
-        if (GET_DIR(workspace,1)->rpath[0] == '/' && GET_DIR(workspace,1)->rpath[1] == '\0')
+        if (GET_DIR(workspace,1)->path[0] == '/' && GET_DIR(workspace,1)->path[1] == '\0')
             settings->Win1Display = false;
         else
         {

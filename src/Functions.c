@@ -613,7 +613,6 @@ void freeBasic(Basic* grf)
     for (size_t i = 0; i < grf->ActualSize; i++)
     {
         free(grf->Base[i]->path);
-        free(grf->Base[i]->rpath);
         free(grf->Base[i]->selected);
         free(grf->Base[i]->Ltop);
         free(grf->Base[i]->filter);
