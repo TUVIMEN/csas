@@ -26,7 +26,7 @@ char* MakeHumanReadAble(ull value);
 void GetDirSize(const int fd, ull* count, ull* size, const bool recursive);
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
-uchar CheckFileExtension(const char* name);
+uchar check_extension(const char* name);
 #endif
 
 char* lsperms(const int mode, const int type);

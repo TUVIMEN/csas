@@ -230,7 +230,7 @@ void* LoadDir(void *arg)
     if (grf->El_t > 0)
     {
         #ifdef __SORT_ELEMENTS_ENABLE__
-        SortEl(grf->El,grf->El_t,grf->sort_m);
+        SortEl(grf->El,grf->El_t,settings->SortMethod);
         #endif
     }
 

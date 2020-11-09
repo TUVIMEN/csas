@@ -158,6 +158,7 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
             case -1:
                 break;
             case 10:
+            case '\r':
                 goto END;
                 break;
             case KEY_UP:

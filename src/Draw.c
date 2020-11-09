@@ -420,7 +420,7 @@ void DrawBasic(Basic* grf, const int which)
         {
             #ifdef __COLOR_FILES_BY_EXTENSION__
             if (GET_DIR(grf->inW,i)->El[j].FType == 1)
-                GET_DIR(grf->inW,i)->El[j].FType = CheckFileExtension(GET_DIR(grf->inW,i)->El[j].name);
+                GET_DIR(grf->inW,i)->El[j].FType = check_extension(GET_DIR(grf->inW,i)->El[j].name);
             #endif
             color = ColorEl(&GET_DIR(grf->inW,i)->El[j],(j == (ll)GET_SELECTED(grf->inW,i)));
 
@@ -501,7 +501,7 @@ void DrawBasic(Basic* grf, const int which)
         if ((settings->Bar1Settings & B_WORKSPACES) == B_WORKSPACES)
         {
             for (int i = 0; i < WORKSPACE_N; i++)
-                    cont_s[2] += grf->Work[i].exists;
+                cont_s[2] += grf->Work[i].exists;
 
             cont_s[2] *= 3;
         }
@@ -536,13 +536,13 @@ void DrawBasic(Basic* grf, const int which)
                 if (!(grf->Work[grf->inW].path[0] == '/' && grf->Work[grf->inW].path[1] == '\0'))
                 {
                     strcat(MainTemp,"/");
-                    MakePathShorter(MainTemp,grf->win[3]->_maxx-(cont_s[3]+1+cont_s[2]+strlen(GET_ESELECTED(grf->inW,1).name)));
+                    MakePathShorter(MainTemp,grf->win[3]->_maxx-(cont_s[3]+1+cont_s[2]+((settings->Bar1Settings & B_NAME) == B_NAME ? strlen(GET_ESELECTED(grf->inW,1).name) : 0)));
                 }
 
                 wattron(grf->win[3],settings->C_Bar_Dir);
                 mvwprintw(grf->win[3],0,cont_s[3]," %s",MainTemp);
                 wattroff(grf->win[3],settings->C_Bar_Dir);
-
+                
                 cont_s[3] += strlen(MainTemp)+1;
             }
             if ((settings->Bar1Settings & B_NAME) == B_NAME)

@@ -79,11 +79,22 @@ void GetFullLine(char* dest, const char* src, size_t* n)
     }
 }
 
-void LoadConfig(const char* path,Basic* grf)
+void LoadConfig(const char* path, Basic* grf)
 {
     int fd;
     if ((fd = open(path,O_RDONLY)) == -1)
         return;
+    
+    static char temp[PATH_MAX];
+    strcpy(temp,path);
+
+    if (temp[0] == '/')
+    {
+        size_t end = strlen(temp)-1;
+        for (; temp[end] != '/'; end--) temp[end] = 0;
+    }
+
+    chdir(temp);
 
     struct stat sFile;
     if (fstat(fd,&sFile) == -1)
@@ -96,7 +107,7 @@ void LoadConfig(const char* path,Basic* grf)
     read(fd,file,sFile.st_size);
 
     close(fd);
-    char line[16384];
+    static char line[16384];
 
     size_t Pos = 0;
 
@@ -108,6 +119,8 @@ void LoadConfig(const char* path,Basic* grf)
     }
 
     free(file);
+
+    chdir(grf->Work[grf->inW].path);
 }
 
 #endif

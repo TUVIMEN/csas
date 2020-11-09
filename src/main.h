@@ -19,6 +19,19 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#define _GNU_SOURCE
+
+#ifndef NCURSES_WIDECHAR
+#define NCURSES_WIDECHAR 1
+#endif
+
+#define __USE_XOPEN
+#define _XOPEN_SOURCE 600
+
+#ifndef __USE_XOPEN_EXTENDED
+#define __USE_XOPEN_EXTENDED 1
+#endif
+
 #include "HardConfig.h"
 
 #include <stdlib.h>
@@ -36,7 +49,7 @@
 #include <sys/time.h>
 #include <pwd.h>
 #include <grp.h>
-#include <curses.h>
+#include <ncurses.h>
 #include <sys/types.h>
 #include <limits.h>
 #include <regex.h>
@@ -106,7 +119,6 @@ typedef unsigned long long int ull;
     #define SORT_NONE 0
     #define SORT_TYPE 1
 
-    #define SORT_CHIR 32
     #define SORT_SIZE 33
     #define SORT_NAME 34
     #define SORT_LNAME 35
@@ -116,7 +128,9 @@ typedef unsigned long long int ull;
     #define SORT_GID 39
     #define SORT_UID 40
 
-    #define SORT_REVERSE 128
+    #define SORT_IF 1073741823
+    #define SORT_BETTER_FILES 1073741824
+    #define SORT_REVERSE 2147483648
 
 #endif
 
@@ -189,7 +203,7 @@ struct Element
     char* name;
     uchar Type;
     #ifdef __MODE_ENABLE__
-    unsigned int flags;
+    mode_t flags;
     #endif
     uchar *List;
     #ifdef __INODE_ENABLE__
@@ -434,4 +448,3 @@ struct WinArgs {
     Vector2i MaxPos;
     int settings;
 };
-

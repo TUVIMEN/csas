@@ -47,7 +47,7 @@ void* FileRun(void* arg)
     bool binary = false;
 
     for (size_t i = 0; i < buf_t; i++)
-        bina += 1*(buffer[i] != 10 && (buffer[i] < 32 || buffer[i] > 126));
+        bina += 1*!(isascii(buffer[i]));
 
     binary = bina>3;
 
@@ -67,7 +67,7 @@ void* FileRun(void* arg)
         if (pipe(pipes) == -1)
             goto END;
 
-        if (fork() == 0) //Delay must be small to see
+        if (fork() == 0)
         {
             close(pipes[0]);
             dup2(pipes[1],1);

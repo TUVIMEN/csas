@@ -207,38 +207,16 @@ void GetDirSize(const int fd, ull* count, ull* size, const bool recursive)
 }
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
-uchar CheckFileExtension(const char* name)
+uchar check_extension(const char* name)
 {
-    static char stemp[NAME_MAX];
-    static size_t tse, nse;
-    static bool found;
+    register char* ret = memrchr(name,'.',strlen(name)-1);
 
-    found = false;
-    tse = strlen(name);
-    nse = 0;
+    if (ret == NULL) return 0;
+    ret++;
 
-    for (register size_t j = tse-1; j; j--)
-    {
-        if (name[j] == '.' && j < tse-1)
-        {
-            found = true;
-            tse = j;
-            break;
-        }
-    }
-
-    if (found)
-    {
-        strcpy(stemp,name+tse+1);
-        nse = strlen(stemp);
-
-        for (register size_t j = 0; j < nse; j++)
-            stemp[j] ^= 32*(stemp[j] > 96 && stemp[j] < 123);
-
-        for (register size_t j = 0; extensions[j].group != 0; j++)
-            if (strcmp(stemp,extensions[j].Name) == 0)
-                return extensions[j].group;
-    }
+    for (register size_t j = 0; extensions[j].group != 0; j++)
+        if (strcasecmp(ret,extensions[j].Name) == 0)
+            return extensions[j].group;
 
     return 0;
 }
@@ -269,7 +247,6 @@ char* lsperms(const int mode, const int type)
     memcpy(bits+1,rwx[(mode >> 6)&7],4);
     memcpy(bits+4,rwx[(mode >> 3)&7],4);
     memcpy(bits+7,rwx[mode&7],4);
-
 
 	return bits;
 }
@@ -308,14 +285,14 @@ void RunFile(char* path)
         int bina = 0;
         bool binary = false;
 
-        for (size_t i = 0; i < buf_t; i++)
-                bina += 1*(buf[i] != 10 && (buf[i] < 32 || buf[i] > 126));
+        for (register size_t i = 0; i < buf_t; i++)
+            bina += 1*!(isascii(buf[i]));
 
         binary = bina > 32;
 
         char* nest = (char*)malloc(32);
 
-        for (int i = 0; signatures[i].sig != NULL; i++)
+        for (register int i = 0; signatures[i].sig != NULL; i++)
         {
             if (signatures[i].binary == binary)
             {

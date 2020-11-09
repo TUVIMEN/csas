@@ -22,22 +22,22 @@
 struct AliasesT aliases[] = {
     {"false",0},
     {"true",1},
-    {"COL_00",COLOR_PAIR(0x0)},
-    {"COL_01",COLOR_PAIR(0x1)},
-    {"COL_02",COLOR_PAIR(0x2)},
-    {"COL_03",COLOR_PAIR(0x3)},
-    {"COL_04",COLOR_PAIR(0x4)},
-    {"COL_05",COLOR_PAIR(0x5)},
-    {"COL_06",COLOR_PAIR(0x6)},
-    {"COL_07",COLOR_PAIR(0x7)},
-    {"COL_08",COLOR_PAIR(0x8)},
-    {"COL_09",COLOR_PAIR(0x9)},
-    {"COL_0A",COLOR_PAIR(0xA)},
-    {"COL_0B",COLOR_PAIR(0xB)},
-    {"COL_0C",COLOR_PAIR(0xC)},
-    {"COL_0D",COLOR_PAIR(0xD)},
-    {"COL_0E",COLOR_PAIR(0xE)},
-    {"COL_0F",COLOR_PAIR(0xF)},
+    {"COL_0",COLOR_PAIR(0x0)},
+    {"COL_1",COLOR_PAIR(0x1)},
+    {"COL_2",COLOR_PAIR(0x2)},
+    {"COL_3",COLOR_PAIR(0x3)},
+    {"COL_4",COLOR_PAIR(0x4)},
+    {"COL_5",COLOR_PAIR(0x5)},
+    {"COL_6",COLOR_PAIR(0x6)},
+    {"COL_7",COLOR_PAIR(0x7)},
+    {"COL_8",COLOR_PAIR(0x8)},
+    {"COL_9",COLOR_PAIR(0x9)},
+    {"COL_A",COLOR_PAIR(0xA)},
+    {"COL_B",COLOR_PAIR(0xB)},
+    {"COL_C",COLOR_PAIR(0xC)},
+    {"COL_D",COLOR_PAIR(0xD)},
+    {"COL_E",COLOR_PAIR(0xE)},
+    {"COL_F",COLOR_PAIR(0xF)},
     {"A_BOLD",A_BOLD},
     {"A_REVERSE",A_REVERSE},
     {"A_UNDERLINE",A_UNDERLINE},
@@ -77,7 +77,6 @@ struct AliasesT aliases[] = {
     #ifdef __SORT_ELEMENTS_ENABLE__
     {"SORT_NONE",SORT_NONE},
     {"SORT_TYPE",SORT_TYPE},
-    {"SORT_CHIR",SORT_CHIR},
     {"SORT_SIZE",SORT_SIZE},
     {"SORT_NAME",SORT_NAME},
     {"SORT_LNAME",SORT_LNAME},
@@ -93,6 +92,7 @@ struct AliasesT aliases[] = {
     {"SORT_GID",SORT_GID},
     {"SORT_UID",SORT_UID},
     {"SORT_REVERSE",SORT_REVERSE},
+    {"SORT_BETTER_FILES",SORT_BETTER_FILES},
     #endif
     {"D_F",D_F},
     {"D_R",D_R},
@@ -195,22 +195,24 @@ Settings* settings;
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
 Extensions extensions[] = {
-    {"AIFF",'V'}, {"MKV",'V'}, {"AVI",'V'}, {"FLAC",'V'}, {"FLV",'V'},
-    {"M4A",'V'}, {"M4B",'V'}, {"M4P",'V'}, {"M4V",'V'}, {"MP2",'V'},
-    {"MP3",'V'}, {"MP4",'V'}, {"MPE",'V'}, {"MPG",'V'}, {"MPV",'V'},
-    {"OGG",'V'}, {"MPEG",'V'}, {"PCM",'V'}, {"QT",'V'}, {"SWF",'V'},
-    {"WAV",'V'}, {"AAC",'V'}, {"WMA",'V'}, {"WMV",'V'}, {"VOB",'V'},
-    {"MOV",'V'}, {"WEBM",'V'}, {"RVI",'V'}, {"3G2",'V'}, {"3GP",'V'},
-    {"AA",'V'}, {"AC3",'V'}, {"MJ2",'V'}, {"MPC",'V'}, {"MPC8",'V'},
-    {"M4V",'V'}, {"OGA",'V'}, {"OGV",'V'}, {"RVI",'V'}, {"ALAC",'V'},
-    {"AVCHD",'V'}, //Video || Audio
-    {"GIF",'I'}, {"JPEG",'I'}, {"JPG",'I'}, {"PNG",'I'}, {"RAW",'I'},
-    {"TIFF",'I'}, {"BMP",'I'}, {"TGA",'I'}, {"GVS",'I'}, {"WEBP",'I'},
-    {"SVG",'I'}, //Image
-    {"TAR",'A'}, {"JAR",'A'}, {"RAR",'A'}, {"BZ2",'A'}, {"EXE",'A'},
-    {"GZ",'A'}, {"IMG",'A'}, {"ISO",'A'}, {"LZMA",'A'}, {"TBZ2",'A'},
-    {"TGZ",'A'}, {"Z",'A'}, {"ZX",'A'}, {"ZIP",'A'}, {"7Z",'A'},
-    {"XZ",'A'}, //Archive
+    {"aiff",'V'}, {"mkv",'V'}, {"avi",'V'}, {"flac",'V'}, {"flv",'V'},
+    {"m4a",'V'}, {"m4b",'V'}, {"m4p",'V'}, {"mp2",'V'}, {"avchd",'V'},
+    {"mp3",'V'}, {"mp4",'V'}, {"mpe",'V'}, {"mpg",'V'}, {"mpv",'V'},
+    {"ogg",'V'}, {"mpeg",'V'}, {"pcm",'V'}, {"qt",'V'}, {"swf",'V'},
+    {"wav",'V'}, {"aac",'V'}, {"wma",'V'}, {"wmv",'V'}, {"vob",'V'},
+    {"mov",'V'}, {"webm",'V'}, {"rvi",'V'}, {"3g2",'V'}, {"3gp",'V'},
+    {"aa",'V'}, {"ac3",'V'}, {"mj2",'V'}, {"mpc",'V'}, {"mpc8",'V'},
+    {"m4v",'V'}, {"oga",'V'}, {"ogv",'V'}, {"rvi",'V'}, {"alac",'V'},
+    //Video || Audio
+    {"gif",'I'}, {"jpeg",'I'}, {"jpg",'I'}, {"png",'I'}, {"raw",'I'},
+    {"tiff",'I'}, {"bmp",'I'}, {"tga",'I'}, {"gvs",'I'}, {"webp",'I'},
+    {"svg",'I'},
+    //Image
+    {"tar",'A'}, {"jar",'A'}, {"rar",'A'}, {"bz2",'A'}, {"exe",'A'},
+    {"gz",'A'}, {"img",'A'}, {"iso",'A'}, {"lzma",'A'}, {"tbz2",'A'},
+    {"tgz",'A'}, {"z",'A'}, {"zx",'A'}, {"zip",'A'}, {"7z",'A'},
+    {"xz",'A'},
+    //Archive
     {NULL,'\0'}
 };
 #endif

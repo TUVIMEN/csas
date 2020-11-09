@@ -38,11 +38,11 @@ void ChangeWorkSpace(Basic* grf, const int num)
     {
         grf->Work[num].exists = 1;
         grf->Work[num].ShowMessage = false;
-        grf->Work[num].path = strcpy(malloc(PATH_MAX),GET_DIR(temp,1)->rpath);
-        CD(GET_DIR(temp,1)->rpath,num,grf);
+        grf->Work[num].path = strcpy(malloc(PATH_MAX),GET_DIR(temp,1)->path);
+        CD(GET_DIR(temp,1)->path,num,grf);
     }
     else
-        CD(GET_DIR(num,1)->rpath,num,grf);
+        CD(GET_DIR(num,1)->path,num,grf);
 }
 
 int UpdateEvent(Basic* grf)
@@ -273,6 +273,7 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
 
     size_t path_t = strlen(args[0]);
     bool CommentWrite;
+    char* temp;
 
     for (size_t i = 0; i < grf->ActualSize; i++)
     {
@@ -290,7 +291,7 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
                 if (!strstr(grf->Base[i]->rpath,args[0]))
                     continue;
             }
-            else if ((strcmp(grf->Base[i]->rpath,args[0]) == 0))
+            else if ((strcmp(grf->Base[i]->rpath,args[0]) != 0))
                 continue;
         }
 
@@ -306,7 +307,7 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
                     write(fd[0],"\n",1);
                     CommentWrite = 1;
                 }
-                char* temp = (flag & 0x1) ? MakePath(grf->Base[i]->rpath,grf->Base[i]->El[j].name) : grf->Base[i]->El[j].name;
+                temp = (flag & 0x1) ? MakePath(grf->Base[i]->rpath,grf->Base[i]->El[j].name) : grf->Base[i]->El[j].name;
                 write(fd[0],temp,strlen(temp));
                 write(fd[0],"\n",1);
             }
@@ -329,7 +330,7 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
     write(fd[1],args[1],strlen(args[1]));
     write(fd[1],"\n\n",2);
 
-    while (file[pos])
+    if (file[pos])
     {
         for (size_t i = 0; i < grf->ActualSize; i++)
         {
@@ -347,7 +348,7 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
                     if (!strstr(grf->Base[i]->rpath,args[0]))
                         continue;
                 }
-                else if ((strcmp(grf->Base[i]->rpath,args[0]) == 0))
+                else if ((strcmp(grf->Base[i]->rpath,args[0]) != 0))
                     continue;
             }
 
@@ -373,27 +374,23 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
                         x = 0;
                         while (file[pos] && file[pos] != '\n') buffer[x++] = file[pos++];
                         buffer[x] = '\0';
-                        char* temp = (flag & 0x1) ? MakePath(grf->Base[i]->rpath,grf->Base[i]->El[j].name) : grf->Base[i]->El[j].name;
-                        char stemp[PATH_MAX];
+                        temp = (flag & 0x1) ? MakePath(grf->Base[i]->rpath,grf->Base[i]->El[j].name) : grf->Base[i]->El[j].name;
                         if (x > 0 && strcmp(temp,buffer) != 0)
                         {
-                            write(fd[1],args[3],strlen(args[3]));
-                            write(fd[1]," ",1);
+                            if (write(fd[1],args[3],strlen(args[3])) > 0) write(fd[1]," ",1);
 
-                            strcpy(stemp,temp);
-                            MakePathRunAble(stemp);
-                            write(fd[1],stemp,strlen(stemp));
-                            write(fd[1]," ",1);
+                            if (!(flag & 0x1)) temp = MakePath(grf->Base[i]->rpath,temp);
+                            MakePathRunAble(temp);
+                            if (write(fd[1],temp,strlen(temp)) > 0) write(fd[1]," ",1);
 
-                            write(fd[1],args[4],strlen(args[4]));
-                            write(fd[1]," ",1);
+                            if (write(fd[1],args[4],strlen(args[4])) > 0) write(fd[1]," ",1);
 
-                            strcpy(stemp,buffer);
-                            MakePathRunAble(stemp);
-                            write(fd[1],stemp,strlen(stemp));
-                            write(fd[1]," ",1);
+                            temp = MakePath(grf->Base[i]->rpath,buffer);
+                            MakePathRunAble(temp);
+                            if (write(fd[1],temp,strlen(temp)) > 0) write(fd[1]," ",1);
 
                             write(fd[1],args[5],strlen(args[5]));
+                            
                             write(fd[1],"\n",1);
                         }
                     }
@@ -408,7 +405,6 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
 
     spawn(args[2],buf[1],NULL,F_NORMAL|F_WAIT);
     spawn(args[1],buf[1],NULL,F_NORMAL|F_WAIT|F_CONFIRM);
-
 
     for (int i = 0; i < 2; i++)
     {
@@ -452,10 +448,8 @@ void ___SET(const char* src, Basic* grf)
         {"C_LReg",&settings->C_LReg},{"C_LFifo",&settings->C_LFifo},{"C_LSock",&settings->C_LSock},{"C_LDev",&settings->C_LDev},
         {"C_LBDev",&settings->C_LBDev},{"C_Other",&settings->C_Other},{"C_User_S_D",&settings->C_User_S_D},
         {"C_Bar_Dir",&settings->C_Bar_Dir},{"C_Bar_Name",&settings->C_Bar_Name},{"C_Bar_WorkSpace",&settings->C_Bar_WorkSpace},
-        {"C_Bar_WorkSpace_Selected",&settings->C_Bar_WorkSpace_Selected},{"C_Group_0",&settings->C_Group[0]},
-        {"C_Group_1",&settings->C_Group[1]},{"C_Group_2",&settings->C_Group[2]},{"C_Group_3",&settings->C_Group[3]},
-        {"C_Group_4",&settings->C_Group[4]},{"C_Group_5",&settings->C_Group[5]},{"C_Group_6",&settings->C_Group[6]},
-        {"C_Group_7",&settings->C_Group[7]},{"C_Bar_F",&settings->C_Bar_F},{"C_Bar_E",&settings->C_Bar_E},
+        {"C_Bar_WorkSpace_Selected",&settings->C_Bar_WorkSpace_Selected},{"C_Group",&settings->C_Group},
+        {"C_Bar_F",&settings->C_Bar_F},{"C_Bar_E",&settings->C_Bar_E},
         #ifdef __THREADS_FOR_DIR_ENABLE__
         {"ThreadsForDir",&settings->ThreadsForDir},
         #endif
@@ -483,14 +477,9 @@ void ___SET(const char* src, Basic* grf)
 #ifdef __LOAD_CONFIG_ENABLE__
 void ___INCLUDE(const char* src, Basic* grf)
 {
-    size_t pos = 0, end = 0;
-    char temp[8192];
+    static char temp[8192];
 
-    if (src[pos] != '\'')
-        return;
-    pos++;
-    end = FindEndOf(src+pos,'\'');
-    strncpy(temp,src+pos,end);
+    StrToPath(temp,src);
     LoadConfig(temp,grf);
 }
 #endif
@@ -846,7 +835,7 @@ void ___GETSIZE(const char* src, Basic* grf)
     }
 
     if (workspace != grf->inW)
-		if (chdir(GET_DIR(workspace,1)->rpath) != 0)
+		if (chdir(GET_DIR(workspace,1)->path) != 0)
 			return;
 
     if (selected == -2)
@@ -858,7 +847,7 @@ void ___GETSIZE(const char* src, Basic* grf)
             #ifdef __THREADS_FOR_DIR_ENABLE__
             !GET_DIR(workspace,1)->enable &&
             #endif
-            GET_DIR(workspace,1)->El_t > 0 && (fd = open(GET_DIR(workspace,1)->rpath,O_DIRECTORY)) != -1)
+            GET_DIR(workspace,1)->El_t > 0 && (fd = open(GET_DIR(workspace,1)->path,O_DIRECTORY)) != -1)
         GETSIZE(&GET_ESELECTED(workspace,1),fd,flag);
         if (!(flag&0x1))
         {
@@ -866,7 +855,7 @@ void ___GETSIZE(const char* src, Basic* grf)
             return;
         }
         else
-            strcpy(path,MakePath(GET_DIR(workspace,1)->rpath,GET_ESELECTED(workspace,1).name));
+            strcpy(path,MakePath(GET_DIR(workspace,1)->path,GET_ESELECTED(workspace,1).name));
     }
 
     if (path[0])
@@ -891,14 +880,14 @@ void ___GETSIZE(const char* src, Basic* grf)
         {
             if (flag&0x1)
             {
-                if (!strstr(grf->Base[i]->rpath,path))
+                if (!strstr(grf->Base[i]->path,path))
                     continue;
             }
-            else if (strcmp(grf->Base[i]->rpath,path) != 0)
+            else if (strcmp(grf->Base[i]->path,path) != 0)
                 continue;
         }
 
-        if ((temp = open(grf->Base[i]->rpath,O_DIRECTORY)) == -1)
+        if ((temp = open(grf->Base[i]->path,O_DIRECTORY)) == -1)
             continue;
 
         for (ll j = 0; j < grf->Base[i]->El_t; j++)
@@ -909,7 +898,7 @@ void ___GETSIZE(const char* src, Basic* grf)
 
     free(path);
     if (workspace != grf->inW)
-        chdir(GET_DIR(grf->inW,1)->rpath);
+        chdir(GET_DIR(grf->inW,1)->path);
 }
 
 void ___SETGROUP(const char* src, Basic* grf)
@@ -1018,7 +1007,7 @@ void ___F_MOD(const char* src, Basic* grf)
         goto END;
 
     if (workspace != grf->inW)
-        if (chdir(GET_DIR(workspace,1)->rpath) != 0)
+        if (chdir(GET_DIR(workspace,1)->path) != 0)
 			return;
 
     if (selected == -2)
@@ -1047,7 +1036,7 @@ void ___F_MOD(const char* src, Basic* grf)
             #ifdef __THREADS_FOR_DIR_ENABLE__
             !GET_DIR(workspace,1)->enable &&
             #endif
-            GET_DIR(workspace,1)->El_t > 0 && (fd2 = open(GET_DIR(workspace,1)->rpath,O_DIRECTORY)) != -1)
+            GET_DIR(workspace,1)->El_t > 0 && (fd2 = open(GET_DIR(workspace,1)->path,O_DIRECTORY)) != -1)
         {
             if (fstatat(fd2,GET_ESELECTED(workspace,1).name,&ST,AT_SYMLINK_NOFOLLOW) == -1)
                 goto END2;
@@ -1115,10 +1104,10 @@ void ___F_MOD(const char* src, Basic* grf)
         #endif
         grf->Base[i]->El_t < 1)
             continue;
-        if (path[0] && strcmp(grf->Base[i]->rpath,path) != 0)
+        if (path[0] && strcmp(grf->Base[i]->path,path) != 0)
                 continue;
 
-        if ((fd2 = open(grf->Base[i]->rpath,O_DIRECTORY)) == -1)
+        if ((fd2 = open(grf->Base[i]->path,O_DIRECTORY)) == -1)
             continue;
 
         for (ll j = 0; j < grf->Base[i]->El_t; j++)
@@ -1127,14 +1116,14 @@ void ___F_MOD(const char* src, Basic* grf)
             {
                 if (fstatat(fd2,grf->Base[i]->El[j].name,&ST,AT_SYMLINK_NOFOLLOW) == -1)
                     continue;
+                count++;
+                size += ST.st_size;
                 if ((ST.st_mode&S_IFMT) == S_IFDIR)
 				{
 					if ((fd3 = openat(fd2,grf->Base[i]->El[j].name,O_RDONLY)) != -1)
 					{
 						GetDirSize(fd3,&count,&size,true);
 						close(fd3);
-						count++;
-						size += ST.st_size;
 					}
 				}
             }
@@ -1169,10 +1158,10 @@ void ___F_MOD(const char* src, Basic* grf)
         #endif
         grf->Base[i]->El_t < 1)
             continue;
-        if (path[0] && strcmp(grf->Base[i]->rpath,path) != 0)
+        if (path[0] && strcmp(grf->Base[i]->path,path) != 0)
                 continue;
 
-        if ((fd2 = open(grf->Base[i]->rpath,O_DIRECTORY)) == -1)
+        if ((fd2 = open(grf->Base[i]->path,O_DIRECTORY)) == -1)
             continue;
 
         for (ll j = 0; j < grf->Base[i]->El_t; j++)
@@ -1200,7 +1189,7 @@ void ___F_MOD(const char* src, Basic* grf)
     free(path);
     free(target);
     if (workspace != grf->inW)
-        chdir(GET_DIR(grf->inW,1)->rpath);
+        chdir(GET_DIR(grf->inW,1)->path);
 }
 
 static void GETDIR(char* path, Basic* grf, uchar mode
@@ -1390,7 +1379,7 @@ void ___SELECT(const char* src, Basic* grf)
     }
 
     if (workspace1 != grf->inW)
-        if (chdir(GET_DIR(workspace1,1)->rpath) != 0)
+        if (chdir(GET_DIR(workspace1,1)->path) != 0)
 			return;
 
     if (selected == -2)
@@ -1405,7 +1394,7 @@ void ___SELECT(const char* src, Basic* grf)
             return;
         }
 
-        strcpy(path,MakePath(GET_DIR(workspace1,1)->rpath,GET_ESELECTED(workspace1,1).name));
+        strcpy(path,MakePath(GET_DIR(workspace1,1)->path,GET_ESELECTED(workspace1,1).name));
         switch (mode)
         {
             case -1: GET_ESELECTED(workspace1,1).List[workspace2] ^= 1<<toselected; break;
@@ -1434,10 +1423,10 @@ void ___SELECT(const char* src, Basic* grf)
         {
             if (recursive)
             {
-                if (!strstr(grf->Base[i]->rpath,path))
+                if (!strstr(grf->Base[i]->path,path))
                     continue;
             }
-            else if (strcmp(grf->Base[i]->rpath,path) != 0)
+            else if (strcmp(grf->Base[i]->path,path) != 0)
                 continue;
         }
 
@@ -1457,12 +1446,12 @@ void ___SELECT(const char* src, Basic* grf)
 
     free(path);
     if (workspace1 != grf->inW)
-        chdir(GET_DIR(grf->inW,1)->rpath);
+        chdir(GET_DIR(grf->inW,1)->path);
 }
 
 void ___EXEC(const char* src, Basic* grf)
 {
-    size_t pos = 0, x = 0, end;
+    size_t pos = 0;
     int background = 0;
     char temp[PATH_MAX];
 
@@ -1482,28 +1471,8 @@ void ___EXEC(const char* src, Basic* grf)
 
             } while (src[pos] && !isspace(src[pos]));
         }
-        else if (src[pos] == '\'')
-        {
-            pos++;
-            end = FindEndOf(src+pos,'\'');
-            strncpy(temp,src+pos,end);
-            temp[end] = '\0';
-            pos += end;
-        }
         else
-        {
-            while (src[pos] && !isspace(src[pos]))
-            {
-                if (src[pos] == '\\')
-                    temp[x] = src[++pos];
-                else
-                    temp[x] = src[pos];
-                x++;
-                pos++;
-            }
-            temp[x] = '\0';
-        }
-
+            pos += StrToPath(temp,src+pos);
 
         pos += FindFirstCharacter(src+pos);
     }
@@ -1544,6 +1513,10 @@ void ___BULK(const char* src, Basic* grf)
                         if (src[pos] == '-')
                         {
                             selected = -1;
+                            pos++;
+                        } else if (src[pos] == 's')
+                        {
+                            selected = grf->Work[workspace].SelectedGroup;
                             pos++;
                         }
                         else
@@ -1588,7 +1561,7 @@ void ___BULK(const char* src, Basic* grf)
         return;
 
     if (grf->inW != workspace)
-        if (chdir(GET_DIR(workspace,1)->rpath) != 0)
+        if (chdir(GET_DIR(workspace,1)->path) != 0)
 			return;
 
     if (path[0])
@@ -1599,7 +1572,7 @@ void ___BULK(const char* src, Basic* grf)
         free(temp[i]);
     free(temp);
     if (grf->inW != workspace)
-        chdir(GET_DIR(grf->inW,1)->rpath);
+        chdir(GET_DIR(workspace,1)->path);
 }
 
 void ___CONSOLE(const char* src, Basic* grf)

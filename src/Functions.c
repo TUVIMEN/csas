@@ -109,26 +109,26 @@ void KeyInit()
     #ifdef __SORT_ELEMENTS_ENABLE__
     addKey((Key){"oe","set SortMethod SORT_NONE"});
     addKey((Key){"oE","set SortMethod SORT_NONE|SORT_REVERSE"});
-    addKey((Key){"or","set SortMethod SORT_TYPE"});
-    addKey((Key){"oR","set SortMethod SORT_TYPE|SORT_REVERSE'"});
-    addKey((Key){"ob","set SortMethod SORT_CHIR"});
-    addKey((Key){"oB","set SortMethod SORT_CHIR|SORT_REVERSE"});
-    addKey((Key){"os","set SortMethod SORT_SIZE"});
-    addKey((Key){"oS","set SortMethod SORT_SIZE|SORT_REVERSE"});
-    addKey((Key){"otm","set SortMethod SORT_MTIME"});
-    addKey((Key){"otM","set SortMethod SORT_MTIME|SORT_REVERSE"});
-    addKey((Key){"otc","set SortMethod SORT_CTIME"});
-    addKey((Key){"otC","set SortMethod SORT_CTIME|SORT_REVERSE"});
-    addKey((Key){"ota","set SortMethod SORT_ATIME"});
-    addKey((Key){"otA","set SortMethod SORT_ATIME|SORT_REVERSE"});
-    addKey((Key){"og","set SortMethod SORT_GID"});
-    addKey((Key){"oG","set SortMethod SORT_GID|SORT_REVERSE"});
-    addKey((Key){"ou","set SortMethod SORT_UID"});
-    addKey((Key){"oU","set SortMethod SORT_UID|SORT_REVERSE"});
-    addKey((Key){"om","set SortMethod SORT_LNAME"});
-    addKey((Key){"oM","set SortMethod SORT_LNAME|SORT_REVERSE"});
-    addKey((Key){"on","set SortMethod SORT_NAME"});
-    addKey((Key){"oN","set SortMethod SORT_NAME|SORT_REVERSE"});
+    addKey((Key){"or","set SortMethod SORT_TYPE|SORT_BETTER_FILES"});
+    addKey((Key){"oR","set SortMethod SORT_TYPE|SORT_REVERSE|SORT_BETTER_FILES'"});
+    addKey((Key){"ob","set SortMethod SORT_NONE|SORT_BETTER_FILES"});
+    addKey((Key){"oB","set SortMethod SORT_NONE|SORT_REVERSE|SORT_BETTER_FILES"});
+    addKey((Key){"os","set SortMethod SORT_SIZE|SORT_BETTER_FILES"});
+    addKey((Key){"oS","set SortMethod SORT_SIZE|SORT_REVERSE|SORT_BETTER_FILES"});
+    addKey((Key){"otm","set SortMethod SORT_MTIME|SORT_BETTER_FILES"});
+    addKey((Key){"otM","set SortMethod SORT_MTIME|SORT_REVERSE|SORT_BETTER_FILES"});
+    addKey((Key){"otc","set SortMethod SORT_CTIME|SORT_BETTER_FILES"});
+    addKey((Key){"otC","set SortMethod SORT_CTIME|SORT_REVERSE|SORT_BETTER_FILES"});
+    addKey((Key){"ota","set SortMethod SORT_ATIME|SORT_BETTER_FILES"});
+    addKey((Key){"otA","set SortMethod SORT_ATIME|SORT_REVERSE|SORT_BETTER_FILES"});
+    addKey((Key){"og","set SortMethod SORT_GID|SORT_BETTER_FILES"});
+    addKey((Key){"oG","set SortMethod SORT_GID|SORT_REVERSE|SORT_BETTER_FILES"});
+    addKey((Key){"ou","set SortMethod SORT_UID|SORT_BETTER_FILES"});
+    addKey((Key){"oU","set SortMethod SORT_UID|SORT_REVERSE|SORT_BETTER_FILES"});
+    addKey((Key){"om","set SortMethod SORT_LNAME|SORT_BETTER_FILES"});
+    addKey((Key){"oM","set SortMethod SORT_LNAME|SORT_REVERSE|SORT_BETTER_FILES"});
+    addKey((Key){"on","set SortMethod SORT_NAME|SORT_BETTER_FILES"});
+    addKey((Key){"oN","set SortMethod SORT_NAME|SORT_REVERSE|SORT_BETTER_FILES"});
     #endif
     addKey((Key){"dct","getsize -cs s"});
     addKey((Key){"dCt","getsize -crs s"});
@@ -195,7 +195,7 @@ Settings* SettingsInit()
     grf->FileOpener                    = strcpy(malloc(PATH_MAX),"NULL");
     grf->shell                         = strcpy(malloc(PATH_MAX),"sh");
     grf->editor                        = strcpy(malloc(PATH_MAX),"vim");
-    grf->Values                        = strcpy(malloc(PATH_MAX),"KMGTPEZY");
+    grf->Values                        = strcpy(malloc(16),"KMGTPEZY");
     grf->Bar1Settings                  = B_DIR | B_WORKSPACES | B_POSITION | B_FGROUP | B_MODES | B_CSF;
     grf->Bar2Settings                  = DP_LSPERMS | DP_SMTIME | DP_HSIZE;
     grf->UserHostPattern               = strcpy(malloc(NAME_MAX),"%s@%s");
@@ -236,7 +236,7 @@ Settings* SettingsInit()
     grf->ShowHiddenFiles                = true;
     #endif
     #ifdef __SORT_ELEMENTS_ENABLE__
-    grf->SortMethod                     = SORT_NAME;
+    grf->SortMethod                     = SORT_NAME|SORT_BETTER_FILES;
     grf->BetterFiles                    = (li*)calloc(16,sizeof(li));
     grf->BetterFiles[0]                 = T_DIR;
     grf->BetterFiles[1]                 = T_LDIR;
@@ -279,9 +279,9 @@ Settings* SettingsInit()
     grf->C_Group[5]		                = COLOR_PAIR(6);
     grf->C_Group[6]		                = COLOR_PAIR(9);
     grf->C_Group[7]		                = COLOR_PAIR(10);
-    grf->C_Bar_E                                = COLOR_PAIR(1);
-    grf->C_Bar_F                                = COLOR_PAIR(1);
-    grf->C_Borders                              = 0;
+    grf->C_Bar_E                        = COLOR_PAIR(1);
+    grf->C_Bar_F                        = COLOR_PAIR(1);
+    grf->C_Borders                      = 0;
 
     return grf;
 }
@@ -612,6 +612,7 @@ void freeBasic(Basic* grf)
 
     for (size_t i = 0; i < grf->ActualSize; i++)
     {
+        free(grf->Base[i]->path);
         free(grf->Base[i]->rpath);
         free(grf->Base[i]->selected);
         free(grf->Base[i]->Ltop);

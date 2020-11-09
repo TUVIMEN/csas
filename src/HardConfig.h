@@ -24,7 +24,7 @@
 
 #define __COLOR_FILES_BY_EXTENSION__
 //#define __SHOW_HIDDEN_FILES_ENABLE__
-//#define __USER_NAME_ENABLE__
+#define __USER_NAME_ENABLE__
 #define __LOAD_CONFIG_ENABLE__
 #define __INODE_ENABLE__
 
@@ -53,5 +53,5 @@
 #define __FILE_SIZE_ENABLE__
 
 #define __SORT_ELEMENTS_ENABLE__
-//#define __FILESYSTEM_INFO_ENABLE__
+#define __FILESYSTEM_INFO_ENABLE__
 #define WORKSPACE_N 10

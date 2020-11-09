@@ -32,163 +32,57 @@ static bool CheckIfMatchesBetterFiles(const uchar grf)
     return 0;
 }
 
-static int compBet(const void* El1, const void* El2)
+static int comp(const void* El1, const void* El2, void* flag)
 {
-    register bool g1 = 0, g2 = 0;
+    if (*(ull*)flag & SORT_BETTER_FILES)
+    {
+        register bool g1 = 0, g2 = 0;
 
-    g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
-    g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
+        g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
+        g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
 
-    if (!g1 && !g2) goto Result;
-    if (!g1 && g2) return 1;
-    if (g1 && !g2) return 0;
+        if (!g1 && !g2) goto Result;
+        if (!g1 && g2) return 1;
+        if (g1 && !g2) return 0;
+    }
 
     Result: ;
-    return 0;
+    register int ret = 0;
+
+    switch (*(ull*)flag & SORT_IF)
+    {
+        case SORT_TYPE: ret = ((struct Element*)El1)->Type > ((struct Element*)El2)->Type; break;
+        #ifdef __FILE_SIZE_ENABLE__
+        case SORT_SIZE: ret = (((struct Element*)El1)->size) < (((struct Element*)El2)->size); break;
+        #endif
+        case SORT_NAME: ret = strcasecmp((((struct Element*)El1)->name),((struct Element*)El2)->name);  break;
+        case SORT_LNAME: ret = (strcmp(((struct Element*)El1)->name,((struct Element*)El2)->name)); break;
+        #ifdef __MTIME_ENABLE__
+        case SORT_MTIME: ret = (((struct Element*)El1)->mtim.tv_sec) > (((struct Element*)El2)->mtim.tv_sec); break;
+        #endif
+        #ifdef __ATIME_ENABLE__
+        case SORT_ATIME: ret = (((struct Element*)El1)->atim.tv_sec) > (((struct Element*)El2)->atim.tv_sec); break;
+        #endif
+        #ifdef __CTIME_ENABLE__
+        case SORT_CTIME: ret = (((struct Element*)El1)->ctim.tv_sec) > (((struct Element*)El2)->ctim.tv_sec); break;
+        #endif
+        #ifdef __FILE_GROUPS_ENABLE__
+        case SORT_GID: ret = (((struct Element*)El1)->gr) > (((struct Element*)El2)->gr); break;
+        #endif
+        #ifdef __FILE_OWNERS_ENABLE__
+        case SORT_UID: ret = (((struct Element*)El1)->pw) > (((struct Element*)El2)->pw); break;
+        #endif
+    }
+
+    return ret;
 }
 
-static int compType(const void* El1, const void* El2)
-{
-    return ((struct Element*)El1)->Type > ((struct Element*)El2)->Type;
-}
-
-#ifdef __FILE_SIZE_ENABLE__
-static int compSize(const void  *El1, const void *El2)
-{
-    register bool g1 = 0, g2 = 0;
-
-    g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
-    g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
-
-    if (!g1 && !g2) goto Result;
-    if (!g1 && g2) return 1;
-    if (g1 && !g2) return 0;
-
-    Result: ;
-    return (((struct Element*)El1)->size) < (((struct Element*)El2)->size);
-}
-#endif
-
-static int compSName(const void *El1, const void *El2)
-{
-    register bool g1 = 0, g2 = 0;
-
-    g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
-    g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
-
-    if (!g1 && !g2) goto Result;
-    if (!g1 && g2) return 1;
-    if (g1 && !g2) return 0;
-
-    Result: ;
-    return strcasecmp((((struct Element*)El1)->name),((struct Element*)El2)->name);
-}
-
-static int compLName(const void *El1, const void *El2)
-{
-    register bool g1 = 0, g2 = 0;
-
-    g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
-    g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
-
-    if (!g1 && !g2) goto Result;
-    if (!g1 && g2) return 1;
-    if (g1 && !g2) return 0;
-
-    Result: ;
-    return (strcmp(((struct Element*)El1)->name,((struct Element*)El2)->name));
-
-}
-
-#ifdef __MTIME_ENABLE__
-static int compMTime(const void *El1, const void *El2)
-{
-    register bool g1 = 0, g2 = 0;
-
-    g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
-    g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
-
-    if (!g1 && !g2) goto Result;
-    if (!g1 && g2) return 1;
-    if (g1 && !g2) return 0;
-
-    Result: ;
-    return (((struct Element*)El1)->mtim.tv_sec) > (((struct Element*)El2)->mtim.tv_sec);
-}
-#endif
-#ifdef __ATIME_ENABLE__
-static int compATime(const void *El1, const void *El2)
-{
-    register bool g1 = 0, g2 = 0;
-
-    g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
-    g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
-
-    if (!g1 && !g2) goto Result;
-    if (!g1 && g2) return 1;
-    if (g1 && !g2) return 0;
-
-    Result: ;
-    return (((struct Element*)El1)->atim.tv_sec) > (((struct Element*)El2)->atim.tv_sec);
-}
-#endif
-#ifdef __CTIME_ENABLE__
-static int compCTime(const void *El1, const void *El2)
-{
-    register bool g1 = 0, g2 = 0;
-
-    g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
-    g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
-
-    if (!g1 && !g2) goto Result;
-    if (!g1 && g2) return 1;
-    if (g1 && !g2) return 0;
-
-    Result: ;
-    return (((struct Element*)El1)->ctim.tv_sec) > (((struct Element*)El2)->ctim.tv_sec);
-}
-#endif
-
-#ifdef __FILE_GROUPS_ENABLE__
-static int compGid(const void *El1, const void *El2)
-{
-    register bool g1 = 0, g2 = 0;
-
-    g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
-    g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
-
-    if (!g1 && !g2) goto Result;
-    if (!g1 && g2) return 1;
-    if (g1 && !g2) return 0;
-
-    Result: ;
-    return (((struct Element*)El1)->gr) > (((struct Element*)El2)->gr);
-}
-#endif
-
-#ifdef __FILE_OWNERS_ENABLE__
-static int compUid(const void *El1, const void *El2)
-{
-    register bool g1 = 0, g2 = 0;
-
-    g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
-    g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
-
-    if (!g1 && !g2) goto Result;
-    if (!g1 && g2) return 1;
-    if (g1 && !g2) return 0;
-
-    Result: ;
-    return (((struct Element*)El1)->pw) > (((struct Element*)El2)->pw);
-}
-#endif
-
-static int FindBorder(struct Element* El, size_t begin, size_t end)
+static int FindBorder(struct Element* El, const size_t begin, const size_t end)
 {
     if (end == 0)
         return 0;
-    bool g1 = 0, g2 = 0;
-    int ret = 1;
+    register bool g1 = 0, g2 = 0;
+    register int ret = 1;
 
     g1 = CheckIfMatchesBetterFiles(El[((begin+end)/2)-1].Type);
     g2 = CheckIfMatchesBetterFiles(El[((begin+end)/2)].Type);
@@ -203,74 +97,38 @@ static int FindBorder(struct Element* El, size_t begin, size_t end)
     return ret;
 }
 
-void SortEl(struct Element* El, const size_t El_t, const uchar Method)
+void SortEl(struct Element* El, const size_t El_t, ull flag)
 {
-    int (*Function)(const void*,const void*) = NULL;
-    switch((Method > 128) ? Method-128 : Method)
-    {
-        case SORT_TYPE: Function = compType; break;
-        case SORT_CHIR: Function = compBet; break;
-        #ifdef __FILE_SIZE_ENABLE__
-        case SORT_SIZE: Function = compSize; break;
-        #endif
-        case SORT_NAME: Function = compSName; break;
-        case SORT_LNAME: Function = compLName; break;
-        #ifdef __MTIME_ENABLE__
-        case SORT_MTIME: Function = compMTime; break;
-        #endif
-        #ifdef __ATIME_ENABLE__
-        case SORT_ATIME: Function = compATime; break;
-        #endif
-        #ifdef __CTIME_ENABLE__
-        case SORT_CTIME: Function = compCTime; break;
-        #endif
-        #ifdef __FILE_GROUPS_ENABLE__
-        case SORT_GID: Function = compGid; break;
-        #endif
-        #ifdef __FILE_OWNERS_ENABLE__
-        case SORT_UID: Function = compUid; break;
-        #endif
-    }
+    qsort_r(El,El_t,sizeof(struct Element),comp,&flag);
 
-    if (Function) qsort(El,El_t,sizeof(struct Element),Function);
+    if (!(flag & SORT_REVERSE))
+        return;
+    
+    register size_t border = 0, i, j;
+    struct Element temp;
 
-    if (Method&128) //reverse
+    if (flag & SORT_BETTER_FILES)
     {
-        struct Element Temp;
-        if ((Method-128) < 32)
+        if (El_t > 2) border = FindBorder(El,0,El_t-1);
+
+        if (border)
         {
-            for (int i = 0, j = El_t-1; i < j; i++, j--)
+            for (i = 0, j = border-1; i < j; i++, j--)
             {
-                Temp = El[i];
+                temp = El[i];
                 El[i] = El[j];
-                El[j] = Temp;
+                El[j] = temp;
             }
         }
-        else
+    }
+
+    if (border != El_t)
+    {
+        for (i = border, j = El_t-1; i < j; i++, j--)
         {
-            size_t border = 0;
-            if (El_t > 2)
-                border = FindBorder(El,0,El_t-1);
-
-            if (border)
-            {
-                for (size_t i = 0, j = border-1; i < j; i++, j--)
-                {
-                    Temp = El[i];
-                    El[i] = El[j];
-                    El[j] = Temp;
-                }
-            }
-
-            if (border != El_t)
-            {
-                for (size_t i = border, j = El_t-1; i < j; i++, j--)
-                {
-                    Temp = El[i];
-                    El[i] = El[j];
-                    El[j] = Temp;
-                }
-            }
+            temp = El[i];
+            El[i] = El[j];
+            El[j] = temp;
         }
     }
 }
