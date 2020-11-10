@@ -288,6 +288,7 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     bool exists = false;
 
     int found = -1;
+    
     for (size_t i = 0; i < grf->ActualSize; i++)
     {
         if (strcmp(grf->Base[i]->path,temp) == 0)
@@ -312,7 +313,6 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
                 grf->Base[i]->enable = false;
                 #endif
                 grf->Base[i]->path = NULL;
-                grf->Base[i]->path = NULL;
                 grf->Base[i]->Ltop = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
                 grf->Base[i]->selected = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
                 grf->Base[i]->Changed = false;
@@ -331,7 +331,6 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
         grf->Base[found]->inode = sFile1.st_ino;
         grf->Base[found]->ctime = sFile1.st_ctim;
         grf->Base[found]->path = strcpy(malloc(PATH_MAX),temp);
-        realpath(temp,grf->Base[found]->path);
     }
     else
     {
