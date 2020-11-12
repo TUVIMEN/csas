@@ -42,7 +42,7 @@ void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, cons
 
 char* MakePathRunAble(char* temp);
 char* MakePath(const char* dir, const char* name);
-size_t FindFirstCharacter(const char* srd);
+size_t FindFirstCharacter(const char* src);
 size_t StrToValue(void* dest, const char* src);
 char CharConv(const char dest);
 size_t StrToPath(char* dest, const char* src);

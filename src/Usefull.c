@@ -158,6 +158,9 @@ char* MakeHumanReadAble(ull value)
             ret[i-1] = ret[i-2];
             ret[i-2] = temp;
         }
+
+        if (ret[i-1] == '.')
+            ret[i---1] = 0;
     }
 
     if (Too != 0)

@@ -204,7 +204,7 @@ Settings* SettingsInit()
     grf->MoveOffSet                    = 0.1;
     grf->WrapScroll                    = true;
     grf->JumpScroll                    = false;
-    grf->JumpScrollValue               = 16;
+    grf->JumpScrollValue               = 0.5;
     grf->StatusBarOnTop                = false;
     grf->Win1Enable                    = false;
     grf->Win3Enable                    = false;
@@ -226,7 +226,7 @@ Settings* SettingsInit()
     grf->WindowBorder[7]                = 0;
     grf->EnableColor                    = true;
     grf->DelayBetweenFrames             = 1024;
-    grf->SDelayBetweenFrames            = 1024;
+    grf->SDelayBetweenFrames            = 1;
     grf->NumberLines                    = false;
     grf->NumberLinesOff                 = false;
     grf->NumberLinesFromOne             = false;
@@ -242,45 +242,45 @@ Settings* SettingsInit()
     grf->BetterFiles[1]                 = T_LDIR;
     #endif
     grf->DirSizeMethod                  = D_F;
-    grf->C_Error                        = COLOR_PAIR(4) | A_BOLD | A_REVERSE;
+    grf->C_Error                        = COLOR_PAIR(1) | A_BOLD | A_REVERSE;
     #ifdef __COLOR_FILES_BY_EXTENSION__
-    grf->C_FType_A                      = COLOR_PAIR(4);
-    grf->C_FType_I                      = COLOR_PAIR(2);
-    grf->C_FType_V                      = COLOR_PAIR(6);
+    grf->C_FType_A                      = COLOR_PAIR(1);
+    grf->C_FType_I                      = COLOR_PAIR(3);
+    grf->C_FType_V                      = COLOR_PAIR(5);
     #endif
     grf->C_Selected		                = A_REVERSE | A_BOLD;
     grf->C_Exec_set		                = A_BOLD;
     grf->C_Exec		                    = COLOR_PAIR(10);
-    grf->C_BLink		                = COLOR_PAIR(1);
-    grf->C_Dir		                    = COLOR_PAIR(1) | A_BOLD;
+    grf->C_BLink		                = COLOR_PAIR(5);
+    grf->C_Dir		                    = COLOR_PAIR(4) | A_BOLD;
     grf->C_Reg		                    = A_NORMAL;
-    grf->C_Fifo		                    = COLOR_PAIR(9) | A_ITALIC;
-    grf->C_Sock		                    = COLOR_PAIR(9) | A_ITALIC;
-    grf->C_Dev		                    = COLOR_PAIR(9);
+    grf->C_Fifo		                    = COLOR_PAIR(3) | A_ITALIC;
+    grf->C_Sock		                    = COLOR_PAIR(3) | A_ITALIC;
+    grf->C_Dev		                    = COLOR_PAIR(3);
     grf->C_BDev		                    = COLOR_PAIR(9);
-    grf->C_LDir		                    = COLOR_PAIR(5) | A_BOLD;
-    grf->C_LReg		                    = COLOR_PAIR(5);
-    grf->C_LFifo		                = COLOR_PAIR(5);
-    grf->C_LSock		                = COLOR_PAIR(5);
-    grf->C_LDev		                    = COLOR_PAIR(5);
+    grf->C_LDir		                    = COLOR_PAIR(6) | A_BOLD;
+    grf->C_LReg		                    = COLOR_PAIR(6);
+    grf->C_LFifo		                = COLOR_PAIR(6);
+    grf->C_LSock		                = COLOR_PAIR(6);
+    grf->C_LDev		                    = COLOR_PAIR(6);
     grf->C_LBDev		                = COLOR_PAIR(5);
     grf->C_Other		                = COLOR_PAIR(0);
-    grf->C_User_S_D		                = COLOR_PAIR(6) | A_BOLD;
-    grf->C_Bar_Dir		                = COLOR_PAIR(1) | A_UNDERLINE | A_BOLD;
+    grf->C_User_S_D		                = COLOR_PAIR(2) | A_BOLD;
+    grf->C_Bar_Dir		                = COLOR_PAIR(4) | A_BOLD;
     grf->C_Bar_Name		                = A_NORMAL | A_BOLD;
     grf->C_Bar_WorkSpace		        = A_NORMAL | A_BOLD;
-    grf->C_Bar_WorkSpace_Selected	    = COLOR_PAIR(6) | A_REVERSE | A_BOLD;
+    grf->C_Bar_WorkSpace_Selected	    = COLOR_PAIR(2) | A_REVERSE | A_BOLD;
     grf->C_Group                        = malloc(sizeof(ll)*8);
-    grf->C_Group[0]		                = COLOR_PAIR(2);
-    grf->C_Group[1]		                = COLOR_PAIR(1);
-    grf->C_Group[2]		                = COLOR_PAIR(7);
+    grf->C_Group[0]		                = COLOR_PAIR(3);
+    grf->C_Group[1]		                = COLOR_PAIR(2);
+    grf->C_Group[2]		                = COLOR_PAIR(1);
     grf->C_Group[3]		                = COLOR_PAIR(4);
     grf->C_Group[4]		                = COLOR_PAIR(5);
     grf->C_Group[5]		                = COLOR_PAIR(6);
     grf->C_Group[6]		                = COLOR_PAIR(9);
     grf->C_Group[7]		                = COLOR_PAIR(10);
-    grf->C_Bar_E                        = COLOR_PAIR(1);
-    grf->C_Bar_F                        = COLOR_PAIR(1);
+    grf->C_Bar_E                        = COLOR_PAIR(0);
+    grf->C_Bar_F                        = COLOR_PAIR(0);
     grf->C_Borders                      = 0;
 
     return grf;
@@ -288,7 +288,8 @@ Settings* SettingsInit()
 
 int initcurs()
 {
-    newterm(NULL,stderr,stdin);
+    //newterm(NULL,stderr,stdin);
+	initscr();
 
     noecho();
 	cbreak();
@@ -411,17 +412,19 @@ void RunBasic(Basic* grf, const int argc, char** argv)
 
     char* path;
     if (argv[1])
+    {
         path = argv[1];
+
+        if (chdir(path) != 0)
+        {
+            endwin();
+            fprintf(stderr,"Error while entering: %s\n",path);
+            fflush(stderr);
+            refresh();
+        }
+    }
     else
         path = getenv("PWD");
-
-    if (chdir(path) != 0)
-    {
-        endwin();
-        fprintf(stderr,"Error while entering: %s\n",path);
-        fflush(stderr);
-        return;
-    }
 
     if (strcmp(path,".") == 0)
         strcpy(grf->Work[grf->inW].path,getenv("PWD"));

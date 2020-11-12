@@ -28,37 +28,37 @@
 extern struct AliasesT aliases[];
 extern Settings* settings;
 
-struct FunctTab
+struct command
 {
     char* name;
     void (*function)(const char*, Basic*);
 };
 
-struct FunctTab FunctionsTable[] = {
-    {"move",&___MOVE},
-    {"fastselect",&___FASTSELECT},
-    {"cd",&___CD},
-    {"ChangeWorkSpace",&___CHANGEWORKSPACE},
-    {"gotop",&___GOTOP},
-    {"godown",&___GODOWN},
-    {"getsize",&___GETSIZE},
-    {"setgroup",&___SETGROUP},
-    {"select",&___SELECT},
-    {"togglevisual",&___TOGGLEVISUAL},
-    {"f_mod",&___F_MOD},
-    {"set",&___SET},
-    {"map",&___MAP},
-    {"search",&___SEARCH},
-    {"load",&___LOAD},
-    {"exec",&___EXEC},
-    {"quit",&___QUIT},
-    {"console",&___CONSOLE},
-    {"bulk",&___BULK},
+struct command commands[] = {
+    {"move",___MOVE},
+    {"fastselect",___FASTSELECT},
+    {"cd",___CD},
+    {"ChangeWorkSpace",___CHANGEWORKSPACE},
+    {"gotop",___GOTOP},
+    {"godown",___GODOWN},
+    {"getsize",___GETSIZE},
+    {"setgroup",___SETGROUP},
+    {"select",___SELECT},
+    {"togglevisual",___TOGGLEVISUAL},
+    {"f_mod",___F_MOD},
+    {"set",___SET},
+    {"map",___MAP},
+    {"search",___SEARCH},
+    {"load",___LOAD},
+    {"exec",___EXEC},
+    {"quit",___QUIT},
+    {"console",___CONSOLE},
+    {"bulk",___BULK},
     #ifdef __LOAD_CONFIG_ENABLE__
-    {"include",&___INCLUDE},
+    {"include",___INCLUDE},
     #endif
-    {"shell",&___SHELL},
-    {"filter",&___FILTER},
+    {"shell",___SHELL},
+    {"filter",___FILTER},
     {NULL,NULL}
 };
 
@@ -69,13 +69,13 @@ void RunCommand(const char* src, Basic* grf)
     pos += FindFirstCharacter(src);
     while (src[pos+end] && !isspace(src[pos+end])) end++;
 
-    for (int i = 0; FunctionsTable[i].name; i++)
+    for (int i = 0; commands[i].name; i++)
     {
-        if (end == strlen(FunctionsTable[i].name) && strncmp(src+pos,FunctionsTable[i].name,end) == 0)
+        if (end == strlen(commands[i].name) && strncmp(src+pos,commands[i].name,end) == 0)
         {
             pos += end;
             pos += FindFirstCharacter(src+pos);
-            (*FunctionsTable[i].function)(src+pos,grf);
+            (*commands[i].function)(src+pos,grf);
             break;
         }
     }
@@ -144,6 +144,13 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
         while (x-off >= win->_maxx) off++;
     }
 
+    char name_complete[NAME_MAX];
+    int* name_complete_arr = NULL;
+    size_t name_complete_t = 0;
+    size_t name_complete_actual = 0;
+    bool tab_was_pressed = 0;
+    size_t name_n;
+
     for (;;)
     {
         for (int i = border; i < win->_maxx-border; i++)
@@ -157,12 +164,71 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
         {
             case -1:
                 break;
+            case 9:
+            {
+                name_n = 0;
+                while (History[size-1][name_n] && !isspace(History[size-1][name_n]))
+                {
+                    name_complete[name_n] = History[size-1][name_n];
+                    name_n++;
+                }
+                name_complete[name_n] = 0;
+
+                if (History[size-1][name_n] == 0)
+                {
+                    if (!tab_was_pressed)
+                    {
+                        size_t best_match_n = 0, matched_n;
+                        for (int i = 0; commands[i].name; i++)
+                        {
+                            matched_n = 0;
+                            for (int j = 0; commands[i].name[j] && name_complete[j] && commands[i].name[j] == name_complete[j]; j++)
+                                matched_n++;
+
+                            if (matched_n > best_match_n)
+                            {
+                                name_complete_t = 0;
+                                free(name_complete_arr);
+                                name_complete_arr = NULL;
+                                best_match_n = matched_n;
+                                goto ADD_TO_ARR;
+                            }
+
+                            if (matched_n == best_match_n)
+                            {
+                                ADD_TO_ARR: ;
+                                name_complete_arr = (int*)realloc(name_complete_arr,++name_complete_t*sizeof(int));
+                                name_complete_arr[name_complete_t-1] = i;
+                            }
+                        }
+                        name_complete_actual = 0;
+                        tab_was_pressed = 1;
+                    }
+
+                    if (name_complete_t)
+                    {
+                        strcpy(History[size-1],commands[name_complete_arr[name_complete_actual++]].name);
+                        name_complete_actual = name_complete_actual*(name_complete_actual != name_complete_t);
+                        x = strlen(History[size-1]);
+                        if (name_complete_t == 1)
+                        {
+                            History[size-1][x++] = ' ';
+                            History[size-1][x] = 0;
+                            tab_was_pressed = 0;
+                        }
+
+                        while (x-off >= win->_maxx) off++;
+                    }
+                }
+            }
+                break;
             case 10:
             case '\r':
                 goto END;
                 break;
             case KEY_UP:
             case ('p'&0x1f):
+                tab_was_pressed = 0;
                 if (z > 0)
                 {
                     z--;
@@ -173,6 +239,7 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
                 break;
             case KEY_DOWN:
             case ('n'&0x1f):
+                tab_was_pressed = 0;
                 if (z < size-1)
                 {
                     z++;
@@ -203,6 +270,7 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
                 break;
             case 27:
             case ('r'&0x1f):
+                History[size-1][0] = 0;
                 goto END;
             case KEY_RESIZE:
                 UpdateSizeBasic(grf);
@@ -212,14 +280,16 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
                 break;
             case KEY_BACKSPACE:
             case ('h'&0x1f):
+                tab_was_pressed = 0;
                 if (x > 0)
                 {
                     for (size_t i = x-1; i <= strlen(History[size-1]); i++)
                         History[size-1][i] = History[size-1][i+1];
                     x--;
-                    if (off != 0)
-                        off--;
+                    if (off != 0) off--;
                 }
+                else
+                    goto END;
                 break;
             case KEY_LEFT:
             case ('b'&0x1f):
@@ -250,17 +320,21 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
                 while (History[size-1][x-1] && !isalnum(History[size-1][x-1])) x--;
                 break;
             default:
-                for (int i = strlen(History[size-1]); i >= x; i--)
+                tab_was_pressed = 0;
+                int i = strlen(History[size-1]);
+                History[size-1][i+1] = 0;
+                for (; i >= x; i--)
                     History[size-1][i] = History[size-1][i-1];
                 History[size-1][x] = (char)Event;
                 x++;
-                if (border+x+first_t-off >= (size_t)win->_maxx)
-                    off++;
+                if (border+x+first_t-off >= (size_t)win->_maxx) off++;
                 break;
         }
     }
 
     END: ;
+
+    free(name_complete_arr);
 
     curs_set(0);
     werase(win);

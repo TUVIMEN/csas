@@ -275,7 +275,7 @@ typedef struct
 
 struct Dir
 {
-    char* path;
+    char *path;
     ll El_t;
     ll oldEl_t;
     struct Element* El;
@@ -284,13 +284,14 @@ struct Dir
     bool enable;
     #endif
     size_t *selected;
+    char **move_to;
     size_t *Ltop;
     struct timespec ctime;
     ino_t inode;
-    char* filter;
+    char *filter;
     bool Changed;
     bool filter_set;
-    uchar sort_m;
+    li sort_m;
 };
 
 typedef struct

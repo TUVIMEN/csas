@@ -1,0 +1,32 @@
+set C_Error COL_4|A_BOLD|A_REVERSE
+set C_FType_A COL_4
+set C_FType_I COL_2
+set C_FType_V COL_6
+set C_Selected A_REVERSE|A_BOLD
+set C_Exec_set A_BOLD
+set C_Exec COL_A
+set C_BLink COL_6
+set C_Dir COL_1|A_BOLD
+set C_Reg A_NORMAL
+set C_Fifo COL_9|A_ITALIC
+set C_Sock COL_9|A_ITALIC
+set C_Dev COL_9
+set C_BDev COL_9
+set C_LDir COL_5|A_BOLD
+set C_LReg COL_5
+set C_LFifo COL_5
+set C_LSock COL_5
+set C_LDev COL_5
+set C_LBDev COL_5
+set C_Other COL_0
+set C_User_S_D COL_6|A_BOLD
+set C_Bar_Dir COL_1|A_BOLD
+set C_Bar_Name A_NORMAL|A_BOLD
+set C_Bar_WorkSpace A_NORMAL|A_BOLD
+set C_Bar_WorkSpace_Selected COL_6|A_REVERSE|A_BOLD
+set C_Group {COL_2,COL_1,COL_3,COL_4,COL_5,COL_6,COL_9,COL_10}
+set C_Bar_E COL_6
+set C_Bar_F COL_6
+set C_Borders 0
+
+setC_DirCOL_1

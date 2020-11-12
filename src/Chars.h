@@ -21,7 +21,7 @@
 
 int UpdateEvent(Basic* grf);
 void ExitBasic(Basic* grf, const bool force);
-void move_to(Basic* grf, const int workspace, const int which, char* name);
+void move_to(struct Dir* dir, const int workspace, const char* name);
 
 void ___SET(const char* src, Basic* grf);
 #ifdef __LOAD_CONFIG_ENABLE__

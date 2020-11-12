@@ -24,12 +24,12 @@
 
 extern Settings* settings;
 
-static bool CheckIfMatchesBetterFiles(const uchar grf)
+static bool CheckIfMatchesBetterFiles(const uchar src)
 {
-    for (register int i = 0; settings->BetterFiles[i] != 0; i++)
-        if (grf == settings->BetterFiles[i])
-            return 1;
-    return 0;
+    register bool ret = 0;
+    for (register int i = 0; settings->BetterFiles[i] != 0 && ret == 0; i++)
+        ret = 1*(src == settings->BetterFiles[i]);
+    return ret;
 }
 
 static int comp(const void* El1, const void* El2, void* flag)
@@ -77,23 +77,11 @@ static int comp(const void* El1, const void* El2, void* flag)
     return ret;
 }
 
-static int FindBorder(struct Element* El, const size_t begin, const size_t end)
+static size_t FindBorder(const struct Element* El, size_t size)
 {
-    if (end == 0)
-        return 0;
-    register bool g1 = 0, g2 = 0;
-    register int ret = 1;
-
-    g1 = CheckIfMatchesBetterFiles(El[((begin+end)/2)-1].Type);
-    g2 = CheckIfMatchesBetterFiles(El[((begin+end)/2)].Type);
-
-    if (g1 == 1 && g2 == 0)
-        ret = (begin+end)/2;
-    if (g1 == 1 && g2 == 1)
-        ret = FindBorder(El,begin+end/2,end);
-    if (g1 == 0 && g2 == 0)
-        ret = FindBorder(El,begin,end/2);
-
+    register size_t ret = 0;
+    for (register size_t i = 0; i < size && ret == 0; i++)
+        ret = i*!CheckIfMatchesBetterFiles(El[i].Type);
     return ret;
 }
 
@@ -109,7 +97,7 @@ void SortEl(struct Element* El, const size_t El_t, ull flag)
 
     if (flag & SORT_BETTER_FILES)
     {
-        if (El_t > 2) border = FindBorder(El,0,El_t-1);
+        border = FindBorder(El,El_t);
 
         if (border)
         {

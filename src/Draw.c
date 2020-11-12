@@ -92,7 +92,7 @@ void SetBorders(Basic* grf, const int which)
 
 static int ColorEl(const struct Element* src, const bool Select)
 {
-    int set = 0, col = 0;
+    register int set = 0, col = 0;
 
     #ifdef __MODE_ENABLE__
     if (src->flags & S_IXUSR)

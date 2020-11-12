@@ -31,7 +31,7 @@
 
 extern Settings* settings;
 
-void* LoadDir(void *arg)
+static void* LoadDir(void *arg)
 {
     struct Dir* grf = (struct Dir*)arg;
 
@@ -81,7 +81,7 @@ void* LoadDir(void *arg)
     #endif
 
     buffer_size = 0;
-    size_t temp_name_lenght;
+    size_t name_lenght;
 
     while ((dir = readdir(d)))
     {
@@ -96,20 +96,20 @@ void* LoadDir(void *arg)
         if (grf->El_t == buffer_size)
             grf->El = (struct Element*)realloc(grf->El,(buffer_size+=DIR_INC_RATE)*sizeof(struct Element));
 
-        temp_name_lenght = strlen(dir->d_name)+1;
-        grf->El[grf->El_t].name = (char*)malloc(temp_name_lenght);
+        name_lenght = strlen(dir->d_name)+1;
+        grf->El[grf->El_t].name = (char*)malloc(name_lenght);
 
-        memcpy(grf->El[grf->El_t].name,dir->d_name,temp_name_lenght);
+        memcpy(grf->El[grf->El_t].name,dir->d_name,name_lenght);
         if (fstatat(fd,dir->d_name,&sFile,0) != 0)
         {
-            fstatat(fd,dir->d_name,&sFile,AT_SYMLINK_NOFOLLOW);
+            if (fstatat(fd,dir->d_name,&sFile,AT_SYMLINK_NOFOLLOW) != 0)
+                continue;
             grf->El[grf->El_t].Type = 7;
         }
 
         if (grf->El[grf->El_t].Type != 7)
         {
-            if (dir->d_type == 10)
-                typeOFF = T_BLINK;
+            typeOFF = T_BLINK*(dir->d_type == 10);
 
             switch (sFile.st_mode & S_IFMT)
             {
@@ -315,6 +315,7 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
                 grf->Base[i]->path = NULL;
                 grf->Base[i]->Ltop = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
                 grf->Base[i]->selected = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
+                grf->Base[i]->move_to = (char**)calloc(WORKSPACE_N,sizeof(char*));
                 grf->Base[i]->Changed = false;
                 grf->Base[i]->oldEl_t = 0;
                 grf->Base[i]->filter_set = false;
@@ -350,10 +351,14 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
         begin++;
     }
 
-    if (settings->Win1Enable && exists && strcmp(path,"..") == 0)
+    if (
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        !grf->Base[found]->enable &&
+        #endif
+        (exists && (mode == 0 || (mode == 1 && !grf->Base[found]->Changed))) && strcmp(path,"..") == 0)
     {
         if (strcmp(temp+begin,GET_ESELECTED(workspace,Which).name) != 0)
-            move_to(grf,workspace,!settings->Win1Enable,temp+begin);
+            move_to(GET_DIR(workspace,!settings->Win1Enable),workspace,temp+begin);
     }
 
     if (mode == 0 && exists)
@@ -365,6 +370,7 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     #ifdef __SORT_ELEMENTS_ENABLE__
     grf->Base[found]->sort_m = settings->SortMethod;
     #endif
+
     #ifdef __THREADS_FOR_DIR_ENABLE__
     if (grf->Base[found]->enable)
         pthread_join(grf->Base[found]->thread,NULL);
@@ -377,11 +383,15 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     LoadDir(grf->Base[found]);
     #endif
     grf->Base[found]->Changed = false;
-
-    if (settings->Win1Enable && !exists && strcmp(path,"..") == 0)
+    
+    if (
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        !grf->Base[found]->enable &&
+        #endif
+        strcmp(path,"..") == 0)
     {
         if (strcmp(temp+begin,GET_ESELECTED(workspace,Which).name) != 0)
-            move_to(grf,workspace,!settings->Win1Enable,temp+begin);
+            move_to(GET_DIR(workspace,!settings->Win1Enable),workspace,temp+begin);
     }
 }
 
@@ -440,10 +450,14 @@ void CD(const char* path, const int workspace, Basic* grf)
     #endif
     );
 
-    if (!settings->Win1Enable && strcmp(path,"..") == 0)
+    if (
+        #ifdef __THREADS_FOR_DIR_ENABLE__
+        !GET_DIR(workspace,1)->enable &&
+        #endif
+        !settings->Win1Enable && strcmp(path,"..") == 0)
     {
         if (strcmp(temp+begin,GET_ESELECTED(workspace,1).name) != 0)
-            move_to(grf,workspace,1,temp+begin);
+            move_to(GET_DIR(workspace,1),workspace,temp+begin);
     }
 
     if (settings->Win1Enable)

@@ -19,8 +19,7 @@
 #ifndef LOAD_H
 #define LOAD_H
 
-void* LoadDir(void* arg);
-void GetDir(const char* path, Basic* grc, const int workspace, const int which, const char mode
+void GetDir(const char* path, Basic* grf, const int workspace, const int which, const char mode
 #ifdef __THREADS_FOR_DIR_ENABLE__
 , const bool threaded
 #endif
