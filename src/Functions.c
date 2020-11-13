@@ -230,7 +230,7 @@ Settings* SettingsInit()
     grf->NumberLines                    = false;
     grf->NumberLinesOff                 = false;
     grf->NumberLinesFromOne             = false;
-    grf->DirLoadingMode                 = 1;
+    grf->DirLoadingMode                 = 0;
     grf->DisplayingC                    = 0;
     #ifdef __SHOW_HIDDEN_FILES_ENABLE__
     grf->ShowHiddenFiles                = true;

@@ -403,6 +403,7 @@ void ___SET(const char* src, Basic* grf)
         {"DelayBetweenFrames",&settings->DelayBetweenFrames},{"NumberLines",&settings->NumberLines},
         {"NumberLinesOff",&settings->NumberLinesOff},{"NumberLinesFromOne",&settings->NumberLinesFromOne},
         {"DisplayingC",&settings->DisplayingC},{"JumpScroll",&settings->JumpScroll},{"Values",&settings->Values},
+        {"DirLoadingMode",&settings->DirLoadingMode},
         #ifdef __SHOW_HIDDEN_FILES_ENABLE__
         {"ShowHiddenFiles",&settings->ShowHiddenFiles},
         #endif
