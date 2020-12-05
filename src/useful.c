@@ -17,10 +17,10 @@
 */
 
 #include "main.h"
-#include "Usefull.h"
-#include "FastRun.h"
-#include "Draw.h"
-#include "Functions.h"
+#include "useful.h"
+#include "preview.h"
+#include "draw.h"
+#include "inits.h"
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
 extern Extensions extensions[];
@@ -218,34 +218,45 @@ uchar check_extension(const char* name)
     ret++;
 
     for (register size_t j = 0; extensions[j].group != 0; j++)
-        if (strcasecmp(ret,extensions[j].Name) == 0)
+        if (strcasecmp(ret,extensions[j].name) == 0)
             return extensions[j].group;
 
     return 0;
 }
 #endif
 
-char* lsperms(const int mode, const int type)
+char* lsperms(const int mode)
 {
     const char* const rwx[] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
 	static char bits[11] = {0};
 
-    if (type == T_DIR)
-        bits[0] = 'd';
-    else if (type == T_REG)
-        bits[0] = '-';
-    else if (type == T_BDEV)
-        bits[0] = 'b';
-    else if (type == T_DEV)
-        bits[0] = 'c';
-    else if (type == T_SOCK)
-        bits[0] = 's';
-    else if (type == T_FIFO)
-        bits[0] = 'p';
-    else if (type > 6 && type < 14)
-        bits[0] = 'l';
-    else
-       bits[0] = '?';
+    switch (mode & S_IFMT)
+    {
+        case S_IFREG:
+            bits[0] = '-';
+            break;
+        case S_IFDIR:
+            bits[0] = 'd';
+            break;
+        case S_IFLNK:
+            bits[0] = 'l';
+            break;
+        case S_IFSOCK:
+            bits[0] = 's';
+            break;
+        case S_IFIFO:
+            bits[0] = 'p';
+            break;
+        case S_IFBLK:
+            bits[0] = 'b';
+            break;
+        case S_IFCHR:
+            bits[0] = 'c';
+            break;
+        default:
+            bits[0] = '?';
+            break;
+    }
 
     memcpy(bits+1,rwx[(mode >> 6)&7],4);
     memcpy(bits+4,rwx[(mode >> 3)&7],4);
@@ -260,13 +271,13 @@ void RunFile(char* path)
         spawn(settings->FileOpener,path,NULL,F_NORMAL|F_WAIT);
     else
     {
-        struct stat sFile;
-        if (stat(path,&sFile) == -1)
+        struct stat sfile;
+        if (stat(path,&sfile) == -1)
             return;
-        if (!(sFile.st_mode&S_IRUSR))
+        if (!(sfile.st_mode&S_IRUSR))
             return;
 
-        if (sFile.st_size == 0)
+        if (sfile.st_size == 0)
         {
             spawn(settings->editor,path,NULL,F_NORMAL|F_WAIT);
             return;
@@ -278,8 +289,8 @@ void RunFile(char* path)
 
         size_t buf_t = 2048;
 
-        if (buf_t > (size_t)sFile.st_size)
-            buf_t = (size_t)sFile.st_size;
+        if (buf_t > (size_t)sfile.st_size)
+            buf_t = (size_t)sfile.st_size;
 
         static char buf[PATH_MAX];
 
@@ -306,7 +317,7 @@ void RunFile(char* path)
 
                 if (strcmp(nest,signatures[i].sig) == 0)
                 {
-                    spawn(signatures[i].comma_com,path,NULL,signatures->RunInBG ? F_SILENT : F_NORMAL|F_WAIT);
+                    spawn(signatures[i].comma_com,path,NULL,signatures->run_in_bg ? F_SILENT : F_NORMAL|F_WAIT);
                     return;
                 }
             }
@@ -323,10 +334,10 @@ void RunFile(char* path)
 
 void DeleteFile(const int fd, const char* name)
 {
-    struct stat sFile;
-    fstatat(fd,name,&sFile,0);
+    struct stat sfile;
+    fstatat(fd,name,&sfile,0);
 
-    if ((sFile.st_mode& S_IFMT) == S_IFDIR)
+    if ((sfile.st_mode& S_IFMT) == S_IFDIR)
     {
         int temp;
         if ((temp = openat(fd,name,O_DIRECTORY)) != -1)
@@ -352,15 +363,15 @@ void DeleteFile(const int fd, const char* name)
 
 void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, const mode_t arg)
 {
-    struct stat sFile;
+    struct stat sfile;
     int fd3, fd4;
-    fstatat(fd2,name,&sFile,0);
+    fstatat(fd2,name,&sfile,0);
 
     char* temp = (char*)malloc(NAME_MAX);
     strcpy(temp,name);
     ull num = 0;
 
-    if (!(arg&M_MERGE && (sFile.st_mode&S_IFMT) == S_IFDIR))
+    if (!(arg&M_MERGE && (sfile.st_mode&S_IFMT) == S_IFDIR))
     {
         if (arg&M_CHNAME)
         {
@@ -386,7 +397,7 @@ void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, cons
             DeleteFile(fd1,temp);
     }
 
-    if ((sFile.st_mode& S_IFMT) == S_IFDIR)
+    if ((sfile.st_mode& S_IFMT) == S_IFDIR)
     {
         if ((fd3 = openat(fd2,name,O_DIRECTORY)) != -1)
         {
@@ -395,7 +406,7 @@ void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, cons
 
             if (d)
             {
-                mkdirat(fd1,temp,sFile.st_mode);
+                mkdirat(fd1,temp,sfile.st_mode);
                 if ((fd4 = openat(fd1,temp,O_DIRECTORY)) != -1)
                 {
                     while ((dir = readdir(d)))
@@ -413,7 +424,7 @@ void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, cons
     {
         if ((fd3 = openat(fd2,name,O_RDONLY)) != -1)
         {
-            if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sFile.st_mode)) != -1)
+            if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sfile.st_mode)) != -1)
             {
                 int bytesread;
                 while ((bytesread = read(fd3,buffer,settings->CopyBufferSize)) > 0)
@@ -431,15 +442,15 @@ void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, cons
 
 void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, const mode_t arg)
 {
-    struct stat sFile;
+    struct stat sfile;
     int fd3, fd4;
-    fstatat(fd2,name,&sFile,0);
+    fstatat(fd2,name,&sfile,0);
 
     char* temp = (char*)malloc(NAME_MAX);
     strcpy(temp,name);
     ull num = 0;
 
-    if (!(arg&M_MERGE && (sFile.st_mode&S_IFMT) == S_IFDIR))
+    if (!(arg&M_MERGE && (sfile.st_mode&S_IFMT) == S_IFDIR))
     {
         if (arg&M_CHNAME)
         {
@@ -465,7 +476,7 @@ void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, cons
             DeleteFile(fd1,temp);
     }
 
-    if ((sFile.st_mode& S_IFMT) == S_IFDIR)
+    if ((sfile.st_mode& S_IFMT) == S_IFDIR)
     {
         if ((fd3 = openat(fd2,name,O_DIRECTORY)) != -1)
         {
@@ -474,7 +485,7 @@ void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, cons
 
             if (d)
             {
-                mkdirat(fd1,temp,sFile.st_mode);
+                mkdirat(fd1,temp,sfile.st_mode);
                 if ((fd4 = openat(fd1,temp,O_DIRECTORY)) != -1)
                 {
                     while ((dir = readdir(d)))
@@ -493,7 +504,7 @@ void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, cons
     {
         if ((fd3 = openat(fd2,name,O_RDONLY)) != -1)
         {
-            if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sFile.st_mode)) != -1)
+            if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sfile.st_mode)) != -1)
             {
                 int bytesread;
                 while ((bytesread = read(fd3,buffer,settings->CopyBufferSize)) > 0)

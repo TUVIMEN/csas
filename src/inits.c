@@ -17,19 +17,19 @@
 */
 
 #include "main.h"
-#include "Functions.h"
-#include "Usefull.h"
-#include "Sort.h"
-#include "Chars.h"
-#include "Load.h"
-#include "FastRun.h"
-#include "Draw.h"
-#include "Console.h"
+#include "inits.h"
+#include "useful.h"
+#include "sort.h"
+#include "functions.h"
+#include "load.h"
+#include "preview.h"
+#include "draw.h"
+#include "console.h"
 
 #include "config.h"
 
 #ifdef __LOAD_CONFIG_ENABLE__
-#include "Loading.h"
+#include "loading.h"
 #endif
 
 void addKey(const Key src)
@@ -173,11 +173,11 @@ void KeyInit()
     addKey((Key){"Dt","f_mod d -s s"});
     addKey((Key){"R","load -tm 2"});
     addKey((Key){":","console"});
-    addKey((Key){"cd","console -a \"cd \""});
-    addKey((Key){"s","console -a \"shell \""});
+    addKey((Key){"cd","console -a 'cd '"});
+    addKey((Key){"s","console -a 'shell '"});
     addKey((Key){"S","exec bash"});
     addKey((Key){"b","bulk -S sh -E nvim -b mv -s 0 -R ."});
-    addKey((Key){"/","console -a \"search -N \""});
+    addKey((Key){"/","console -a 'search -N '"});
     addKey((Key){"n","search -n 1"});
     addKey((Key){"N","search -b 1"});
 }
@@ -232,6 +232,7 @@ Settings* SettingsInit()
     grf->NumberLinesFromOne             = false;
     grf->DirLoadingMode                 = 0;
     grf->DisplayingC                    = 0;
+    grf->PreviewSettings                = PREV_ASCII|PREV_BINARY;
     #ifdef __SHOW_HIDDEN_FILES_ENABLE__
     grf->ShowHiddenFiles                = true;
     #endif
@@ -239,7 +240,7 @@ Settings* SettingsInit()
     grf->SortMethod                     = SORT_NAME|SORT_BETTER_FILES;
     grf->BetterFiles                    = (li*)calloc(16,sizeof(li));
     grf->BetterFiles[0]                 = T_DIR;
-    grf->BetterFiles[1]                 = T_LDIR;
+    grf->BetterFiles[1]                 = T_DIR|T_SYMLINK;
     #endif
     grf->DirSizeMethod                  = D_F;
     grf->C_Error                        = COLOR_PAIR(1) | A_BOLD | A_REVERSE;
@@ -250,21 +251,16 @@ Settings* SettingsInit()
     #endif
     grf->C_Selected		                = A_REVERSE | A_BOLD;
     grf->C_Exec_set		                = A_BOLD;
-    grf->C_Exec		                    = COLOR_PAIR(10);
-    grf->C_BLink		                = COLOR_PAIR(5);
+    grf->C_Exec_col	                    = COLOR_PAIR(2);
     grf->C_Dir		                    = COLOR_PAIR(4) | A_BOLD;
     grf->C_Reg		                    = A_NORMAL;
     grf->C_Fifo		                    = COLOR_PAIR(3) | A_ITALIC;
     grf->C_Sock		                    = COLOR_PAIR(3) | A_ITALIC;
     grf->C_Dev		                    = COLOR_PAIR(3);
-    grf->C_BDev		                    = COLOR_PAIR(9);
-    grf->C_LDir		                    = COLOR_PAIR(6) | A_BOLD;
-    grf->C_LReg		                    = COLOR_PAIR(6);
-    grf->C_LFifo		                = COLOR_PAIR(6);
-    grf->C_LSock		                = COLOR_PAIR(6);
-    grf->C_LDev		                    = COLOR_PAIR(6);
-    grf->C_LBDev		                = COLOR_PAIR(5);
+    grf->C_BDev		                    = COLOR_PAIR(6);
     grf->C_Other		                = COLOR_PAIR(0);
+    grf->C_FileMissing                  = COLOR_PAIR(5);
+    grf->C_SymLink                      = COLOR_PAIR(6);
     grf->C_User_S_D		                = COLOR_PAIR(2) | A_BOLD;
     grf->C_Bar_Dir		                = COLOR_PAIR(4) | A_BOLD;
     grf->C_Bar_Name		                = A_NORMAL | A_BOLD;
@@ -277,8 +273,8 @@ Settings* SettingsInit()
     grf->C_Group[3]		                = COLOR_PAIR(4);
     grf->C_Group[4]		                = COLOR_PAIR(5);
     grf->C_Group[5]		                = COLOR_PAIR(6);
-    grf->C_Group[6]		                = COLOR_PAIR(9);
-    grf->C_Group[7]		                = COLOR_PAIR(10);
+    grf->C_Group[6]		                = COLOR_PAIR(7);
+    grf->C_Group[7]		                = COLOR_PAIR(8);
     grf->C_Bar_E                        = COLOR_PAIR(0);
     grf->C_Bar_F                        = COLOR_PAIR(0);
     grf->C_Borders                      = 0;
@@ -305,7 +301,7 @@ int initcurs()
         start_color();
         use_default_colors();
 
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < 8; i++)
             init_pair(i,i,-1);
     }
 
@@ -320,13 +316,13 @@ Basic* InitBasic()
     statfs(".",&grf->fs);
     #endif
 
-    grf->ExitTime = false;
-    grf->cSF_E = false;
-    grf->cSF = (char*)malloc(64);
+    grf->exit_time = false;
+    grf->was_typed = false;
+    grf->typed_keys = (char*)malloc(64);
 
     grf->ConsoleHistory.allocated = 0;
     grf->ConsoleHistory.size = 0;
-    grf->ConsoleHistory.History = NULL;
+    grf->ConsoleHistory.history = NULL;
     grf->ConsoleHistory.max_size = 32;
     grf->ConsoleHistory.alloc_r = 8192;
     grf->ConsoleHistory.inc_r = 8;
@@ -335,7 +331,7 @@ Basic* InitBasic()
     grf->SearchList.inc_r = 16;
     grf->SearchList.pos = 0;
     grf->SearchList.size = 0;
-    grf->SearchList.List = NULL;
+    grf->SearchList.list = NULL;
 
     KeyInit();
     settings = SettingsInit();
@@ -368,35 +364,35 @@ Basic* InitBasic()
     for (int i = 0; i < 6; i++)
         grf->win[i] = newwin(0,0,0,0);
 
-    grf->WinMiddle = 0;
+    grf->win_middle = 0;
 
-    grf->ActualSize = 0;
-    grf->AllocatedSize = 0;
-    grf->Base = NULL;
+    grf->size = 0;
+    grf->asize = 0;
+    grf->base = NULL;
 
-    grf->FastRunSettings = 0;
+    grf->preview_settings = 0;
 
     #ifdef __USER_NAME_ENABLE__
-    grf->H_Host = (char*)malloc(64);
-    grf->H_User = (char*)malloc(64);
-    getlogin_r(grf->H_User,63);
-    gethostname(grf->H_Host,63);
+    grf->hostn = (char*)malloc(64);
+    grf->usern = (char*)malloc(64);
+    getlogin_r(grf->usern,63);
+    gethostname(grf->hostn,63);
     #endif
 
     for (int i = 0; i < WORKSPACE_N; i++)
     {
-        grf->Work[i].path = NULL;
-        grf->Work[i].exists = 0;
-        grf->Work[i].SelectedGroup = 0;
-        grf->Work[i].Visual = 0;
+        grf->workspaces[i].path = NULL;
+        grf->workspaces[i].exists = 0;
+        grf->workspaces[i].sel_group = 0;
+        grf->workspaces[i].visual = 0;
         for (int j = 0; j < 3; j++)
-            grf->Work[i].win[j] = -1;
+            grf->workspaces[i].win[j] = -1;
     }
 
-    grf->inW = 0;
-    grf->Work[grf->inW].exists = true;
-    grf->Work[grf->inW].ShowMessage = false;
-    grf->Work[grf->inW].path = (char*)malloc(PATH_MAX);
+    grf->current_workspace = 0;
+    grf->workspaces[grf->current_workspace].exists = true;
+    grf->workspaces[grf->current_workspace].show_message = false;
+    grf->workspaces[grf->current_workspace].path = (char*)malloc(PATH_MAX);
 
     UpdateSizeBasic(grf);
 
@@ -427,34 +423,34 @@ void RunBasic(Basic* grf, const int argc, char** argv)
         path = getenv("PWD");
 
     if (strcmp(path,".") == 0)
-        strcpy(grf->Work[grf->inW].path,getenv("PWD"));
+        strcpy(grf->workspaces[grf->current_workspace].path,getenv("PWD"));
     else if (strcmp(path,"..") == 0)
     {
-        strcpy(grf->Work[grf->inW].path,getenv("PWD"));
-        size_t end = strlen(grf->Work[grf->inW].path)-1;
-        for (; end != 1 && grf->Work[grf->inW].path[end] != '/'; end--) grf->Work[grf->inW].path[end] = 0;
-        if (end != 1) grf->Work[grf->inW].path[end] = 0;
+        strcpy(grf->workspaces[grf->current_workspace].path,getenv("PWD"));
+        size_t end = strlen(grf->workspaces[grf->current_workspace].path)-1;
+        for (; end != 1 && grf->workspaces[grf->current_workspace].path[end] != '/'; end--) grf->workspaces[grf->current_workspace].path[end] = 0;
+        if (end != 1) grf->workspaces[grf->current_workspace].path[end] = 0;
     }
     else if (path[0] == '/')
-        strcpy(grf->Work[grf->inW].path,path);
+        strcpy(grf->workspaces[grf->current_workspace].path,path);
     else
     {
-        strcpy(grf->Work[grf->inW].path,getenv("PWD"));
-        size_t end = strlen(grf->Work[grf->inW].path);
-        if (grf->Work[grf->inW].path[end-1] != '/')
+        strcpy(grf->workspaces[grf->current_workspace].path,getenv("PWD"));
+        size_t end = strlen(grf->workspaces[grf->current_workspace].path);
+        if (grf->workspaces[grf->current_workspace].path[end-1] != '/')
         {
-            grf->Work[grf->inW].path[end] = '/';
-            strcpy(grf->Work[grf->inW].path+end+1,path);
+            grf->workspaces[grf->current_workspace].path[end] = '/';
+            strcpy(grf->workspaces[grf->current_workspace].path+end+1,path);
         }
         else
-            strcpy(grf->Work[grf->inW].path+end,path);
+            strcpy(grf->workspaces[grf->current_workspace].path+end,path);
     }
 
-    size_t end = strlen(grf->Work[grf->inW].path);
-    while (end-1 && grf->Work[grf->inW].path[end-1] == '/')
+    size_t end = strlen(grf->workspaces[grf->current_workspace].path);
+    while (end-1 && grf->workspaces[grf->current_workspace].path[end-1] == '/')
     {
-        grf->Work[grf->inW].path[end-1] = 0;
-        end = strlen(grf->Work[grf->inW].path);
+        grf->workspaces[grf->current_workspace].path[end-1] = 0;
+        end = strlen(grf->workspaces[grf->current_workspace].path);
     }
 
     CD(".",0,grf);
@@ -464,9 +460,9 @@ void RunBasic(Basic* grf, const int argc, char** argv)
         ActualTime = MainTimer.tv_sec;
 
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        if (grf->Work[grf->inW].win[2] != -1 && grf->Work[grf->inW].win[0] != -1)
+        if (grf->workspaces[grf->current_workspace].win[2] != -1 && grf->workspaces[grf->current_workspace].win[0] != -1)
         {
-            if (GET_DIR(grf->inW,0)->enable || GET_DIR(grf->inW,2)->enable)
+            if (GET_DIR(grf->current_workspace,0)->enable || GET_DIR(grf->current_workspace,2)->enable)
                 timeout(settings->SDelayBetweenFrames);
             else
                 timeout(settings->DelayBetweenFrames);
@@ -483,13 +479,13 @@ void RunBasic(Basic* grf, const int argc, char** argv)
         if (ActualTime != PastTime)
         {
             PastTime = ActualTime;
-            GetDir(".",grf,grf->inW,1,settings->DirLoadingMode
+            GetDir(".",grf,grf->current_workspace,1,settings->DirLoadingMode
                 #ifdef __THREADS_FOR_DIR_ENABLE__
                 ,settings->ThreadsForDir
                 #endif
                 );
             if (settings->Win1Display)
-                GetDir("..",grf,grf->inW,0,settings->DirLoadingMode
+                GetDir("..",grf,grf->current_workspace,0,settings->DirLoadingMode
                 #ifdef __THREADS_FOR_DIR_ENABLE__
                 ,settings->ThreadsForDir
                 #endif
@@ -497,7 +493,7 @@ void RunBasic(Basic* grf, const int argc, char** argv)
         }
 
 
-    } while (!grf->ExitTime);
+    } while (!grf->exit_time);
 
     endwin();
 
@@ -526,16 +522,16 @@ void UpdateSizeBasic(Basic* grf)
     {
         wresize(grf->win[0],grf->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,grf->wx*settings->WinSizeMod[0]);
         mvwin(grf->win[0],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),0);
-        grf->WinMiddle = grf->win[0]->_maxx;
+        grf->win_middle = grf->win[0]->_maxx;
         werase(grf->win[0]);
     }
-    wresize(grf->win[1],grf->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,(grf->wx*(settings->WinSizeMod[1]*settings->Win3Enable))+(!settings->Win3Enable*(grf->wx-grf->WinMiddle)));
-    mvwin(grf->win[1],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),grf->WinMiddle);
+    wresize(grf->win[1],grf->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,(grf->wx*(settings->WinSizeMod[1]*settings->Win3Enable))+(!settings->Win3Enable*(grf->wx-grf->win_middle)));
+    mvwin(grf->win[1],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),grf->win_middle);
     werase(grf->win[1]);
     if (settings->Win3Enable)
     {
-        wresize(grf->win[2],grf->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,grf->wx-grf->win[1]->_maxx-grf->WinMiddle);
-        mvwin(grf->win[2],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),grf->win[1]->_maxx+grf->WinMiddle);
+        wresize(grf->win[2],grf->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,grf->wx-grf->win[1]->_maxx-grf->win_middle);
+        mvwin(grf->win[2],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),grf->win[1]->_maxx+grf->win_middle);
         werase(grf->win[2]);
     }
 
@@ -545,35 +541,35 @@ void UpdateSizeBasic(Basic* grf)
 
     for (int i = 0; i < 3; i++)
     {
-        if (grf->Work[grf->inW].win[i] == -1)
+        if (grf->workspaces[grf->current_workspace].win[i] == -1)
             continue;
         if (i == 0 && (!settings->Win1Enable || !settings->Win1Display))
             continue;
         if (i == 2 && (!settings->Win3Enable
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        || GET_DIR(grf->inW,1)->enable
+        || GET_DIR(grf->current_workspace,1)->enable
         #endif
         ))
             continue;
 
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        if (GET_DIR(grf->inW,i)->enable)
+        if (GET_DIR(grf->current_workspace,i)->enable)
             continue;
         #endif
-        if ((ll)GET_DIR(grf->inW,i)->El_t == (ll)-1)
+        if (GET_DIR(grf->current_workspace,i)->permission_denied)
             continue;
-        if ((ll)GET_DIR(grf->inW,i)->El_t == (ll)0)
+        if (GET_DIR(grf->current_workspace,i)->size == 0)
             continue;
 
-        if (GET_DIR(grf->inW,i)->Ltop[grf->inW]+grf->win[i]->_maxy < GET_SELECTED(grf->inW,i))
-            GET_DIR(grf->inW,i)->Ltop[grf->inW] = GET_SELECTED(grf->inW,i)-grf->win[i]->_maxy;
+        if (GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace]+grf->win[i]->_maxy < GET_SELECTED(grf->current_workspace,i))
+            GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace] = GET_SELECTED(grf->current_workspace,i)-grf->win[i]->_maxy;
 
-        for (ll j = GET_DIR(grf->inW,i)->Ltop[grf->inW]; j-GET_DIR(grf->inW,i)->Ltop[grf->inW] < (size_t)grf->win[i]->_maxy-(settings->Borders*2)+1; j++)
+        for (size_t j = GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace]; j-GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace] < (size_t)grf->win[i]->_maxy-(settings->Borders*2)+1; j++)
         {
-            if (j == GET_DIR(grf->inW,i)->El_t)
+            if (j == GET_DIR(grf->current_workspace,i)->size)
             {
-                if (GET_DIR(grf->inW,i)->Ltop[grf->inW] != 0)
-                    GET_DIR(grf->inW,i)->Ltop[grf->inW] = GET_DIR(grf->inW,i)->El_t-1-grf->win[i]->_maxy;
+                if (GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace] != 0)
+                    GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace] = GET_DIR(grf->current_workspace,i)->size-1-grf->win[i]->_maxy;
                 break;
             }
         }
@@ -581,57 +577,52 @@ void UpdateSizeBasic(Basic* grf)
 }
 
 
-void freeEl(struct Element** El, ll* El_t)
+void freeEl(struct Element** el, size_t* size)
 {
-    for (ll i = 0; i < *El_t; i++)
-    {
-        free((*El)[i].List);
-        free((*El)[i].name);
-    }
-    free(*El);
-    *El = NULL;
-    *El_t = 0;
+    for (size_t i = 0; i < *size; i++)
+        free((*el)[i].name);
+    free(*el);
+    *el = NULL;
+    *size = 0;
 }
 
 void freeBasic(Basic* grf)
 {
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    for (size_t i = 0; i < grf->ActualSize; i++)
-        if (grf->Base[i]->enable)
-            pthread_cancel(grf->Base[i]->thread);
+    for (size_t i = 0; i < grf->size; i++)
+        if (grf->base[i]->enable)
+            pthread_cancel(grf->base[i]->thread);
     #endif
 
     for (int i = 0; i < 6; i++)
         delwin(grf->win[i]);
 
-    free(grf->cSF);
+    free(grf->typed_keys);
     #ifdef __USER_NAME_ENABLE__
-    free(grf->H_Host);
-    free(grf->H_User);
+    free(grf->hostn);
+    free(grf->usern);
     #endif
 
     for (int i = 0; i < WORKSPACE_N; i++)
-        free(grf->Work[i].path);
+        free(grf->workspaces[i].path);
 
-    for (size_t i = 0; i < grf->ActualSize; i++)
+    for (size_t i = 0; i < grf->size; i++)
     {
-        free(grf->Base[i]->path);
-        free(grf->Base[i]->selected);
-        free(grf->Base[i]->Ltop);
-        free(grf->Base[i]->filter);
+        free(grf->base[i]->path);
+        free(grf->base[i]->selected);
+        free(grf->base[i]->ltop);
+        free(grf->base[i]->filter);
 
-        if (grf->Base[i]->oldEl_t > grf->Base[i]->El_t)
-            grf->Base[i]->El_t = grf->Base[i]->oldEl_t;
+        if (grf->base[i]->oldsize > grf->base[i]->size)
+            grf->base[i]->size = grf->base[i]->oldsize;
 
-        freeEl(&grf->Base[i]->El,&grf->Base[i]->El_t);
+        freeEl(&grf->base[i]->el,&grf->base[i]->size);
     }
-    free(grf->Base);
+    free(grf->base);
 
     for (size_t i = 0; i < grf->ConsoleHistory.allocated; i++)
-        free(grf->ConsoleHistory.History[i]);
-    free(grf->ConsoleHistory.History);
-
-    free(grf->SearchList.List);
+        free(grf->ConsoleHistory.history[i]);
+    free(grf->ConsoleHistory.history);
 
     free(grf);
 }

@@ -17,11 +17,13 @@
 */
 
 #include "main.h"
-#include "Functions.h"
+#include "inits.h"
+#include <signal.h>
 
 int main(int argc, char** argv)
 {
     setlocale(LC_ALL, "");
+    
     signal(SIGINT,SIG_IGN);
 
     Basic* Main = InitBasic();

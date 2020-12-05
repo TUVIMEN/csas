@@ -17,11 +17,11 @@
 */
 
 #include "main.h"
-#include "Draw.h"
-#include "FastRun.h"
-#include "Sort.h"
-#include "Console.h"
-#include "Usefull.h"
+#include "draw.h"
+#include "preview.h"
+#include "sort.h"
+#include "console.h"
+#include "useful.h"
 
 extern Settings* settings;
 
@@ -40,7 +40,7 @@ void SetMessage(Basic* grf, const int attr, const char* fmt, ...)
     vw_printw(grf->win[5],fmt,va_args);
     wattroff(grf->win[5],attr);
     va_end(va_args);
-    grf->Work[grf->inW].ShowMessage = true;
+    grf->workspaces[grf->current_workspace].show_message = true;
 }
 
 void DrawText(WINDOW* grf, int fd, char* buffer, off_t offset, int whence, bool wrap)
@@ -95,41 +95,47 @@ static int ColorEl(const struct Element* src, const bool Select)
     register int set = 0, col = 0;
 
     #ifdef __MODE_ENABLE__
-    if (src->flags & S_IXUSR)
+    if (src->mode & S_IXUSR)
     {
         set |= settings->C_Exec_set;
-        col = settings->C_Exec;
+        col = settings->C_Exec_col;
     }
     #endif
 
-    if (Select)
-        set |= settings->C_Selected;
+    set |= settings->C_Selected*Select;
 
-    switch(src->Type)
+    if (src->type&T_FILE_MISSING)
+        col = settings->C_FileMissing;
+    else
     {
-        case T_REG:
-            #ifdef __COLOR_FILES_BY_EXTENSION__
-            switch(src->FType)
-            {
-                case 'A': col = settings->C_FType_A; break;
-                case 'I': col = settings->C_FType_I; break;
-                case 'V': col = settings->C_FType_V; break;
-            }
-            #endif
-            break;
-        case T_LREG: col = settings->C_LReg; break;
-        case T_DIR: col = settings->C_Dir; break;
-        case T_LDIR: col = settings->C_LDir; break;
-        case T_LSOCK: col = settings->C_LSock; break;
-        case T_SOCK: col = settings->C_Sock; break;
-        case T_FIFO: col = settings->C_Fifo; break;
-        case T_LFIFO: col = settings->C_LFifo; break;
-        case T_DEV: col = settings->C_Dev; break;
-        case T_LDEV: col = settings->C_LDev; break;
-        case T_BLINK: col = settings->C_BLink; break;
-        case T_BDEV: col = settings->C_BDev; break;
-        case T_LBDEV: col = settings->C_LBDev; break;
+        if (src->type&T_SYMLINK && settings->C_SymLink)
+        {
+            col = settings->C_SymLink;
+            goto END;
+        }
+
+        switch(src->type&T_GT)
+        {
+            case T_REG:
+                #ifdef __COLOR_FILES_BY_EXTENSION__
+                switch(src->ftype)
+                {
+                    case 'A': col = settings->C_FType_A; break;
+                    case 'I': col = settings->C_FType_I; break;
+                    case 'V': col = settings->C_FType_V; break;
+                }
+                #endif
+                break;
+            case T_DIR: col = settings->C_Dir; break;
+            case T_SOCK: col = settings->C_Sock; break;
+            case T_FIFO: col = settings->C_Fifo; break;
+            case T_DEV: col = settings->C_Dev; break;
+            case T_BDEV: col = settings->C_BDev; break;
+            case T_OTHER: col = settings->C_Other; break;
+        }
     }
+
+    END: ;
 
     return set | col;
 }
@@ -233,21 +239,21 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
 
     #ifdef __MODE_ENABLE__
     if (Settings&DP_LSPERMS)
-        *size += sprintf(result+*size,"%s ",lsperms(grf->flags,grf->Type));
+        *size += sprintf(result+*size,"%s ",lsperms(grf->mode));
     #endif
     #ifdef __BLOCKS_ENABLE__
     if (Settings&DP_BLOCKS)
         *size += sprintf(result+*size,"%ld ",grf->blocks);
     #endif
     if (Settings&DP_TYPE)
-        *size += sprintf(result+*size,"%d ",grf->Type);
+        *size += sprintf(result+*size,"%d ",grf->type);
     #ifdef __COLOR_FILES_BY_EXTENSION__
     if (Settings&DP_FTYPE)
     {
-        if (grf->FType > 32)
-            *size += sprintf(result+*size,"%c ",grf->FType);
+        if (grf->ftype > 32)
+            *size += sprintf(result+*size,"%c ",grf->ftype);
         else
-            *size += sprintf(result+*size,"%d ",grf->FType);
+            *size += sprintf(result+*size,"%d ",grf->ftype);
     }
     #endif
     #ifdef __NLINK_ENABLE__
@@ -292,21 +298,21 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
 
     #ifdef __ATIME_ENABLE__
     if (Settings&DP_ATIME)
-        *size += sprintf(result+*size,"%ld ",grf->atim.tv_sec);
+        *size += sprintf(result+*size,"%ld ",grf->atim);
     if (Settings&DP_SATIME)
-        *size += TimeToStr(&grf->atim.tv_sec,result+*size);
+        *size += TimeToStr(&grf->atim,result+*size);
     #endif
     #ifdef __MTIME_ENABLE__
     if (Settings&DP_MTIME)
-        *size += sprintf(result+*size,"%ld ",grf->mtim.tv_sec);
+        *size += sprintf(result+*size,"%ld ",grf->mtim);
     if (Settings&DP_SMTIME)
-        *size += TimeToStr(&grf->mtim.tv_sec,result+*size);
+        *size += TimeToStr(&grf->mtim,result+*size);
     #endif
     #ifdef __CTIME_ENABLE__
     if (Settings&DP_CTIME)
-        *size += sprintf(result+*size,"%ld ",grf->ctim.tv_sec);
+        *size += sprintf(result+*size,"%ld ",grf->ctim);
     if (Settings&DP_SCTIME)
-        *size += TimeToStr(&grf->ctim.tv_sec,result+*size);
+        *size += TimeToStr(&grf->ctim,result+*size);
     #endif
     #ifdef __BLK_SIZE_ENABLE__
     if (Settings&DP_BLK_SIZE)
@@ -325,7 +331,7 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
         *size += sprintf(result+*size,"%lld ",grf->size);
     if (Settings&DP_HSIZE)
     {
-        if ((ll)grf->size < 1024)
+        if (grf->size < 1024)
             *size += sprintf(result+*size,"%lld ",grf->size);
         else
             *size += sprintf(result+*size,"%s ",MakeHumanReadAble(grf->size));
@@ -348,27 +354,28 @@ void DrawBasic(Basic* grf, const int which)
     static char temp[96];
     static size_t cont_s[4];
 
-    if (settings->Win3Display && grf->Work[grf->inW].win[2] == -1)
-        FastRun(grf);
+    if (settings->Win3Display && grf->workspaces[grf->current_workspace].win[2] == -1)
+        Preview(grf);
 
     for (int i = 0; i < 3; i++)
     {
         if (which != -1 && i != which)
             continue;
-        if (grf->Work[grf->inW].win[i] == -1)
+        if (grf->workspaces[grf->current_workspace].win[i] == -1)
             continue;
         if (i == 0 && (!settings->Win1Enable || !settings->Win1Display))
             continue;
         if (i == 2 && (!settings->Win3Enable
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        || GET_DIR(grf->inW,1)->enable
+        || GET_DIR(grf->current_workspace,1)->enable
         #endif
         ))
             continue;
 
-        if (i == 2 && !settings->Win3Display && grf->preview_fd != -1 && grf->FastRunSettings&F_TEXT)
+        if (i == 2 && !settings->Win3Display 
+            && grf->preview_fd != -1 && grf->preview_settings&F_TEXT)
         {
-            DrawText(grf->win[i],grf->preview_fd,temp,0,SEEK_SET,grf->FastRunSettings&F_WRAP);
+            DrawText(grf->win[i],grf->preview_fd,temp,0,SEEK_SET,grf->preview_settings&F_WRAP);
             wrefresh(grf->win[i]);
             continue;
         }
@@ -378,7 +385,7 @@ void DrawBasic(Basic* grf, const int which)
 
         wattron(grf->win[i],settings->C_Error);
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        if (GET_DIR(grf->inW,i)->enable)
+        if (GET_DIR(grf->current_workspace,i)->enable)
         {
             snprintf(NameTemp,grf->win[i]->_maxx-((settings->Borders+1)+2),"LOADING");
             mvwaddstr(grf->win[i],settings->Borders,settings->Borders+3,NameTemp);
@@ -387,7 +394,7 @@ void DrawBasic(Basic* grf, const int which)
             continue;
         }
         #endif
-        if ((ll)GET_DIR(grf->inW,i)->El_t == (ll)-1)
+        if (GET_DIR(grf->current_workspace,i)->permission_denied)
         {
             snprintf(NameTemp,grf->win[i]->_maxx-((settings->Borders+1)+2),"NOT ACCESSIBLE");
             mvwaddstr(grf->win[i],settings->Borders,settings->Borders+3,NameTemp);
@@ -395,7 +402,7 @@ void DrawBasic(Basic* grf, const int which)
             wrefresh(grf->win[i]);
             continue;
         }
-        if ((ll)GET_DIR(grf->inW,i)->El_t == (ll)0)
+        if (GET_DIR(grf->current_workspace,i)->size == 0)
         {
             snprintf(NameTemp,grf->win[i]->_maxx-((settings->Borders+1)+2),"EMPTY");
             mvwaddstr(grf->win[i],settings->Borders,settings->Borders+3,NameTemp);
@@ -408,26 +415,26 @@ void DrawBasic(Basic* grf, const int which)
         line_off1 = 0;
 
         #ifdef __SORT_ELEMENTS_ENABLE__
-        if (GET_DIR(grf->inW,i)->sort_m != settings->SortMethod)
+        if (GET_DIR(grf->current_workspace,i)->sort_m != settings->SortMethod)
         {
-            GET_DIR(grf->inW,i)->sort_m = settings->SortMethod;
-            if (GET_DIR(grf->inW,i)->El_t > 0)
-                SortEl(GET_DIR(grf->inW,i)->El,GET_DIR(grf->inW,i)->El_t,settings->SortMethod);
+            GET_DIR(grf->current_workspace,i)->sort_m = settings->SortMethod;
+            if (GET_DIR(grf->current_workspace,i)->size > 0)
+                SortEl(GET_DIR(grf->current_workspace,i)->el,GET_DIR(grf->current_workspace,i)->size,settings->SortMethod);
         }
         #endif
 
-        for (ll j = GET_DIR(grf->inW,i)->Ltop[grf->inW]; j-GET_DIR(grf->inW,i)->Ltop[grf->inW] < (size_t)grf->win[i]->_maxy-(settings->Borders*2)+1 && j < GET_DIR(grf->inW,i)->El_t; j++)
+        for (size_t j = GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace]; j-GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace] < (size_t)grf->win[i]->_maxy-(settings->Borders*2)+1 && j < GET_DIR(grf->current_workspace,i)->size; j++)
         {
             #ifdef __COLOR_FILES_BY_EXTENSION__
-            if (GET_DIR(grf->inW,i)->El[j].FType == 1)
-                GET_DIR(grf->inW,i)->El[j].FType = check_extension(GET_DIR(grf->inW,i)->El[j].name);
+            if (GET_DIR(grf->current_workspace,i)->el[j].ftype == 1)
+                GET_DIR(grf->current_workspace,i)->el[j].ftype = check_extension(GET_DIR(grf->current_workspace,i)->el[j].name);
             #endif
-            color = ColorEl(&GET_DIR(grf->inW,i)->El[j],(j == (ll)GET_SELECTED(grf->inW,i)));
+            color = ColorEl(&GET_DIR(grf->current_workspace,i)->el[j],(j == GET_SELECTED(grf->current_workspace,i)));
 
             if (settings->FillBlankSpace)
                 wattron(grf->win[i],color);
             for (int g = settings->Borders+1; g < grf->win[i]->_maxx-settings->Borders-1+((i == 2)*2)*!settings->Borders+(((i == 1)*2)*!settings->Win3Enable)*!settings->Borders; g++)
-                mvwaddch(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i)->Ltop[grf->inW],g+settings->Borders,' ');
+                mvwaddch(grf->win[i],settings->Borders+j-GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace],g+settings->Borders,' ');
             if (!settings->FillBlankSpace)
                 wattron(grf->win[i],color);
 
@@ -440,15 +447,15 @@ void DrawBasic(Basic* grf, const int which)
             {
                 if (settings->DisplayingC != 0)
                 {
-                    ByIntToStr(&cont_s[0],settings->DisplayingC,MainTemp,&GET_DIR(grf->inW,i)->El[j]);
+                    ByIntToStr(&cont_s[0],settings->DisplayingC,MainTemp,&GET_DIR(grf->current_workspace,i)->el[j]);
 
-                    mvwaddstr(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i)->Ltop[grf->inW],grf->win[i]->_maxx-cont_s[0]-1+(((i == 1)*2)*!settings->Win3Enable)*!settings->Borders,MainTemp);
+                    mvwaddstr(grf->win[i],settings->Borders+j-GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace],grf->win[i]->_maxx-cont_s[0]-1+(((i == 1)*2)*!settings->Win3Enable)*!settings->Borders,MainTemp);
                 }
 
                 if (settings->NumberLinesOff)
                 {
                     line_off1 = 0;
-                    cont_s[1] = GET_DIR(grf->inW,i)->El_t;
+                    cont_s[1] = GET_DIR(grf->current_workspace,i)->size;
                     while (cont_s[1] > 9) { cont_s[1] /= 10; line_off1++; }
 
                     line_off2 = 0;
@@ -458,33 +465,41 @@ void DrawBasic(Basic* grf, const int which)
 
                 if (settings->NumberLines)
                 {
-					sprintf(temp,"%lld ",j+settings->NumberLinesFromOne);
+					sprintf(temp,"%lu ",j+settings->NumberLinesFromOne);
                     strcat(NameTemp,temp);
                 }
             }
 
-            strcat(NameTemp,GET_DIR(grf->inW,i)->El[j].name);
+            strcat(NameTemp,GET_DIR(grf->current_workspace,i)->el[j].name);
             cont_s[1] = strlen(NameTemp);
 
-            if ((ll)grf->win[i]->_maxx < (ll)(4+cont_s[0]+settings->Borders+1))
-                NameTemp[0] = '\0';
+            if (grf->win[i]->_maxx < (ll)(cont_s[0]+settings->Borders+1))
+                NameTemp[0] = 0;
             else if ((size_t)cont_s[1] > grf->win[i]->_maxx-cont_s[0]-2-((settings->Borders+1)+1)-settings->Borders)
             {
                 NameTemp[grf->win[i]->_maxx-cont_s[0]-3-((settings->Borders+1)+1)-settings->Borders] = '~';
                 NameTemp[grf->win[i]->_maxx-cont_s[0]-2-((settings->Borders+1)+1)-settings->Borders] = '\0';
             }
 
-            mvwaddstr(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i)->Ltop[grf->inW],(settings->Borders*2)+2+(line_off1-line_off2),NameTemp);
+            /*if ((ll)grf->win[i]->_maxx < (ll)(4+cont_s[0]+settings->Borders+1))
+                NameTemp[0] = '\0';
+            else if ((size_t)cont_s[1] > grf->win[i]->_maxx-cont_s[0]-2-((settings->Borders+1)+1)-settings->Borders)
+            {
+                NameTemp[grf->win[i]->_maxx-cont_s[0]-3-((settings->Borders+1)+1)-settings->Borders] = '~';
+                NameTemp[grf->win[i]->_maxx-cont_s[0]-2-((settings->Borders+1)+1)-settings->Borders] = '\0';
+            }*/
+
+            mvwaddstr(grf->win[i],settings->Borders+j-GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace],(settings->Borders*2)+2+(line_off1-line_off2),NameTemp);
 
             wattroff(grf->win[i],color);
 
-            if (GET_DIR(grf->inW,i)->El[j].List[grf->inW]&(1<<grf->Work[grf->inW].SelectedGroup))
-                color = settings->C_Group[grf->Work[grf->inW].SelectedGroup];
+            if (GET_DIR(grf->current_workspace,i)->el[j].list[grf->current_workspace]&(1<<grf->workspaces[grf->current_workspace].sel_group))
+                color = settings->C_Group[grf->workspaces[grf->current_workspace].sel_group];
             else
                 color = 0;
 
             wattron(grf->win[i],(color|A_REVERSE)*(color > 0));
-            mvwaddch(grf->win[i],settings->Borders+j-GET_DIR(grf->inW,i)->Ltop[grf->inW],(settings->Borders*2),' ');
+            mvwaddch(grf->win[i],settings->Borders+j-GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace],(settings->Borders*2),' ');
             wattroff(grf->win[i],(color|A_REVERSE)*(color > 0));
         }
 
@@ -501,7 +516,7 @@ void DrawBasic(Basic* grf, const int which)
         if ((settings->Bar1Settings & B_WORKSPACES) == B_WORKSPACES)
         {
             for (int i = 0; i < WORKSPACE_N; i++)
-                cont_s[2] += grf->Work[i].exists;
+                cont_s[2] += grf->workspaces[i].exists;
 
             cont_s[2] *= 3;
         }
@@ -513,9 +528,9 @@ void DrawBasic(Basic* grf, const int which)
         {
             wattron(grf->win[3],settings->C_User_S_D);
             if (settings->UserRHost)
-                sprintf(temp,settings->UserHostPattern,grf->H_Host,grf->H_User);
+                sprintf(temp,settings->UserHostPattern,grf->hostn,grf->usern);
             else
-                sprintf(temp,settings->UserHostPattern,grf->H_User,grf->H_Host);
+                sprintf(temp,settings->UserHostPattern,grf->usern,grf->hostn);
             mvwaddstr(grf->win[3],0,0,temp);
             wattroff(grf->win[3],settings->C_User_S_D);
             cont_s[3] = strlen(temp);
@@ -524,19 +539,19 @@ void DrawBasic(Basic* grf, const int which)
 
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !GET_DIR(grf->inW,1)->enable &&
+            !GET_DIR(grf->current_workspace,1)->enable &&
             #endif
-            GET_DIR(grf->inW,1)->El_t > 0)
+            GET_DIR(grf->current_workspace,1)->size > 0)
         {
-            if (GET_DIR(grf->inW,1)->El_t <= (ll)GET_SELECTED(grf->inW,1))
-                GET_SELECTED(grf->inW,1) = GET_DIR(grf->inW,1)->El_t-1;
+            if (GET_DIR(grf->current_workspace,1)->size <= GET_SELECTED(grf->current_workspace,1))
+                GET_SELECTED(grf->current_workspace,1) = GET_DIR(grf->current_workspace,1)->size-1;
             if ((settings->Bar1Settings & B_DIR) == B_DIR)
             {
-                strcpy(MainTemp,grf->Work[grf->inW].path);
-                if (!(grf->Work[grf->inW].path[0] == '/' && grf->Work[grf->inW].path[1] == '\0'))
+                strcpy(MainTemp,grf->workspaces[grf->current_workspace].path);
+                if (!(grf->workspaces[grf->current_workspace].path[0] == '/' && grf->workspaces[grf->current_workspace].path[1] == '\0'))
                 {
                     strcat(MainTemp,"/");
-                    MakePathShorter(MainTemp,grf->win[3]->_maxx-(cont_s[3]+1+cont_s[2]+((settings->Bar1Settings & B_NAME) == B_NAME ? strlen(GET_ESELECTED(grf->inW,1).name) : 0)));
+                    MakePathShorter(MainTemp,grf->win[3]->_maxx-(cont_s[3]+1+cont_s[2]+((settings->Bar1Settings & B_NAME) == B_NAME ? strlen(GET_ESELECTED(grf->current_workspace,1).name) : 0)));
                 }
 
                 wattron(grf->win[3],settings->C_Bar_Dir);
@@ -548,7 +563,7 @@ void DrawBasic(Basic* grf, const int which)
             if ((settings->Bar1Settings & B_NAME) == B_NAME)
             {
                 wattron(grf->win[3],settings->C_Bar_Name);
-                mvwaddstr(grf->win[3],0,cont_s[3],GET_ESELECTED(grf->inW,1).name);
+                mvwaddstr(grf->win[3],0,cont_s[3],GET_ESELECTED(grf->current_workspace,1).name);
                 wattroff(grf->win[3],settings->C_Bar_Name);
             }
         }
@@ -562,16 +577,16 @@ void DrawBasic(Basic* grf, const int which)
                 cont_s[2] = 2;
                 for (int i = WORKSPACE_N-1; i > -1; i--)
                 {
-                    if (grf->Work[i].exists)
+                    if (grf->workspaces[i].exists)
                     {
-                        if (i == grf->inW)
+                        if (i == grf->current_workspace)
                             wattron(grf->win[3],settings->C_Bar_WorkSpace_Selected);
                         else
                             wattron(grf->win[3],settings->C_Bar_WorkSpace);
 
                         mvwprintw(grf->win[3],0,grf->win[3]->_maxx-cont_s[2]," %d ",i);
 
-                        if (i == grf->inW)
+                        if (i == grf->current_workspace)
                             wattroff(grf->win[3],settings->C_Bar_WorkSpace_Selected);
                         else
                             wattroff(grf->win[3],settings->C_Bar_WorkSpace);
@@ -592,11 +607,11 @@ void DrawBasic(Basic* grf, const int which)
         // 4
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !GET_DIR(grf->inW,1)->enable &&
+            !GET_DIR(grf->current_workspace,1)->enable &&
             #endif
-            GET_DIR(grf->inW,1)->El_t > 0)
+            GET_DIR(grf->current_workspace,1)->size > 0)
         {
-            ByIntToStr(&cont_s[0],settings->Bar2Settings,MainTemp,&GET_ESELECTED(grf->inW,1));
+            ByIntToStr(&cont_s[0],settings->Bar2Settings,MainTemp,&GET_ESELECTED(grf->current_workspace,1));
             wattron(grf->win[4],settings->C_Bar_F);
             mvwaddstr(grf->win[4],0,0,MainTemp);
             wattroff(grf->win[4],settings->C_Bar_E);
@@ -606,21 +621,21 @@ void DrawBasic(Basic* grf, const int which)
 
         cont_s[0] = 0;
 
-        if (settings->Bar1Settings & B_CSF && grf->cSF_E)
-            cont_s[0] += sprintf(MainTemp+cont_s[0],"%s",grf->cSF);
+        if (settings->Bar1Settings & B_CSF && grf->was_typed)
+            cont_s[0] += sprintf(MainTemp+cont_s[0],"%s",grf->typed_keys);
         if (settings->Bar1Settings & B_MODES)
         {
-            if (GET_DIR(grf->inW,1)->Changed)
+            if (GET_DIR(grf->current_workspace,1)->changed)
                 cont_s[0] += sprintf(MainTemp+cont_s[0]," C");
 
-            if (grf->Work[grf->inW].Visual)
+            if (grf->workspaces[grf->current_workspace].visual)
                 cont_s[0] += sprintf(MainTemp+cont_s[0]," VISUAL");
 
-            if (GET_DIR(grf->inW,1)->filter_set)
-                cont_s[0] += sprintf(MainTemp+cont_s[0]," f=\"%s\"",GET_DIR(grf->inW,1)->filter);
+            if (GET_DIR(grf->current_workspace,1)->filter_set)
+                cont_s[0] += sprintf(MainTemp+cont_s[0]," f=\"%s\"",GET_DIR(grf->current_workspace,1)->filter);
         }
         if (settings->Bar1Settings & B_FGROUP)
-            cont_s[0] += sprintf(MainTemp+cont_s[0]," %dW",grf->Work[grf->inW].SelectedGroup);
+            cont_s[0] += sprintf(MainTemp+cont_s[0]," %dW",grf->workspaces[grf->current_workspace].sel_group);
         #ifdef __FILESYSTEM_INFO_ENABLE__
         if (settings->Bar1Settings & B_FTYPE)
             cont_s[0] += sprintf(MainTemp+cont_s[0]," %lx",grf->fs.f_type);
@@ -655,12 +670,12 @@ void DrawBasic(Basic* grf, const int which)
         #endif
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !GET_DIR(grf->inW,1)->enable &&
+            !GET_DIR(grf->current_workspace,1)->enable &&
             #endif
-            GET_DIR(grf->inW,1)->El_t > 0)
+            GET_DIR(grf->current_workspace,1)->size > 0)
         {
             if (settings->Bar1Settings & B_POSITION)
-                cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld/%lld",GET_SELECTED(grf->inW,1)+1,GET_DIR(grf->inW,1)->El_t);
+                cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld/%lu",GET_SELECTED(grf->current_workspace,1)+1,GET_DIR(grf->current_workspace,1)->size);
         }
 
         wattron(grf->win[4],settings->C_Bar_E);
@@ -672,9 +687,9 @@ void DrawBasic(Basic* grf, const int which)
         // 4
     }
 
-    if (grf->Work[grf->inW].ShowMessage)
+    if (grf->workspaces[grf->current_workspace].show_message)
     {
-        grf->Work[grf->inW].ShowMessage = false;
+        grf->workspaces[grf->current_workspace].show_message = false;
         wrefresh(grf->win[5]);
     }
 }

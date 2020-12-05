@@ -17,13 +17,13 @@
 */
 
 #include "main.h"
-#include "Loading.h"
-#include "Functions.h"
-#include "Chars.h"
-#include "Load.h"
-#include "Usefull.h"
-#include "FastRun.h"
-#include "Draw.h"
+#include "loading.h"
+#include "inits.h"
+#include "functions.h"
+#include "load.h"
+#include "useful.h"
+#include "preview.h"
+#include "draw.h"
 
 extern struct AliasesT aliases[];
 extern Settings* settings;
@@ -41,7 +41,9 @@ struct command commands[] = {
     {"ChangeWorkSpace",___CHANGEWORKSPACE},
     {"gotop",___GOTOP},
     {"godown",___GODOWN},
+    #ifdef __FILE_SIZE_ENABLE__
     {"getsize",___GETSIZE},
+    #endif
     {"setgroup",___SETGROUP},
     {"select",___SELECT},
     {"togglevisual",___TOGGLEVISUAL},
@@ -65,7 +67,7 @@ struct command commands[] = {
 void RunCommand(const char* src, Basic* grf)
 {
     size_t pos = 0, end = 0;
-
+    
     pos += FindFirstCharacter(src);
     while (src[pos+end] && !isspace(src[pos+end])) end++;
 
@@ -86,39 +88,39 @@ void ConsoleResize(WINDOW* win, const struct WinArgs args)
 {
     Vector2i Size = {0,0}, Pos = {0,0};
 
-    if (args.S_Size.x != -1)
-        Size.x = args.S_Size.x;
-    if (args.S_Size.y != -1)
-        Size.y = args.S_Size.y;
-    if (args.PercentSize.x > 0)
-        Size.x = args.place->_maxx*args.PercentSize.x+1;
-    if (args.PercentSize.y > 0)
-        Size.y = args.place->_maxy*args.PercentSize.y+1;
-    if (args.MinSize.x != -1 && Size.x < args.MinSize.x)
-        Size.x = args.MinSize.x;
-    if (args.MinSize.y != -1 && Size.y < args.MinSize.y)
-        Size.y = args.MinSize.y;
-    if (args.MaxSize.x != -1 && Size.x > args.MaxSize.x)
-        Size.x = args.MaxSize.x;
-    if (args.MaxSize.y != -1 && Size.y > args.MaxSize.y)
-        Size.y = args.MaxSize.y;
+    if (args.s_size.x != -1)
+        Size.x = args.s_size.x;
+    if (args.s_size.y != -1)
+        Size.y = args.s_size.y;
+    if (args.p_size.x > 0)
+        Size.x = args.place->_maxx*args.p_size.x+1;
+    if (args.p_size.y > 0)
+        Size.y = args.place->_maxy*args.p_size.y+1;
+    if (args.min_size.x != -1 && Size.x < args.min_size.x)
+        Size.x = args.min_size.x;
+    if (args.min_size.y != -1 && Size.y < args.min_size.y)
+        Size.y = args.min_size.y;
+    if (args.max_size.x != -1 && Size.x > args.max_size.x)
+        Size.x = args.max_size.x;
+    if (args.max_size.y != -1 && Size.y > args.max_size.y)
+        Size.y = args.max_size.y;
 
-    if (args.S_Pos.x != -1)
-        Pos.x = args.S_Pos.x;
-    if (args.S_Pos.y != -1)
-        Pos.y = args.S_Pos.y;
-    if (args.PercentPos.x > 0)
-        Pos.x = (args.place->_begx+args.place->_maxx)*args.PercentPos.x;
-    if (args.PercentPos.y > 0)
-        Pos.y = (args.place->_begy+args.place->_maxy)*args.PercentPos.y;
-    if (args.MinPos.x != -1 && Pos.x < args.MinPos.x)
-        Pos.x = args.MinPos.x;
-    if (args.MinPos.y != -1 && Pos.y < args.MinPos.y)
-        Pos.y = args.MinPos.y;
-    if (args.MaxPos.x != -1 && Pos.x > args.MaxPos.x)
-        Pos.x = args.MaxPos.x;
-    if (args.MaxPos.y != -1 && Pos.y > args.MaxPos.y)
-        Pos.y = args.MaxPos.y;
+    if (args.s_pos.x != -1)
+        Pos.x = args.s_pos.x;
+    if (args.s_pos.y != -1)
+        Pos.y = args.s_pos.y;
+    if (args.p_pos.x > 0)
+        Pos.x = (args.place->_begx+args.place->_maxx)*args.p_pos.x;
+    if (args.p_pos.y > 0)
+        Pos.y = (args.place->_begy+args.place->_maxy)*args.p_pos.y;
+    if (args.min_pos.x != -1 && Pos.x < args.min_pos.x)
+        Pos.x = args.min_pos.x;
+    if (args.min_pos.y != -1 && Pos.y < args.min_pos.y)
+        Pos.y = args.min_pos.y;
+    if (args.max_pos.x != -1 && Pos.x > args.max_pos.x)
+        Pos.x = args.max_pos.x;
+    if (args.max_pos.y != -1 && Pos.y > args.max_pos.y)
+        Pos.y = args.max_pos.y;
 
     wresize(win,Size.y,Size.x);
     mvwin(win,Pos.y,Pos.x);
@@ -128,7 +130,7 @@ void ConsoleResize(WINDOW* win, const struct WinArgs args)
     wrefresh(win);
 }
 
-void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t max, struct WinArgs args, char* first, char* add)
+void ConsoleGetLine(WINDOW* win, Basic* grf, char** history, size_t size, size_t max, struct WinArgs args, char* first, char* add)
 {
     curs_set(1);
     int Event;
@@ -139,7 +141,7 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
     size_t first_t = strlen(first), z = size-1;
     if (add)
     {
-        strcpy(History[size-1],add);
+        strcpy(history[size-1],add);
         x = strlen(add);
         while (x-off >= win->_maxx) off++;
     }
@@ -156,7 +158,7 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
         for (int i = border; i < win->_maxx-border; i++)
             mvwaddch(win,border+y,i,' ');
         mvwaddstr(win,border+y,border,first);
-        mvwaddnstr(win,border+y,border+first_t,History[size-1]+off,win->_maxx-border*2-first_t);
+        mvwaddnstr(win,border+y,border+first_t,history[size-1]+off,win->_maxx-border*2-first_t);
         wmove(win,border+y,border+x+first_t-off);
         wrefresh(win);
 
@@ -167,14 +169,14 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
             case 9:
             {
                 name_n = 0;
-                while (History[size-1][name_n] && !isspace(History[size-1][name_n]))
+                while (history[size-1][name_n] && !isspace(history[size-1][name_n]))
                 {
-                    name_complete[name_n] = History[size-1][name_n];
+                    name_complete[name_n] = history[size-1][name_n];
                     name_n++;
                 }
                 name_complete[name_n] = 0;
 
-                if (History[size-1][name_n] == 0)
+                if (history[size-1][name_n] == 0)
                 {
                     if (!tab_was_pressed)
                     {
@@ -207,13 +209,13 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
 
                     if (name_complete_t)
                     {
-                        strcpy(History[size-1],commands[name_complete_arr[name_complete_actual++]].name);
+                        strcpy(history[size-1],commands[name_complete_arr[name_complete_actual++]].name);
                         name_complete_actual = name_complete_actual*(name_complete_actual != name_complete_t);
-                        x = strlen(History[size-1]);
+                        x = strlen(history[size-1]);
                         if (name_complete_t == 1)
                         {
-                            History[size-1][x++] = ' ';
-                            History[size-1][x] = 0;
+                            history[size-1][x++] = ' ';
+                            history[size-1][x] = 0;
                             tab_was_pressed = 0;
                         }
 
@@ -232,8 +234,8 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
                 if (z > 0)
                 {
                     z--;
-                    strcpy(History[size-1],History[z]);
-                    x = strlen(History[size-1]);
+                    strcpy(history[size-1],history[z]);
+                    x = strlen(history[size-1]);
                     while (x-off >= win->_maxx) off++;
                 }
                 break;
@@ -245,13 +247,13 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
                     z++;
                     if (z == size-1)
                     {
-                        memset(History[size-1],0,max);
+                        memset(history[size-1],0,max);
                         x = 0;
                         off = 0;
                         break;
                     }
-                    strcpy(History[size-1],History[z]);
-                    x = strlen(History[size-1]);
+                    strcpy(history[size-1],history[z]);
+                    x = strlen(history[size-1]);
                     while (x-off >= win->_maxx) off++;
                 }
                 break;
@@ -265,12 +267,12 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
                 off = 0;
                 break;
             case ('e'&0x1f):
-                x = strlen(History[size-1]);
+                x = strlen(history[size-1]);
                 while (x-off >= win->_maxx) off++;
                 break;
             case 27:
             case ('r'&0x1f):
-                History[size-1][0] = 0;
+                history[size-1][0] = 0;
                 goto END;
             case KEY_RESIZE:
                 UpdateSizeBasic(grf);
@@ -283,8 +285,8 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
                 tab_was_pressed = 0;
                 if (x > 0)
                 {
-                    for (size_t i = x-1; i <= strlen(History[size-1]); i++)
-                        History[size-1][i] = History[size-1][i+1];
+                    for (size_t i = x-1; i <= strlen(history[size-1]); i++)
+                        history[size-1][i] = history[size-1][i+1];
                     x--;
                     if (off != 0) off--;
                 }
@@ -302,7 +304,7 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
                 break;
             case KEY_RIGHT:
             case ('f'&0x1f):
-                if (History[size-1][x])
+                if (history[size-1][x])
                 {
                     if (border+x+first_t-off >= (size_t)win->_maxx)
                         off++;
@@ -310,22 +312,22 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** History, size_t size, size_t
                 }
                 break;
             case ('d'&0x1f):
-                while (History[size-1][x] && !isalnum(History[size-1][x])) x++;
-                while (isalnum(History[size-1][x])) x++;
-                while (History[size-1][x] && !isalnum(History[size-1][x])) x++;
+                while (history[size-1][x] && !isalnum(history[size-1][x])) x++;
+                while (isalnum(history[size-1][x])) x++;
+                while (history[size-1][x] && !isalnum(history[size-1][x])) x++;
                 break;
             case ('s'&0x1f):
-                while (History[size-1][x-1] && !isalnum(History[size-1][x-1])) x--;
-                while (isalnum(History[size-1][x-1])) x--;
-                while (History[size-1][x-1] && !isalnum(History[size-1][x-1])) x--;
+                while (history[size-1][x-1] && !isalnum(history[size-1][x-1])) x--;
+                while (isalnum(history[size-1][x-1])) x--;
+                while (history[size-1][x-1] && !isalnum(history[size-1][x-1])) x--;
                 break;
             default:
                 tab_was_pressed = 0;
-                int i = strlen(History[size-1]);
-                History[size-1][i+1] = 0;
+                int i = strlen(history[size-1]);
+                history[size-1][i+1] = 0;
                 for (; i >= x; i--)
-                    History[size-1][i] = History[size-1][i-1];
-                History[size-1][x] = (char)Event;
+                    history[size-1][i] = history[size-1][i-1];
+                history[size-1][x] = (char)Event;
                 x++;
                 if (border+x+first_t-off >= (size_t)win->_maxx) off++;
                 break;

@@ -16,8 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef USEFULL_H
-#define USEFULL_H
+#ifndef USEFUL_H
+#define USEFUL_H
 
 int spawn(char* file, char* arg1, char* arg2, const uchar mode);
 
@@ -29,7 +29,7 @@ void GetDirSize(const int fd, ull* count, ull* size, const bool recursive);
 uchar check_extension(const char* name);
 #endif
 
-char* lsperms(const int mode, const int type);
+char* lsperms(const int mode);
 
 size_t TimeToStr(const time_t* time, char* result);
 

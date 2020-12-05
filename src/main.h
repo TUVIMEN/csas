@@ -32,7 +32,7 @@
 #define __USE_XOPEN_EXTENDED 1
 #endif
 
-#include "HardConfig.h"
+#include "hconfig.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -53,6 +53,8 @@
 #include <sys/types.h>
 #include <limits.h>
 #include <regex.h>
+#include <err.h>
+#include <sys/mman.h>
 #include <locale.h>
 #ifdef __THREADS_ENABLE__
 #include <pthread.h>
@@ -74,6 +76,7 @@ typedef long int li;
 typedef long long int ll;
 typedef long double ldb;
 typedef unsigned char uchar;
+typedef unsigned short ushort;
 typedef unsigned long int uli;
 typedef unsigned long long int ull;
 
@@ -90,9 +93,9 @@ typedef unsigned long long int ull;
 
 #define TEMPTEMP "/tmp/CSAS-XXXXXX"
 
-#define GET_DIR(x,y) grf->Base[grf->Work[x].win[y]]
+#define GET_DIR(x,y) grf->base[grf->workspaces[x].win[y]]
 #define GET_SELECTED(x,y) GET_DIR(x,y)->selected[x]
-#define GET_ESELECTED(x,y) GET_DIR(x,y)->El[GET_SELECTED(x,y)]
+#define GET_ESELECTED(x,y) GET_DIR(x,y)->el[GET_SELECTED(x,y)]
 
 #define F_SILENT 0x1
 #define F_NORMAL 0x2
@@ -105,14 +108,10 @@ typedef unsigned long long int ull;
 #define T_BDEV 4
 #define T_SOCK 5
 #define T_FIFO 6
-#define T_BLINK 7
-#define T_LDIR 8
-#define T_LREG 9
-#define T_LDEV 10
-#define T_LBDEV 11
-#define T_LSOCK 12
-#define T_LFIFO 13
-#define T_OTHER 14
+#define T_OTHER 7
+#define T_GT 7
+#define T_SYMLINK 8
+#define T_FILE_MISSING 16
 
 #ifdef __SORT_ELEMENTS_ENABLE__
 
@@ -138,6 +137,13 @@ typedef unsigned long long int ull;
 #define D_R 0x2 //recursive
 #define D_C 0x4 //count
 #define D_H 0x8 //human readable
+
+#define PREV_NONE 0x1
+#define PREV_BINARY 0x2
+#define PREV_ASCII 0x4
+
+#define F_TEXT 0x2
+#define F_WRAP 0x4
 
 #define DP_SIZE         0x1
 #define DP_LSPERMS      0x2
@@ -192,7 +198,7 @@ typedef unsigned long long int ull;
 #define B_MODES         0x200000
 #define B_CSF           0x400000
 
-#define GROUP(x) 1<<x
+#define GROUP(x)  1<<x
 #define M_REPLACE 0x1 //replace file
 #define M_MERGE   0x2 //merge directory
 #define M_DCPY    0x4 //don't copy if file exists
@@ -201,11 +207,21 @@ typedef unsigned long long int ull;
 struct Element
 {
     char* name;
-    uchar Type;
-    #ifdef __MODE_ENABLE__
-    mode_t flags;
+
+    uchar list[WORKSPACE_N];
+
+    ushort nlen;
+
+    uchar type;
+    
+    #ifdef __COLOR_FILES_BY_EXTENSION__
+    uchar ftype;
     #endif
-    uchar *List;
+
+    #ifdef __MODE_ENABLE__
+    mode_t mode;
+    #endif
+
     #ifdef __INODE_ENABLE__
     ino_t inode;
     #endif
@@ -215,17 +231,13 @@ struct Element
     #endif
 
     #ifdef __ATIME_ENABLE__
-    struct timespec atim;
+    time_t atim;
     #endif
     #ifdef __MTIME_ENABLE__
-    struct timespec mtim;
+    time_t mtim;
     #endif
     #ifdef __CTIME_ENABLE__
-    struct timespec ctim;
-    #endif
-
-    #ifdef __COLOR_FILES_BY_EXTENSION__
-    uchar FType;
+    time_t ctim;
     #endif
 
     #ifdef __FILE_GROUPS_ENABLE__
@@ -255,14 +267,14 @@ struct Element
 #ifdef __COLOR_FILES_BY_EXTENSION__
 typedef struct
 {
-    char* Name;
+    char* name;
     char group;
 } Extensions;
 #endif
 
 typedef struct
 {
-    bool RunInBG;
+    bool run_in_bg;
     bool binary;
     long pos;
     int from;
@@ -276,32 +288,33 @@ typedef struct
 struct Dir
 {
     char *path;
-    ll El_t;
-    ll oldEl_t;
-    struct Element* El;
+    size_t size;
+    size_t oldsize;
+    struct Element* el;
+    size_t *selected;
+    char **move_to;
+    size_t *ltop;
+    struct timespec ctime;
+    ino_t inode;
+    char *filter;
+    li sort_m;
     #ifdef __THREADS_FOR_DIR_ENABLE__
     pthread_t thread;
     bool enable;
     #endif
-    size_t *selected;
-    char **move_to;
-    size_t *Ltop;
-    struct timespec ctime;
-    ino_t inode;
-    char *filter;
-    bool Changed;
+    bool permission_denied;
+    bool changed;
     bool filter_set;
-    li sort_m;
 };
 
 typedef struct
 {
     char* path;
     int win[3];
-    bool ShowMessage;
-    bool Visual;
+    bool show_message;
+    bool visual;
     bool exists;
-    uchar SelectedGroup;
+    uchar sel_group;
 } WorkSpace;
 
 typedef struct
@@ -347,6 +360,7 @@ typedef struct
     li NumberLinesOff;
     li NumberLinesFromOne;
     li DisplayingC;
+    ll PreviewSettings;
     #ifdef __SHOW_HIDDEN_FILES_ENABLE__
     li ShowHiddenFiles;
     #endif
@@ -361,32 +375,29 @@ typedef struct
     li C_FType_I;
     li C_FType_V;
     #endif
-    li C_Selected,C_Exec_set,C_Exec,C_BLink,C_Dir,
-        C_Reg,C_Fifo,C_Sock,C_Dev,C_BDev,C_LDir,C_LReg,
-        C_LFifo,C_LSock,C_LDev,C_LBDev,C_Other,C_User_S_D,
-        C_Bar_Dir,C_Bar_Name,C_Bar_WorkSpace,C_Bar_WorkSpace_Selected,
-        *C_Group,C_Bar_F,C_Bar_E,C_Borders;
+    li C_Selected,C_Exec_set,C_Exec_col,C_Dir,
+        C_Reg,C_Fifo,C_Sock,C_Dev,C_BDev,C_Other,C_FileMissing,
+        C_SymLink,C_User_S_D,C_Bar_WorkSpace_Selected,
+        C_Bar_Dir,C_Bar_Name,C_Bar_WorkSpace, *C_Group,
+        C_Bar_F,C_Bar_E,C_Borders;
 } Settings;
-
-#define F_TEXT 0x1
-#define F_WRAP 0x2
 
 typedef struct
 {
-    int wx, wy, WinMiddle;
+    int wx, wy, win_middle;
     WINDOW *win[6];
-    size_t ActualSize;
-    size_t AllocatedSize;
-    struct Dir** Base;
-    int inW;
-    WorkSpace Work[WORKSPACE_N];
+    size_t size;
+    size_t asize;
+    struct Dir** base;
+    int current_workspace;
+    WorkSpace workspaces[WORKSPACE_N];
     #ifdef __USER_NAME_ENABLE__
-    char* H_User;
-    char* H_Host;
+    char* usern;
+    char* hostn;
     #endif
-    bool ExitTime;
-    char* cSF;
-    bool cSF_E;
+    bool exit_time;
+    char* typed_keys;
+    bool was_typed;
     #ifdef __FILESYSTEM_INFO_ENABLE__
     struct statfs fs;
     #endif
@@ -397,7 +408,7 @@ typedef struct
         size_t max_size;
         size_t inc_r;
         size_t alloc_r;
-        char** History;
+        char** history;
     } ConsoleHistory;
     struct
     {
@@ -405,10 +416,10 @@ typedef struct
         size_t size;
         size_t inc_r;
         size_t pos;
-        char** List;
+        char** list;
     } SearchList;
     int preview_fd;
-    li FastRunSettings;
+    li preview_settings;
 } Basic;
 
 typedef struct {
@@ -438,13 +449,13 @@ typedef struct {
 
 struct WinArgs {
     WINDOW* place;
-    Vector2i S_Size;
-    Vector2f PercentSize;
-    Vector2i MinSize;
-    Vector2i MaxSize;
-    Vector2i S_Pos;
-    Vector2f PercentPos;
-    Vector2i MinPos;
-    Vector2i MaxPos;
+    Vector2i s_size;
+    Vector2f p_size;
+    Vector2i min_size;
+    Vector2i max_size;
+    Vector2i s_pos;
+    Vector2f p_pos;
+    Vector2i min_pos;
+    Vector2i max_pos;
     int settings;
 };

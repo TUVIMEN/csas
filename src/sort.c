@@ -20,7 +20,7 @@
 
 #ifdef __SORT_ELEMENTS_ENABLE__
 
-#include "Sort.h"
+#include "sort.h"
 
 extern Settings* settings;
 
@@ -38,8 +38,8 @@ static int comp(const void* El1, const void* El2, void* flag)
     {
         register bool g1 = 0, g2 = 0;
 
-        g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->Type);
-        g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->Type);
+        g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->type);
+        g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->type);
 
         if (!g1 && !g2) goto Result;
         if (!g1 && g2) return 1;
@@ -51,20 +51,20 @@ static int comp(const void* El1, const void* El2, void* flag)
 
     switch (*(ull*)flag & SORT_IF)
     {
-        case SORT_TYPE: ret = ((struct Element*)El1)->Type > ((struct Element*)El2)->Type; break;
+        case SORT_TYPE: ret = ((struct Element*)El1)->type > ((struct Element*)El2)->type; break;
         #ifdef __FILE_SIZE_ENABLE__
         case SORT_SIZE: ret = (((struct Element*)El1)->size) < (((struct Element*)El2)->size); break;
         #endif
         case SORT_NAME: ret = strcasecmp((((struct Element*)El1)->name),((struct Element*)El2)->name);  break;
         case SORT_LNAME: ret = (strcmp(((struct Element*)El1)->name,((struct Element*)El2)->name)); break;
         #ifdef __MTIME_ENABLE__
-        case SORT_MTIME: ret = (((struct Element*)El1)->mtim.tv_sec) > (((struct Element*)El2)->mtim.tv_sec); break;
+        case SORT_MTIME: ret = (((struct Element*)El1)->mtim) > (((struct Element*)El2)->mtim); break;
         #endif
         #ifdef __ATIME_ENABLE__
-        case SORT_ATIME: ret = (((struct Element*)El1)->atim.tv_sec) > (((struct Element*)El2)->atim.tv_sec); break;
+        case SORT_ATIME: ret = (((struct Element*)El1)->atim) > (((struct Element*)El2)->atim); break;
         #endif
         #ifdef __CTIME_ENABLE__
-        case SORT_CTIME: ret = (((struct Element*)El1)->ctim.tv_sec) > (((struct Element*)El2)->ctim.tv_sec); break;
+        case SORT_CTIME: ret = (((struct Element*)El1)->ctim) > (((struct Element*)El2)->ctim); break;
         #endif
         #ifdef __FILE_GROUPS_ENABLE__
         case SORT_GID: ret = (((struct Element*)El1)->gr) > (((struct Element*)El2)->gr); break;
@@ -77,17 +77,17 @@ static int comp(const void* El1, const void* El2, void* flag)
     return ret;
 }
 
-static size_t FindBorder(const struct Element* El, size_t size)
+static size_t FindBorder(const struct Element* el, size_t size)
 {
     register size_t ret = 0;
     for (register size_t i = 0; i < size && ret == 0; i++)
-        ret = i*!CheckIfMatchesBetterFiles(El[i].Type);
+        ret = i*!CheckIfMatchesBetterFiles(el[i].type);
     return ret;
 }
 
-void SortEl(struct Element* El, const size_t El_t, ull flag)
+void SortEl(struct Element* el, const size_t size, ull flag)
 {
-    qsort_r(El,El_t,sizeof(struct Element),comp,&flag);
+    qsort_r(el,size,sizeof(struct Element),comp,&flag);
 
     if (!(flag & SORT_REVERSE))
         return;
@@ -97,26 +97,26 @@ void SortEl(struct Element* El, const size_t El_t, ull flag)
 
     if (flag & SORT_BETTER_FILES)
     {
-        border = FindBorder(El,El_t);
+        border = FindBorder(el,size);
 
         if (border)
         {
             for (i = 0, j = border-1; i < j; i++, j--)
             {
-                temp = El[i];
-                El[i] = El[j];
-                El[j] = temp;
+                temp = el[i];
+                el[i] = el[j];
+                el[j] = temp;
             }
         }
     }
 
-    if (border != El_t)
+    if (border != size)
     {
-        for (i = border, j = El_t-1; i < j; i++, j--)
+        for (i = border, j = size-1; i < j; i++, j--)
         {
-            temp = El[i];
-            El[i] = El[j];
-            El[j] = temp;
+            temp = el[i];
+            el[i] = el[j];
+            el[j] = temp;
         }
     }
 }

@@ -16,8 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef CHARS_H
-#define CHARS_H
+#ifndef FUNCTIONS_H
+#define FUNCTIONS_H
 
 int UpdateEvent(Basic* grf);
 void ExitBasic(Basic* grf, const bool force);
@@ -34,7 +34,9 @@ void ___CD(const char* src, Basic* grf);
 void ___GOTOP(const char* src, Basic* grf);
 void ___GODOWN(const char* src, Basic* grf);
 void ___CHANGEWORKSPACE(const char* src, Basic* grf);
+#ifdef __FILE_SIZE_ENABLE__
 void ___GETSIZE(const char* src,Basic* grf);
+#endif
 void ___SETGROUP(const char* src, Basic* grf);
 void ___FASTSELECT(const char* src, Basic* grf);
 void ___TOGGLEVISUAL(const char* src, Basic* grf);

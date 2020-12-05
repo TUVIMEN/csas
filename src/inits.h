@@ -16,9 +16,15 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FASTRUN_H
-#define FASTRUN_H
+#ifndef INITS_H
+#define INITS_H
 
-void FastRun(Basic* grf);
+void addKey(const Key src);
+int initcurs();
+Basic* InitBasic();
+void RunBasic(Basic* grf, const int argc, char** argv);
+void UpdateSizeBasic(Basic* grf);
+void freeEl(struct Element** el, size_t* size);
+void freeBasic(Basic* grf);
 
 #endif

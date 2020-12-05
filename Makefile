@@ -1,6 +1,6 @@
 SHELL	=	/bin/bash
-CC		=	gcc -std=c11
-LINK	=	-lpthread -lncursesw -ltinfow
+CC	=	gcc -std=c11
+LINK	=	-lpthread -lncursesw #-ltinfow
 CFLAGS	=	-O2 -pipe -march=native -Wall -Wextra
 TARGET	=	csas
 

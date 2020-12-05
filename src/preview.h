@@ -16,15 +16,9 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FUNCTIONS_H
-#define FUNCTIONS_H
+#ifndef PREVIEW_H
+#define PREVIEW_H
 
-void addKey(const Key src);
-int initcurs();
-Basic* InitBasic();
-void RunBasic(Basic* grf, const int argc, char** argv);
-void UpdateSizeBasic(Basic* grf);
-void freeEl(struct Element** El, ll* El_t);
-void freeBasic(Basic* grf);
+void Preview(Basic* grf);
 
 #endif

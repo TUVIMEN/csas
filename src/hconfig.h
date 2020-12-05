@@ -44,7 +44,7 @@
 #define __MODE_ENABLE__
 //#define __BLK_SIZE_ENABLE__
 //#define __DEV_ENABLE__
-//#define __NLINK_ENABLE__
+#define __NLINK_ENABLE__
 //#define __RDEV_ENABLE__
 #define __MTIME_ENABLE__
 //#define __ATIME_ENABLE__

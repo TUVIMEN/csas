@@ -17,10 +17,10 @@
 */
 
 #include "main.h"
-#include "Loading.h"
-#include "Functions.h"
-#include "Console.h"
-#include "Usefull.h"
+#include "loading.h"
+#include "inits.h"
+#include "console.h"
+#include "useful.h"
 
 #ifdef __LOAD_CONFIG_ENABLE__
 extern struct AliasesT aliases[];
@@ -96,15 +96,15 @@ void LoadConfig(const char* path, Basic* grf)
 
     chdir(temp);
 
-    struct stat sFile;
-    if (fstat(fd,&sFile) == -1)
+    struct stat sfile;
+    if (fstat(fd,&sfile) == -1)
     {
         close(fd);
         return;
     }
 
-    char* file = (char*)malloc(sFile.st_size+1);
-    read(fd,file,sFile.st_size);
+    char* file = (char*)malloc(sfile.st_size+1);
+    read(fd,file,sfile.st_size);
 
     close(fd);
     static char line[16384];
@@ -120,7 +120,7 @@ void LoadConfig(const char* path, Basic* grf)
 
     free(file);
 
-    chdir(grf->Work[grf->inW].path);
+    chdir(grf->workspaces[grf->current_workspace].path);
 }
 
 #endif
