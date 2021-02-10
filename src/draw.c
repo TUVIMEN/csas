@@ -25,7 +25,7 @@
 
 extern Settings* settings;
 
-void SetMessage(Basic* grf, const int attr, const char* fmt, ...)
+void set_message(Basic* grf, const int attr, const char* fmt, ...)
 {
     struct WinArgs args = {stdscr,
     {-1,1},{1,-1},{-1,-1},{-1,-1},
@@ -43,28 +43,35 @@ void SetMessage(Basic* grf, const int attr, const char* fmt, ...)
     grf->workspaces[grf->current_workspace].show_message = true;
 }
 
-void DrawText(WINDOW* grf, int fd, char* buffer, off_t offset, int whence, bool wrap)
+void DrawText(WINDOW* grf, int fd, off_t offset, int whence, bool wrap)
 {
+    if (fd == -1)
+        return;
+        
     lseek(fd,offset,whence);
     int posx = 1+settings->Borders*2, posy = settings->Borders;
+    ssize_t readb = 2048;
+    char buff[2048];
+    register ssize_t i = 0;
 
-    while (read(fd,buffer,1) > 0 && posy <= grf->_maxy-settings->Borders)
+    while (readb == 2048 && (readb = read(fd,buff,2048)) > 0 && posy <= grf->_maxy-settings->Borders)
     {
-        if ((wrap && grf->_maxx-(settings->Borders*2)-1 < posx))
+        for (i = 0; i < readb && posy <= grf->_maxy-settings->Borders; i++)
         {
-            posy++;
-            posx = 1+settings->Borders*2;
-            mvwaddch(grf,posy,posx++,buffer[0]);
-            continue;
+            if ((wrap && grf->_maxx-(settings->Borders*2)-1 < posx))
+            {
+                posy++;
+                posx = 1+settings->Borders*2;
+                mvwaddch(grf,posy,posx++,buff[i]);
+            }
+            else if (buff[i] == '\n')
+            {
+                posy++;
+                posx = 1+(settings->Borders<<1);
+            }
+            else
+                mvwaddch(grf,posy,posx++,buff[i]);
         }
-        if (buffer[0] == '\n')
-        {
-            posy++;
-            posx = 1+settings->Borders*2;
-            continue;
-        }
-        else
-            mvwaddch(grf,posy,posx++,buffer[0]);
     }
 }
 
@@ -141,7 +148,7 @@ static int ColorEl(const struct Element* src, const bool Select)
 }
 
 #ifdef __FILESYSTEM_INFO_ENABLE__
-static char* fsName(const li ftype)
+static char *fsName(const li ftype)
 {
     switch (ftype)
     {
@@ -348,11 +355,11 @@ static void ByIntToStr(size_t* size, const int Settings, char* result, struct El
 
 void DrawBasic(Basic* grf, const int which)
 {
-    static int color, line_off1, line_off2;;
-    static char NameTemp[PATH_MAX];
-    static char MainTemp[PATH_MAX];
-    static char temp[96];
-    static size_t cont_s[4];
+    int color, line_off1, line_off2;;
+    char NameTemp[PATH_MAX];
+    char MainTemp[PATH_MAX];
+    char temp[96];
+    size_t cont_s[4];
 
     if (settings->Win3Display && grf->workspaces[grf->current_workspace].win[2] == -1)
         Preview(grf);
@@ -375,7 +382,7 @@ void DrawBasic(Basic* grf, const int which)
         if (i == 2 && !settings->Win3Display 
             && grf->preview_fd != -1 && grf->preview_settings&F_TEXT)
         {
-            DrawText(grf->win[i],grf->preview_fd,temp,0,SEEK_SET,grf->preview_settings&F_WRAP);
+            DrawText(grf->win[i],grf->preview_fd,0,SEEK_SET,grf->preview_settings&F_WRAP);
             wrefresh(grf->win[i]);
             continue;
         }

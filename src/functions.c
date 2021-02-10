@@ -450,7 +450,7 @@ void ___SET(const char* src, Basic* grf)
 #ifdef __LOAD_CONFIG_ENABLE__
 void ___INCLUDE(const char* src, Basic* grf)
 {
-    static char temp[8192];
+    char temp[8192];
 
     StrToPath(temp,src);
     LoadConfig(temp,grf);
@@ -460,21 +460,18 @@ void ___INCLUDE(const char* src, Basic* grf)
 void ___MAP(const char* src, Basic* grf)
 {
     size_t pos = 0, end = 0;
-    static char temp[8192];
-    Key TempKey;
-    TempKey.keys = (char*)malloc(64);
+    char temp1[64];
+    char temp2[PATH_MAX];
     while (src[pos+end] && !isspace(src[pos+end])) end++;
-    strncpy(TempKey.keys,src+pos,end);
-    TempKey.keys[end] = '\0';
+    strncpy(temp1,src+pos,end);
+    temp1[end] = '\0';
     pos += end;
 
     pos += FindFirstCharacter(src+pos);
 
-    pos += StrToPath(temp,src+pos);
-    TempKey.value = temp;
+    pos += StrToPath(temp2,src+pos);
 
-    addKey(TempKey);
-    free(TempKey.keys);
+    addKey(temp1,temp2);
 }
 
 void ___MOVE(const char* src, Basic* grf)
@@ -580,7 +577,7 @@ void ___CD(const char* src, Basic* grf)
 {
     size_t pos = 0;
     int workspace = grf->current_workspace;
-    static char path[8192];
+    char path[8192];
     memset(path,0,8191);
 
     while (src[pos])
@@ -1019,13 +1016,13 @@ void ___F_MOD(const char* src, Basic* grf)
 				close(fd3);
                 count++;
                 size += ST.st_size;
-                SetMessage(grf,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,MakeHumanReadAble(size));
+                set_message(grf,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,MakeHumanReadAble(size));
             }
             else
                 #ifdef __FILE_SIZE_ENABLE__
-                SetMessage(grf,0,"Do you want to %s \"%s\" (%s)? (Y/n)",ActionName,GET_ESELECTED(workspace,1).name,MakeHumanReadAble(GET_ESELECTED(workspace,1).size));
+                set_message(grf,0,"Do you want to %s \"%s\" (%s)? (Y/n)",ActionName,GET_ESELECTED(workspace,1).name,MakeHumanReadAble(GET_ESELECTED(workspace,1).size));
                 #else
-                SetMessage(grf,0,"Do you want to %s \"%s\"? (Y/n)",ActionName,GET_ESELECTED(workspace,1).name);
+                set_message(grf,0,"Do you want to %s \"%s\"? (Y/n)",ActionName,GET_ESELECTED(workspace,1).name);
                 #endif
 
             wrefresh(grf->win[5]);
@@ -1038,12 +1035,12 @@ void ___F_MOD(const char* src, Basic* grf)
                     UpdateSizeBasic(grf);
                     DrawBasic(grf,-1);
                     if ((ST.st_mode&S_IFMT) == S_IFDIR)
-                        SetMessage(grf,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,MakeHumanReadAble(size));
+                        set_message(grf,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,MakeHumanReadAble(size));
                     else
                         #ifdef __FILE_SIZE_ENABLE__
-                        SetMessage(grf,0,"Do you want to %s \"%s\" (%s)? (Y/n)",ActionName,GET_ESELECTED(workspace,1).name,MakeHumanReadAble(GET_ESELECTED(workspace,1).size));
+                        set_message(grf,0,"Do you want to %s \"%s\" (%s)? (Y/n)",ActionName,GET_ESELECTED(workspace,1).name,MakeHumanReadAble(GET_ESELECTED(workspace,1).size));
                         #else
-                        SetMessage(grf,0,"Do you want to %s \"%s\"? (Y/n)",ActionName,GET_ESELECTED(workspace,1).name);
+                        set_message(grf,0,"Do you want to %s \"%s\"? (Y/n)",ActionName,GET_ESELECTED(workspace,1).name);
                         #endif
                     wrefresh(grf->win[5]);
                 }
@@ -1109,7 +1106,7 @@ void ___F_MOD(const char* src, Basic* grf)
         close(fd2);
     }
 
-    SetMessage(grf,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,MakeHumanReadAble(size));
+    set_message(grf,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,MakeHumanReadAble(size));
     wrefresh(grf->win[5]);
     int si = -1;
     for (;;)
@@ -1119,7 +1116,7 @@ void ___F_MOD(const char* src, Basic* grf)
         {
             UpdateSizeBasic(grf);
             DrawBasic(grf,-1);
-            SetMessage(grf,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,MakeHumanReadAble(size));
+            set_message(grf,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,MakeHumanReadAble(size));
             wrefresh(grf->win[5]);
         }
         else if (si == 'y' || si == 'Y')
@@ -1556,7 +1553,7 @@ void ___BULK(const char* src, Basic* grf)
 void ___CONSOLE(const char* src, Basic* grf)
 {
     size_t pos = 0;
-    static char temp[1024];
+    char temp[1024];
     temp[0] = '\0';
 
     while (src[pos])
@@ -1616,7 +1613,7 @@ void ___SEARCH(char* src, Basic* grf)
     size_t pos = 0, mul = 1;
     int selected = -1;
     int action = -1;
-    static char temp[1024];
+    char temp[1024];
 
     while (src[pos])
     {

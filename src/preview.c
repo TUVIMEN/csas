@@ -28,7 +28,10 @@ void* PreviewRun(void* arg)
 {
     Basic* grf = (Basic*)arg;
 
-    char buffer[257];
+    close(grf->preview_fd);
+    grf->preview_fd = -1;
+
+    char buffer[1024];
     int fd;
     if ((fd = open(GET_ESELECTED(grf->current_workspace,1).name,O_RDONLY)) == -1)
         goto END;
@@ -39,8 +42,8 @@ void* PreviewRun(void* arg)
         goto END;
     if (sfile.st_size == 0)
         goto END;
-    size_t buf_t = 256;
-    if ((buf_t = read(fd,buffer,buf_t)) < 1)
+    ssize_t buf_t;
+    if ((buf_t = read(fd,buffer,1024)) < 1)
         goto END;
 
     int bina = 0;
@@ -49,10 +52,7 @@ void* PreviewRun(void* arg)
     for (size_t i = 0; i < buf_t; i++)
         bina += 1*!(isascii(buffer[i]));
 
-    binary = bina>3;
-
-    close(grf->preview_fd);
-    grf->preview_fd = -1;
+    binary = bina<<1;
 
     if (!binary)
     {

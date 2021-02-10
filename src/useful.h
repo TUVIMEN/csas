@@ -19,6 +19,8 @@
 #ifndef USEFUL_H
 #define USEFUL_H
 
+void die(int status, const char *p, ...);
+
 int spawn(char* file, char* arg1, char* arg2, const uchar mode);
 
 char* MakeHumanReadAble(ull value);
@@ -44,9 +46,9 @@ char* MakePathRunAble(char* temp);
 char* MakePath(const char* dir, const char* name);
 size_t FindFirstCharacter(const char* src);
 size_t StrToValue(void* dest, const char* src);
-char CharConv(const char dest);
+wchar_t CharConv(const char c);
 size_t StrToPath(char* dest, const char* src);
-char* StrToKeys(char* dest);
+wchar_t *StrToKeys(char *src,  wchar_t * dest);
 size_t FindEndOf(const char* src, const char res);
 
 #endif

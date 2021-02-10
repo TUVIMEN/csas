@@ -36,6 +36,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/mman.h>
 #include <stdarg.h>
 #include <unistd.h>
 #include <time.h>
@@ -423,7 +424,7 @@ typedef struct
 } Basic;
 
 typedef struct {
-    char* keys;
+    wchar_t* keys;
     char* value;
 } Key;
 

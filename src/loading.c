@@ -85,7 +85,7 @@ void LoadConfig(const char* path, Basic* grf)
     if ((fd = open(path,O_RDONLY)) == -1)
         return;
     
-    static char temp[PATH_MAX];
+    char temp[PATH_MAX];
     strcpy(temp,path);
 
     if (temp[0] == '/')
@@ -103,22 +103,21 @@ void LoadConfig(const char* path, Basic* grf)
         return;
     }
 
-    char* file = (char*)malloc(sfile.st_size+1);
-    read(fd,file,sfile.st_size);
-
+    char* file = mmap(NULL,sfile.st_size,PROT_READ,MAP_PRIVATE,fd,0);
     close(fd);
-    static char line[16384];
 
-    size_t Pos = 0;
+    char line[16384];
 
-    while (file[Pos])
+    size_t pos = 0;
+
+    while (file[pos])
     {
-        GetFullLine(line,file,&Pos);
+        GetFullLine(line,file,&pos);
         RunCommand(line,grf);
-        Pos++;
+        pos++;
     }
 
-    free(file);
+    munmap(file,sfile.st_size);
 
     chdir(grf->workspaces[grf->current_workspace].path);
 }

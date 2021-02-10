@@ -32,27 +32,27 @@
 #include "loading.h"
 #endif
 
-void addKey(const Key src)
+void addKey(char *c, char *v)
 {
     if (keys_t == keys_a)
     {
         keys = (Key*)realloc(keys,(keys_a+=32)*sizeof(Key));
         for (size_t i = keys_t; i < keys_a; i++)
         {
-            keys[i].keys = (char*)malloc(64);
+            keys[i].keys = (wchar_t*)malloc(64*sizeof(wchar_t));
             keys[i].value = NULL;
         }
     }
 
-    static char temp[128];
-    strcpy(temp,src.keys);
-    StrToKeys(temp);
+    wchar_t temp[64];
+
+    StrToKeys(c,temp);
 
     li found = -1;
 
     for (size_t i = 0; i < keys_t; i++)
     {
-        if (strcmp(temp,keys[i].keys) == 0)
+        if (wcscmp(temp,keys[i].keys) == 0)
         {
             found = (li)i;
             break;
@@ -62,124 +62,120 @@ void addKey(const Key src)
     if (found == -1)
         found = (li)keys_t++;
 
-    strcpy(keys[found].keys,temp);
+    wcpcpy(keys[found].keys,temp);
 
-    if (keys[found].value != NULL)
-    {
-        free(keys[found].value);
-        keys[found].value = NULL;
-    }
-    keys[found].value = (char*)malloc(PATH_MAX);
-    strcpy(keys[found].value,src.value);
+    if (keys[found].value == NULL)
+        keys[found].value = (char*)malloc(PATH_MAX);
+    strcpy(keys[found].value,v);
 }
 
 void KeyInit()
 {
-    addKey((Key){"q","quit"});
-    addKey((Key){"Q","quit -f"});
-    addKey((Key){"j","move -d"});
-    addKey((Key){"J","move -dc 16"});
-    addKey((Key){"k","move -u"});
-    addKey((Key){"K","move -uc 16"});
-    addKey((Key){"h","move -l"});
-    addKey((Key){"l","move -r"});
-    addKey((Key){"g/","/"});
-    addKey((Key){"gh","cd \"${HOME}\""});
-    addKey((Key){"gd","cd /dev"});
-    addKey((Key){"ge","cd /etc"});
-    addKey((Key){"gM","cd /mnt"});
-    addKey((Key){"go","cd /opt"});
-    addKey((Key){"gs","cd /srv"});
-    addKey((Key){"gp","cd /tmp"});
-    addKey((Key){"gu","cd /usr"});
-    addKey((Key){"gv","cd /var"});
-	addKey((Key){"gm","cd \"${MEDIA}\""});
-    addKey((Key){"gg","gotop"});
-    addKey((Key){"G","godown"});
-    addKey((Key){"z1","ChangeWorkSpace 0"});
-    addKey((Key){"z2","ChangeWorkSpace 1"});
-    addKey((Key){"z3","ChangeWorkSpace 2"});
-    addKey((Key){"z4","ChangeWorkSpace 3"});
-    addKey((Key){"z5","ChangeWorkSpace 4"});
-    addKey((Key){"z6","ChangeWorkSpace 5"});
-    addKey((Key){"z7","ChangeWorkSpace 6"});
-    addKey((Key){"z8","ChangeWorkSpace 7"});
-    addKey((Key){"z9","ChangeWorkSpace 8"});
-    addKey((Key){"z0","ChangeWorkSpace 9"});
+    addKey("q","quit");
+    addKey("Q","quit -f");
+    addKey("j","move -d");
+    addKey("J","move -dc 16");
+    addKey("k","move -u");
+    addKey("K","move -uc 16");
+    addKey("h","move -l");
+    addKey("l","move -r");
+    addKey("g/","/");
+    addKey("gh","cd \"${HOME\"");
+    addKey("gd","cd /dev");
+    addKey("ge","cd /etc");
+    addKey("gM","cd /mnt");
+    addKey("go","cd /opt");
+    addKey("gs","cd /srv");
+    addKey("gp","cd /tmp");
+    addKey("gu","cd /usr");
+    addKey("gv","cd /var");
+    addKey("gm","cd \"${MEDIA\"");
+    addKey("gg","gotop");
+    addKey("G","godown");
+    addKey("z1","ChangeWorkSpace 0");
+    addKey("z2","ChangeWorkSpace 1");
+    addKey("z3","ChangeWorkSpace 2");
+    addKey("z4","ChangeWorkSpace 3");
+    addKey("z5","ChangeWorkSpace 4");
+    addKey("z6","ChangeWorkSpace 5");
+    addKey("z7","ChangeWorkSpace 6");
+    addKey("z8","ChangeWorkSpace 7");
+    addKey("z9","ChangeWorkSpace 8");
+    addKey("z0","ChangeWorkSpace 9");
     #ifdef __SORT_ELEMENTS_ENABLE__
-    addKey((Key){"oe","set SortMethod SORT_NONE"});
-    addKey((Key){"oE","set SortMethod SORT_NONE|SORT_REVERSE"});
-    addKey((Key){"or","set SortMethod SORT_TYPE|SORT_BETTER_FILES"});
-    addKey((Key){"oR","set SortMethod SORT_TYPE|SORT_REVERSE|SORT_BETTER_FILES'"});
-    addKey((Key){"ob","set SortMethod SORT_NONE|SORT_BETTER_FILES"});
-    addKey((Key){"oB","set SortMethod SORT_NONE|SORT_REVERSE|SORT_BETTER_FILES"});
-    addKey((Key){"os","set SortMethod SORT_SIZE|SORT_BETTER_FILES"});
-    addKey((Key){"oS","set SortMethod SORT_SIZE|SORT_REVERSE|SORT_BETTER_FILES"});
-    addKey((Key){"otm","set SortMethod SORT_MTIME|SORT_BETTER_FILES"});
-    addKey((Key){"otM","set SortMethod SORT_MTIME|SORT_REVERSE|SORT_BETTER_FILES"});
-    addKey((Key){"otc","set SortMethod SORT_CTIME|SORT_BETTER_FILES"});
-    addKey((Key){"otC","set SortMethod SORT_CTIME|SORT_REVERSE|SORT_BETTER_FILES"});
-    addKey((Key){"ota","set SortMethod SORT_ATIME|SORT_BETTER_FILES"});
-    addKey((Key){"otA","set SortMethod SORT_ATIME|SORT_REVERSE|SORT_BETTER_FILES"});
-    addKey((Key){"og","set SortMethod SORT_GID|SORT_BETTER_FILES"});
-    addKey((Key){"oG","set SortMethod SORT_GID|SORT_REVERSE|SORT_BETTER_FILES"});
-    addKey((Key){"ou","set SortMethod SORT_UID|SORT_BETTER_FILES"});
-    addKey((Key){"oU","set SortMethod SORT_UID|SORT_REVERSE|SORT_BETTER_FILES"});
-    addKey((Key){"om","set SortMethod SORT_LNAME|SORT_BETTER_FILES"});
-    addKey((Key){"oM","set SortMethod SORT_LNAME|SORT_REVERSE|SORT_BETTER_FILES"});
-    addKey((Key){"on","set SortMethod SORT_NAME|SORT_BETTER_FILES"});
-    addKey((Key){"oN","set SortMethod SORT_NAME|SORT_REVERSE|SORT_BETTER_FILES"});
+    addKey("oe","set SortMethod SORT_NONE");
+    addKey("oE","set SortMethod SORT_NONE|SORT_REVERSE");
+    addKey("or","set SortMethod SORT_TYPE|SORT_BETTER_FILES");
+    addKey("oR","set SortMethod SORT_TYPE|SORT_REVERSE|SORT_BETTER_FILES'");
+    addKey("ob","set SortMethod SORT_NONE|SORT_BETTER_FILES");
+    addKey("oB","set SortMethod SORT_NONE|SORT_REVERSE|SORT_BETTER_FILES");
+    addKey("os","set SortMethod SORT_SIZE|SORT_BETTER_FILES");
+    addKey("oS","set SortMethod SORT_SIZE|SORT_REVERSE|SORT_BETTER_FILES");
+    addKey("otm","set SortMethod SORT_MTIME|SORT_BETTER_FILES");
+    addKey("otM","set SortMethod SORT_MTIME|SORT_REVERSE|SORT_BETTER_FILES");
+    addKey("otc","set SortMethod SORT_CTIME|SORT_BETTER_FILES");
+    addKey("otC","set SortMethod SORT_CTIME|SORT_REVERSE|SORT_BETTER_FILES");
+    addKey("ota","set SortMethod SORT_ATIME|SORT_BETTER_FILES");
+    addKey("otA","set SortMethod SORT_ATIME|SORT_REVERSE|SORT_BETTER_FILES");
+    addKey("og","set SortMethod SORT_GID|SORT_BETTER_FILES");
+    addKey("oG","set SortMethod SORT_GID|SORT_REVERSE|SORT_BETTER_FILES");
+    addKey("ou","set SortMethod SORT_UID|SORT_BETTER_FILES");
+    addKey("oU","set SortMethod SORT_UID|SORT_REVERSE|SORT_BETTER_FILES");
+    addKey("om","set SortMethod SORT_LNAME|SORT_BETTER_FILES");
+    addKey("oM","set SortMethod SORT_LNAME|SORT_REVERSE|SORT_BETTER_FILES");
+    addKey("on","set SortMethod SORT_NAME|SORT_BETTER_FILES");
+    addKey("oN","set SortMethod SORT_NAME|SORT_REVERSE|SORT_BETTER_FILES");
     #endif
-    addKey((Key){"dct","getsize -cs s"});
-    addKey((Key){"dCt","getsize -crs s"});
-    addKey((Key){"dst","getsize -s s"});
-    addKey((Key){"dSt","getsize -rs s"});
-    addKey((Key){"dft","getsize -fs s"});
-    addKey((Key){"dch","getsize -cs ."});
-    addKey((Key){"dCh","getsize -crs ."});
-    addKey((Key){"dsh","getsize -s ."});
-    addKey((Key){"dSh","getsize -rs ."});
-    addKey((Key){"dfh","getsize -fs ."});
-    addKey((Key){"x1","setgroup 0"});
-    addKey((Key){"x2","setgroup 1"});
-    addKey((Key){"x3","setgroup 2"});
-    addKey((Key){"x4","setgroup 3"});
-    addKey((Key){"x5","setgroup 4"});
-    addKey((Key){"x6","setgroup 5"});
-    addKey((Key){"x7","setgroup 6"});
-    addKey((Key){"x8","setgroup 7"});
-    addKey((Key){" ","fastselect"});
-    addKey((Key){"V","togglevisual"});
-    addKey((Key){"vta","select -ts - -o ."});
-    addKey((Key){"vth","select -ts - -o . ."});
-    addKey((Key){"vda","select -ds - -o ."});
-    addKey((Key){"vdh","select -ds - -o . ."});
-    addKey((Key){"vea","select -es - -o ."});
-    addKey((Key){"veh","select -es - -o . ."});
-    addKey((Key){"mm","f_mod m -s . -c -o ."});
-    addKey((Key){"mr","f_mod m -s . -r -o ."});
-    addKey((Key){"md","f_mod m -s . -d -o ."});
-    addKey((Key){"mM","f_mod m -s . -cm -o ."});
-    addKey((Key){"mR","f_mod m -s . -rm -o ."});
-    addKey((Key){"mD","f_mod m -s . -dm -o ."});
-    addKey((Key){"pp","f_mod c -s . -c -o ."});
-    addKey((Key){"pr","f_mod c -s . -r -o ."});
-    addKey((Key){"pd","f_mod c -s . -d -o ."});
-    addKey((Key){"pP","f_mod c -s . -cm -o ."});
-    addKey((Key){"pR","f_mod c -s . -rm -o ."});
-    addKey((Key){"pD","f_mod c -s . -dm -o ."});
-    addKey((Key){"Dd","f_mod d -s . ."});
-    addKey((Key){"DD","f_mod d -s ."});
-    addKey((Key){"Dt","f_mod d -s s"});
-    addKey((Key){"R","load -tm 2"});
-    addKey((Key){":","console"});
-    addKey((Key){"cd","console -a 'cd '"});
-    addKey((Key){"s","console -a 'shell '"});
-    addKey((Key){"S","exec bash"});
-    addKey((Key){"b","bulk -S sh -E nvim -b mv -s 0 -R ."});
-    addKey((Key){"/","console -a 'search -N '"});
-    addKey((Key){"n","search -n 1"});
-    addKey((Key){"N","search -b 1"});
+    addKey("dct","getsize -cs s");
+    addKey("dCt","getsize -crs s");
+    addKey("dst","getsize -s s");
+    addKey("dSt","getsize -rs s");
+    addKey("dft","getsize -fs s");
+    addKey("dch","getsize -cs .");
+    addKey("dCh","getsize -crs .");
+    addKey("dsh","getsize -s .");
+    addKey("dSh","getsize -rs .");
+    addKey("dfh","getsize -fs .");
+    addKey("x1","setgroup 0");
+    addKey("x2","setgroup 1");
+    addKey("x3","setgroup 2");
+    addKey("x4","setgroup 3");
+    addKey("x5","setgroup 4");
+    addKey("x6","setgroup 5");
+    addKey("x7","setgroup 6");
+    addKey("x8","setgroup 7");
+    addKey(" ","fastselect");
+    addKey("V","togglevisual");
+    addKey("vta","select -ts - -o .");
+    addKey("vth","select -ts - -o . .");
+    addKey("vda","select -ds - -o .");
+    addKey("vdh","select -ds - -o . .");
+    addKey("vea","select -es - -o .");
+    addKey("veh","select -es - -o . .");
+    addKey("mm","f_mod m -s . -c -o .");
+    addKey("mr","f_mod m -s . -r -o .");
+    addKey("md","f_mod m -s . -d -o .");
+    addKey("mM","f_mod m -s . -cm -o .");
+    addKey("mR","f_mod m -s . -rm -o .");
+    addKey("mD","f_mod m -s . -dm -o .");
+    addKey("pp","f_mod c -s . -c -o .");
+    addKey("pr","f_mod c -s . -r -o .");
+    addKey("pd","f_mod c -s . -d -o .");
+    addKey("pP","f_mod c -s . -cm -o .");
+    addKey("pR","f_mod c -s . -rm -o .");
+    addKey("pD","f_mod c -s . -dm -o .");
+    addKey("Dd","f_mod d -s . .");
+    addKey("DD","f_mod d -s .");
+    addKey("Dt","f_mod d -s s");
+    addKey("R","load -tm 2");
+    addKey(":","console");
+    addKey("cd","console -a 'cd '");
+    addKey("s","console -a 'shell '");
+    addKey("S","exec bash");
+    addKey("b","bulk -S sh -E nvim -b mv -s 0 -R .");
+    addKey("/","console -a 'search -N '");
+    addKey("n","search -n 1");
+    addKey("N","search -b 1");
 }
 
 Settings* SettingsInit()
@@ -340,16 +336,15 @@ Basic* InitBasic()
     settings->LoadConfig = 1;
     if (settings->LoadConfig)
     {
-        LoadConfig("/etc/.csasrc",grf);
-        char* HomeTemp = getenv("HOME");
+        LoadConfig("/etc/csasrc",grf);
+        char *HomeTemp = getenv("HOME");
         if (HomeTemp != NULL)
         {
-            char* temp = (char*)malloc(PATH_MAX);
+            char temp[PATH_MAX];
             sprintf(temp,"%s/.csasrc",HomeTemp);
             LoadConfig(temp,grf);
             sprintf(temp,"%s/.config/csas/.csasrc",HomeTemp);
             LoadConfig(temp,grf);
-            free(temp);
         }
     }
     #endif
@@ -405,53 +400,6 @@ void RunBasic(Basic* grf, const int argc, char** argv)
     struct timespec MainTimer;
 
     int si;
-
-    char* path;
-    if (argv[1])
-    {
-        path = argv[1];
-
-        if (chdir(path) != 0)
-        {
-            endwin();
-            fprintf(stderr,"Error while entering: %s\n",path);
-            fflush(stderr);
-            refresh();
-        }
-    }
-    else
-        path = getenv("PWD");
-
-    if (strcmp(path,".") == 0)
-        strcpy(grf->workspaces[grf->current_workspace].path,getenv("PWD"));
-    else if (strcmp(path,"..") == 0)
-    {
-        strcpy(grf->workspaces[grf->current_workspace].path,getenv("PWD"));
-        size_t end = strlen(grf->workspaces[grf->current_workspace].path)-1;
-        for (; end != 1 && grf->workspaces[grf->current_workspace].path[end] != '/'; end--) grf->workspaces[grf->current_workspace].path[end] = 0;
-        if (end != 1) grf->workspaces[grf->current_workspace].path[end] = 0;
-    }
-    else if (path[0] == '/')
-        strcpy(grf->workspaces[grf->current_workspace].path,path);
-    else
-    {
-        strcpy(grf->workspaces[grf->current_workspace].path,getenv("PWD"));
-        size_t end = strlen(grf->workspaces[grf->current_workspace].path);
-        if (grf->workspaces[grf->current_workspace].path[end-1] != '/')
-        {
-            grf->workspaces[grf->current_workspace].path[end] = '/';
-            strcpy(grf->workspaces[grf->current_workspace].path+end+1,path);
-        }
-        else
-            strcpy(grf->workspaces[grf->current_workspace].path+end,path);
-    }
-
-    size_t end = strlen(grf->workspaces[grf->current_workspace].path);
-    while (end-1 && grf->workspaces[grf->current_workspace].path[end-1] == '/')
-    {
-        grf->workspaces[grf->current_workspace].path[end-1] = 0;
-        end = strlen(grf->workspaces[grf->current_workspace].path);
-    }
 
     CD(".",0,grf);
 

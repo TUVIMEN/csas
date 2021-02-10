@@ -19,7 +19,7 @@
 #ifndef INITS_H
 #define INITS_H
 
-void addKey(const Key src);
+void addKey(char *c, char *v);
 int initcurs();
 Basic* InitBasic();
 void RunBasic(Basic* grf, const int argc, char** argv);

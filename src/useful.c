@@ -30,6 +30,15 @@ extern FileSignatures signatures[];
 
 extern Settings* settings;
 
+void die(int status, const char *p, ...)
+{
+    va_list args;
+    va_start(args,p);
+    vfprintf(stderr,p,args);
+    va_end(args);
+    exit(status);
+}
+
 int spawn(char* file, char* arg1, char* arg2, const uchar flag)
 {
     if (!file || !*file) return -1;
@@ -99,12 +108,12 @@ char* MakeHumanReadAble(ull value)
 
     off_t rem = 0;
 
-    uchar Too = 0;
+    uchar too = 0;
     while (value >= 1024)
     {
         rem = value & 0x3ff;
         value >>= 10;
-        Too++;
+        too++;
     }
 
     uchar i;
@@ -114,6 +123,7 @@ char* MakeHumanReadAble(ull value)
         ret[i] = value%10+48;
         value /= 10;
     }
+    
     for (uchar temp, j = 0, g = i-1; j < g; j++, g--)
     {
         temp = ret[j];
@@ -123,24 +133,38 @@ char* MakeHumanReadAble(ull value)
 
     if (rem != 0 && i < 3)
     {
-        rem = (rem*1000) >> 10;
-        if (i == 2)
+        if (i == 1)
         {
+            rem = (rem*1000)>>10;
             rem /= 10;
             if (rem%10 >= 5)
             {
                 rem = (rem/10) + 1;
-                rem = rem*(rem != 10);
+                if (rem == 10)
+                    rem = 0;
             }
             else
                 rem /= 10;
         }
-        else
+        else if (i == 2)
         {
+            rem = (rem*1000)>>10;
             if (rem%10 >= 5)
             {
-                rem = (rem/10) + 1;
-                rem = rem*(rem != 100);
+                rem = (rem/10)+1;
+                if (rem == 100)
+                    rem = 0;
+            }
+            else
+                rem /= 10;
+        }
+        else if (i > 0)
+        {
+            rem = (rem*10000)>>10;
+            if (rem%10 >= 5) {
+                rem = (rem/10)+1;
+                if (rem == 1000)
+                    rem = 0;
             }
             else
                 rem /= 10;
@@ -163,8 +187,8 @@ char* MakeHumanReadAble(ull value)
             ret[i---1] = 0;
     }
 
-    if (Too != 0)
-        ret[i++] = settings->Values[Too-1];
+    if (too != 0)
+        ret[i++] = settings->Values[too-1];
 
     ret[i] = '\0';
 
@@ -292,7 +316,7 @@ void RunFile(char* path)
         if (buf_t > (size_t)sfile.st_size)
             buf_t = (size_t)sfile.st_size;
 
-        static char buf[PATH_MAX];
+        char buf[PATH_MAX];
 
         buf_t = read(fd,buf,buf_t-1);
 
@@ -574,7 +598,7 @@ extern struct AliasesT aliases[];
 size_t StrToValue(void* dest, const char* src)
 {
     size_t PosBegin = 0, PosEnd = 0;
-    static char temp[8192];
+    char temp[8192];
     if (src[PosBegin] == '{')
     {
         for (int i = 0; src[PosBegin] != '}'; i++)
@@ -680,10 +704,10 @@ size_t StrToValue(void* dest, const char* src)
     return PosBegin;
 }
 
-char CharConv(const char dest)
+wchar_t CharConv(const char c)
 {
-    char ret = dest;
-    switch (dest)
+    wchar_t ret = c;
+    switch (c)
     {
         case '0': ret = '\x0'; break;
         case 'a': ret = '\x7'; break;
@@ -694,42 +718,80 @@ char CharConv(const char dest)
         case 'f': ret = '\xC'; break;
         case 'r': ret = '\xD'; break;
     }
-    return ret;
+
+    return btowc(ret);
 }
 
-char* StrToKeys(char* dest)
+wchar_t *StrToKeys(char *src, wchar_t *dest)
 {
-    for (int i = 0; dest[i]; i++)
+    for (size_t i = 0, h = 0; src[i]; i++)
     {
-        if (dest[i] == '<' && dest[i+1] == 'C' && dest[i+2] == '-' && dest[i+3] && dest[i+4] == '>')
+        if (src[i] == '<' && src[i+1] == 'C' && src[i+2] == '-' && src[i+3] && src[i+4] == '>')
         {
             for (int g = 0; g < 4; g++)
-                for (int j = i+(g == 3); dest[j]; j++)
-                    dest[j] = dest[j+1];
-            dest[i] &= 0x1f;
+                for (int j = i+(g == 3); src[j]; j++)
+                    src[j] = src[j+1];
+            dest[h++] = src[i]&0x1f;
         }
-        else if (strncmp(dest+i,"<space>",7) == 0)
+        else if (strncasecmp(src+i,"<space>",7) == 0)
         {
             for (int g = 0; g < 6; g++)
-                for (int j = i; dest[j]; j++)
-                    dest[j] = dest[j+1];
-            dest[i] = ' ';
+                for (int j = i; src[j]; j++)
+                    src[j] = src[j+1];
+            dest[h++] = btowc(' ');
         }
-        else if (strncmp(dest+i,"<esc>",5) == 0)
+        else if (strncasecmp(src+i,"<esc>",5) == 0)
         {
             for (int g = 0; g < 4; g++)
-                for (int j = i; dest[j]; j++)
-                    dest[j] = dest[j+1];
-            dest[i] = 27;
+                for (int j = i; src[j]; j++)
+                    src[j] = src[j+1];
+            dest[h++] = KEY_EXIT;
         }
-        else if (dest[i] == '\\' && dest[i+1])
+        else if (strncasecmp(src+i,"<left>",6) == 0)
+        {
+            for (int g = 0; g < 5; g++)
+                for (int j = i; src[j]; j++)
+                    src[j] = src[j+1];
+            dest[h++] = KEY_LEFT;
+        }
+        else if (strncasecmp(src+i,"<right>",7) == 0)
+        {
+            for (int g = 0; g < 6; g++)
+                for (int j = i; src[j]; j++)
+                    src[j] = src[j+1];
+            dest[h++] = KEY_RIGHT;
+        }
+        else if (strncasecmp(src+i,"<up>",4) == 0)
+        {
+            for (int g = 0; g < 3; g++)
+                for (int j = i; src[j]; j++)
+                    src[j] = src[j+1];
+            dest[h++] = KEY_UP;
+        }
+        else if (strncasecmp(src+i,"<down>",6) == 0)
+        {
+            for (int g = 0; g < 5; g++)
+                for (int j = i; src[j]; j++)
+                    src[j] = src[j+1];
+            dest[h++] = KEY_DOWN;
+        }
+        else if (strncasecmp(src+i,"<br>",4) == 0)
+        {
+            for (int g = 0; g < 3; g++)
+                for (int j = i; src[j]; j++)
+                    src[j] = src[j+1];
+            dest[h++] = KEY_ENTER;
+        }
+        else if (src[i] == '\\' && src[i+1])
         {
             size_t j;
-            for (j = i; j < strlen(dest)-1; j++)
-                dest[j] = dest[j+1];
-            dest[j+1] = '\0';
-            dest[i] = CharConv(dest[i]);
+            for (j = i; j < strlen(src)-1; j++)
+                src[j] = src[j+1];
+            src[j+1] = '\0';
+            dest[h++] = CharConv(src[i]);
         }
+        else
+            dest[h++] = btowc(src[i]);
     }
     return dest;
 }

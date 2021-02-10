@@ -293,6 +293,20 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** history, size_t size, size_t
                 else
                     goto END;
                 break;
+            case ('w'&0x1f):
+                tab_was_pressed = 0;
+                if (x > 0)
+                {
+                    do {
+                        for (size_t i = x-1; i <= strlen(history[size-1]); i++)
+                            history[size-1][i] = history[size-1][i+1];
+                        x--;
+                        if (off != 0) off--;
+                    } while (x != 0 && history[size-1][x-1] != ' ');
+                }
+                else
+                    goto END;
+                break;
             case KEY_LEFT:
             case ('b'&0x1f):
                 if (x > 0)

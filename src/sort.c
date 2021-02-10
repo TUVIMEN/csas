@@ -24,7 +24,7 @@
 
 extern Settings* settings;
 
-static bool CheckIfMatchesBetterFiles(const uchar src)
+static bool ismatching(const uchar src)
 {
     register bool ret = 0;
     for (register int i = 0; settings->BetterFiles[i] != 0 && ret == 0; i++)
@@ -38,8 +38,8 @@ static int comp(const void* El1, const void* El2, void* flag)
     {
         register bool g1 = 0, g2 = 0;
 
-        g1 = CheckIfMatchesBetterFiles(((struct Element*)El1)->type);
-        g2 = CheckIfMatchesBetterFiles(((struct Element*)El2)->type);
+        g1 = ismatching(((struct Element*)El1)->type);
+        g2 = ismatching(((struct Element*)El2)->type);
 
         if (!g1 && !g2) goto Result;
         if (!g1 && g2) return 1;
@@ -81,7 +81,7 @@ static size_t FindBorder(const struct Element* el, size_t size)
 {
     register size_t ret = 0;
     for (register size_t i = 0; i < size && ret == 0; i++)
-        ret = i*!CheckIfMatchesBetterFiles(el[i].type);
+        ret = i*!ismatching(el[i].type);
     return ret;
 }
 
