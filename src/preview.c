@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -42,17 +42,17 @@ void* PreviewRun(void* arg)
         goto END;
     if (sfile.st_size == 0)
         goto END;
-    ssize_t buf_t;
+    size_t buf_t;
     if ((buf_t = read(fd,buffer,1024)) < 1)
         goto END;
 
-    int bina = 0;
+    size_t bina = 0;
     bool binary = false;
 
     for (size_t i = 0; i < buf_t; i++)
         bina += 1*!(isascii(buffer[i]));
 
-    binary = bina<<1;
+    binary = (bina<<1);
 
     if (!binary)
     {
@@ -120,6 +120,9 @@ void Preview(Basic* grf)
     {
         settings->Win3Display = true;
         GetDir(GET_ESELECTED(grf->current_workspace,1).name,grf,grf->current_workspace,2,settings->DirLoadingMode
+        #ifdef __FOLLOW_PARENT_DIR__
+        ,NULL
+        #endif
         #ifdef __THREADS_FOR_DIR_ENABLE__
         ,settings->ThreadsForDir
         #endif

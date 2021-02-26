@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,10 +26,10 @@ extern Settings* settings;
 
 static bool ismatching(const uchar src)
 {
-    register bool ret = 0;
-    for (register int i = 0; settings->BetterFiles[i] != 0 && ret == 0; i++)
-        ret = 1*(src == settings->BetterFiles[i]);
-    return ret;
+    for (register int i = 0; settings->BetterFiles[i] != 0; i++)
+        if (src == settings->BetterFiles[i])
+            return 1;
+    return 0;
 }
 
 static int comp(const void* El1, const void* El2, void* flag)

@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
 #define LOAD_H
 
 void GetDir(const char* path, Basic* grf, const int workspace, const int which, const char mode
+#ifdef __FOLLOW_PARENT_DIR__
+, char *searched_name
+#endif
 #ifdef __THREADS_FOR_DIR_ENABLE__
 , const bool threaded
 #endif

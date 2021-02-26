@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ void KeyInit()
     addKey("h","move -l");
     addKey("l","move -r");
     addKey("g/","/");
-    addKey("gh","cd \"${HOME\"");
+    addKey("gh","cd \"${HOME}\"");
     addKey("gd","cd /dev");
     addKey("ge","cd /etc");
     addKey("gM","cd /mnt");
@@ -229,9 +229,6 @@ Settings* SettingsInit()
     grf->DirLoadingMode                 = 0;
     grf->DisplayingC                    = 0;
     grf->PreviewSettings                = PREV_ASCII|PREV_BINARY;
-    #ifdef __SHOW_HIDDEN_FILES_ENABLE__
-    grf->ShowHiddenFiles                = true;
-    #endif
     #ifdef __SORT_ELEMENTS_ENABLE__
     grf->SortMethod                     = SORT_NAME|SORT_BETTER_FILES;
     grf->BetterFiles                    = (li*)calloc(16,sizeof(li));
@@ -401,22 +398,35 @@ void RunBasic(Basic* grf, const int argc, char** argv)
 
     int si;
 
-    CD(".",0,grf);
+    chdir(getenv("PWD"));
+    if (argc > 1)
+        CD(argv[1],0,grf);
+    else
+        CD(".",0,grf);
+
+    bool ccs = 0;
 
     do {
         clock_gettime(1,&MainTimer);
         ActualTime = MainTimer.tv_sec;
 
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        if (grf->workspaces[grf->current_workspace].win[2] != -1 && grf->workspaces[grf->current_workspace].win[0] != -1)
-        {
-            if (GET_DIR(grf->current_workspace,0)->enable || GET_DIR(grf->current_workspace,2)->enable)
-                timeout(settings->SDelayBetweenFrames);
-            else
-                timeout(settings->DelayBetweenFrames);
-        }
-        else
+
+        if (grf->workspaces[grf->current_workspace].win[2] != -1 && GET_DIR(grf->current_workspace,2)->enable)
+            ccs = 1;
+
+        if (grf->workspaces[grf->current_workspace].win[0] != -1 && GET_DIR(grf->current_workspace,0)->enable)
+            ccs = 1;
+        
+        if (GET_DIR(grf->current_workspace,1)->enable)
+            ccs = 1;
+        
+        if (ccs)
             timeout(settings->SDelayBetweenFrames);
+        else
+            timeout(settings->DelayBetweenFrames);
+        
+        ccs = 0;
         #endif
 
         DrawBasic(grf,-1);
@@ -428,12 +438,18 @@ void RunBasic(Basic* grf, const int argc, char** argv)
         {
             PastTime = ActualTime;
             GetDir(".",grf,grf->current_workspace,1,settings->DirLoadingMode
+                #ifdef __FOLLOW_PARENT_DIR__
+                ,NULL
+                #endif
                 #ifdef __THREADS_FOR_DIR_ENABLE__
                 ,settings->ThreadsForDir
                 #endif
                 );
             if (settings->Win1Display)
                 GetDir("..",grf,grf->current_workspace,0,settings->DirLoadingMode
+                #ifdef __FOLLOW_PARENT_DIR__
+                ,NULL
+                #endif
                 #ifdef __THREADS_FOR_DIR_ENABLE__
                 ,settings->ThreadsForDir
                 #endif

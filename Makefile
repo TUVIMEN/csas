@@ -1,7 +1,7 @@
 SHELL	=	/bin/bash
 CC	=	gcc -std=c11
 LINK	=	-lpthread -lncursesw #-ltinfow
-CFLAGS	=	-O2 -pipe -march=native -Wall -Wextra
+CFLAGS	=	-O2 -mavx2 -pipe -march=native -Wall -Wextra
 TARGET	=	csas
 
 MANDIR	=	/usr/local/man/man1

@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -201,23 +201,30 @@ void ExitBasic(Basic* grf, const bool force)
     grf->exit_time = true;
 }
 
-void move_to(struct Dir* dir, const int workspace, const char* name)
+void move_to(Basic* grf, const int workspace, const int which, const char* name)
 {
-    register ll found = -1;
-    register size_t i;
-    register bool temp;
+    if (strcmp(GET_ESELECTED(workspace,which).name,name) == 0)
+        return;
 
-    for (i = 0; i < dir->size && found == -1; i++)
-    {
-        temp = (strcmp(name,dir->el[i].name) == 0);
-        found = i*temp+(-1*!temp);
-    }
+    register size_t i, j;
+    register char found = 0;
 
-    if (found == -1) return;
+    for (i = 0; i < GET_DIR(workspace,which)->size; i++)
+        if (strcmp(GET_DIR(workspace,which)->el[i].name,name) == 0)
+        {
+            found = 1;
+            break;
+        }
+    
+    if (!found)
+        return;
 
-    temp = workspace != -1;
-    for (i = workspace*temp; i < (size_t)(workspace+1)*temp+(WORKSPACE_N*!temp); i++)
-        dir->selected[i] = found;
+    if (i > GET_SELECTED(workspace,which))
+        for (j = GET_SELECTED(workspace,which); j < i; j++)
+            MoveD(1,grf,workspace,which);
+    else if (i < GET_SELECTED(workspace,which))
+        for (j = GET_SELECTED(workspace,which); j > i; j--)
+            MoveD(-1,grf,workspace,which);
 }
 
 static void bulk(Basic* grf, const int workspace, const int selected, char** args, const uchar flag)
@@ -405,9 +412,6 @@ void ___SET(const char* src, Basic* grf)
         {"NumberLinesOff",&settings->NumberLinesOff},{"NumberLinesFromOne",&settings->NumberLinesFromOne},
         {"DisplayingC",&settings->DisplayingC},{"JumpScroll",&settings->JumpScroll},{"Values",&settings->Values},
         {"DirLoadingMode",&settings->DirLoadingMode},{"PreviewSettings",&settings->PreviewSettings},
-        #ifdef __SHOW_HIDDEN_FILES_ENABLE__
-        {"ShowHiddenFiles",&settings->ShowHiddenFiles},
-        #endif
         #ifdef __SORT_ELEMENTS_ENABLE__
         {"SortMethod",&settings->SortMethod},{"BetterFiles",&settings->BetterFiles},
         #endif
@@ -1188,6 +1192,9 @@ static void GETDIR(char* path, Basic* grf, uchar mode
             strcat(path1,"/");
             strcat(path1,dir->d_name);
             GetDir(path1,grf,grf->current_workspace,1,mode
+            #ifdef __FOLLOW_PARENT_DIR__
+            ,NULL
+            #endif
             #ifdef __THREADS_FOR_DIR_ENABLE__
             ,threads
             #endif
@@ -1244,6 +1251,9 @@ void ___LOAD(const char* src, Basic* grf)
     }
 
     GetDir(".",grf,grf->current_workspace,1,mode
+    #ifdef __FOLLOW_PARENT_DIR__
+    ,NULL
+    #endif
     #ifdef __THREADS_FOR_DIR_ENABLE__
     ,(flag&0x1)
     #endif

@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 
 int UpdateEvent(Basic* grf);
 void ExitBasic(Basic* grf, const bool force);
-void move_to(struct Dir* dir, const int workspace, const char* name);
+void move_to(Basic* grf, const int workspace, const int which, const char* name);
 
 void ___SET(const char* src, Basic* grf);
 #ifdef __LOAD_CONFIG_ENABLE__

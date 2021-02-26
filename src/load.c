@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,6 +29,17 @@
 #include "inits.h"
 #include "functions.h"
 
+struct loaddir_s
+{
+    struct Dir *d;
+    #ifdef __FOLLOW_PARENT_DIR__
+    Basic *b;
+    char *searched_name;
+    int workspace;
+    int which;
+    #endif
+};
+
 extern Settings* settings;
 
 static uchar mode_to_type(const mode_t mode)
@@ -48,15 +59,26 @@ static uchar mode_to_type(const mode_t mode)
 
 static void *LoadDir(void *arg)
 {
-    struct Dir* grf = (struct Dir*)arg;
+
+    struct Dir *nd = ((struct loaddir_s*)arg)->d;
+    #ifdef __FOLLOW_PARENT_DIR__
+    Basic *grf = ((struct loaddir_s*)arg)->b;
+    char *searched_name = ((struct loaddir_s*)arg)->searched_name;
+    int workpace = ((struct loaddir_s*)arg)->workspace;
+    int which = ((struct loaddir_s*)arg)->which;
+    #endif
+    free(arg);
 
     DIR* d;
-    if ((d = opendir(grf->path)) == NULL)
+    if ((d = opendir(nd->path)) == NULL)
     {
-        grf->permission_denied = 1;
+        nd->permission_denied = 1;
+        #ifdef __FOLLOW_PARENT_DIR__
+        free(searched_name);
+        #endif
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        grf->enable = false;
-        pthread_detach(grf->thread);
+        nd->enable = false;
+        pthread_detach(nd->thread);
         pthread_exit(NULL);
         #else
         return NULL;
@@ -65,7 +87,7 @@ static void *LoadDir(void *arg)
 
     struct dirent* dir;
 
-    size_t buffer_size = grf->size;
+    size_t buffer_size = nd->size;
     struct stat sfile, sfile2;
 
     int fd;
@@ -76,7 +98,7 @@ static void *LoadDir(void *arg)
     #endif
     fd = dirfd(d);
 
-    bool isOld = grf->size > 0;
+    bool isOld = nd->size > 0;
 
     #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
     struct Element* oldEl = NULL;
@@ -85,15 +107,15 @@ static void *LoadDir(void *arg)
     if (isOld)
     {
         begin = 0;
-        end = grf->size;
-        oldEl = grf->el;
-        oldsize = grf->size;
-        grf->el = NULL;
-        grf->size = 0;
+        end = nd->size;
+        oldEl = nd->el;
+        oldsize = nd->size;
+        nd->el = NULL;
+        nd->size = 0;
     }
     #else
     if (isOld)
-        freeEl(&grf->el,&grf->size);
+        freeEl(&nd->el,&nd->size);
     #endif
 
     buffer_size = 0;
@@ -101,79 +123,78 @@ static void *LoadDir(void *arg)
 
     while ((dir = readdir(d)))
     {
-        #ifdef __SHOW_HIDDEN_FILES_ENABLE__
-        if(!ShowHiddenFiles)
-            if (dir->d_name[0] == '.')
-                continue;
+        #ifdef __HIDE_FILES__
+        if (dir->d_name[0] == '.')
+            continue;
         #endif
         if (dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
             continue;
 
-        if (grf->size == buffer_size)
-            grf->el = (struct Element*)realloc(grf->el,(buffer_size+=DIR_INC_RATE)*sizeof(struct Element));
+        if (nd->size == buffer_size)
+            nd->el = (struct Element*)realloc(nd->el,(buffer_size+=DIR_INC_RATE)*sizeof(struct Element));
 
         name_lenght = strlen(dir->d_name)+1;
-        grf->el[grf->size].nlen = name_lenght;
-        grf->el[grf->size].name = memcpy(malloc(name_lenght),dir->d_name,name_lenght);
+        nd->el[nd->size].nlen = name_lenght;
+        nd->el[nd->size].name = memcpy(malloc(name_lenght),dir->d_name,name_lenght);
 
-        grf->el[grf->size].type = 0;
+        nd->el[nd->size].type = 0;
 
         fstatat(fd,dir->d_name,&sfile,AT_SYMLINK_NOFOLLOW);
 
         if ((sfile.st_mode&S_IFMT) == S_IFLNK)
         {
             if (fstatat(fd,dir->d_name,&sfile2,0) == -1)
-                grf->el[grf->size].type |= T_FILE_MISSING;
+                nd->el[nd->size].type |= T_FILE_MISSING;
             else
             {
-                grf->el[grf->size].type = mode_to_type(sfile2.st_mode);
-                grf->el[grf->size].type |= T_SYMLINK;
+                nd->el[nd->size].type = mode_to_type(sfile2.st_mode);
+                nd->el[nd->size].type |= T_SYMLINK;
             }
         }
         else
-            grf->el[grf->size].type = mode_to_type(sfile.st_mode);
+            nd->el[nd->size].type = mode_to_type(sfile.st_mode);
 
         #ifdef __INODE_ENABLE__
-        grf->el[grf->size].inode = dir->d_ino;
+        nd->el[nd->size].inode = dir->d_ino;
         #endif
 
         #ifdef __MTIME_ENABLE__
-        grf->el[grf->size].mtim = sfile.st_mtim.tv_sec;
+        nd->el[nd->size].mtim = sfile.st_mtim.tv_sec;
         #endif
         #ifdef __ATIME_ENABLE__
-        grf->el[grf->size].atim = sfile.st_atim.tv_sec;
+        nd->el[nd->size].atim = sfile.st_atim.tv_sec;
         #endif
         #ifdef __CTIME_ENABLE__
-        grf->el[grf->size].ctim = sfile.st_ctim.tv_sec;
+        nd->el[nd->size].ctim = sfile.st_ctim.tv_sec;
         #endif
         #ifdef __MODE_ENABLE__
-        grf->el[grf->size].mode = sfile.st_mode;
+        nd->el[nd->size].mode = sfile.st_mode;
         #endif
 
         #ifdef __FILE_SIZE_ENABLE__
-        if ((settings->DirSizeMethod&D_F) != D_F && (grf->el[grf->size].type&T_GT) == T_DIR)
+        if ((settings->DirSizeMethod&D_F) != D_F && (nd->el[nd->size].type&T_GT) == T_DIR)
         {
             if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
             {
                 count = 0;
                 size = 0;
                 GetDirSize(tfd,&count,&size,(settings->DirSizeMethod&D_R)==D_R);
-                grf->el[grf->size].size = (settings->DirSizeMethod&D_C)==D_C ? count : size;
+                nd->el[nd->size].size = (settings->DirSizeMethod&D_C)==D_C ? count : size;
                 close(tfd);
             }
             else
-                grf->el[grf->size].size = 0;
+                nd->el[nd->size].size = 0;
         }
         else
-            grf->el[grf->size].size = sfile.st_size*((grf->el[grf->size].type&T_SYMLINK) == 0)
-            +sfile2.st_size*((grf->el[grf->size].type&T_SYMLINK) != 0);
+            nd->el[nd->size].size = sfile.st_size*((nd->el[nd->size].type&T_SYMLINK) == 0)
+            +sfile2.st_size*((nd->el[nd->size].type&T_SYMLINK) != 0);
         #endif
 
         #ifdef __COLOR_FILES_BY_EXTENSION__
-        grf->el[grf->size].ftype = 1;
+        nd->el[nd->size].ftype = 1;
         #endif
 
-        memset(grf->el[grf->size].list,0,WORKSPACE_N);
+        memset(nd->el[nd->size].list,0,WORKSPACE_N);
         #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
         if (isOld)
         {
@@ -192,7 +213,7 @@ static void *LoadDir(void *arg)
                     {
                         begin += 1*(i == begin);
                         end -= (i == end);
-                        memcpy(grf->el[grf->size].list,oldEl[i].list,WORKSPACE_N);
+                        memcpy(nd->el[nd->size].list,oldEl[i].list,WORKSPACE_N);
                         break;
                     }
             }
@@ -200,29 +221,29 @@ static void *LoadDir(void *arg)
         #endif
 
         #ifdef __FILE_OWNERS_ENABLE__
-        grf->el[grf->size].pw = sfile.st_uid;
+        nd->el[nd->size].pw = sfile.st_uid;
         #endif
         #ifdef __FILE_GROUPS_ENABLE__
-        grf->el[grf->size].gr = sfile.st_gid;
+        nd->el[nd->size].gr = sfile.st_gid;
         #endif
 
         #ifdef __DEV_ENABLE__
-        grf->el[grf->size].dev = sfile.st_dev;
+        nd->el[nd->size].dev = sfile.st_dev;
         #endif
         #ifdef __NLINK_ENABLE__
-        grf->el[grf->size].nlink = sfile.st_nlink;
+        nd->el[nd->size].nlink = sfile.st_nlink;
         #endif
         #ifdef __RDEV_ENABLE__
-        grf->el[grf->size].rdev = sfile.st_rdev;
+        nd->el[nd->size].rdev = sfile.st_rdev;
         #endif
         #ifdef __BLK_SIZE_ENABLE__
-        grf->el[grf->size].blksize = sfile.st_blksize;
+        nd->el[nd->size].blksize = sfile.st_blksize;
         #endif
         #ifdef __BLOCKS_ENABLE__
-        grf->el[grf->size].blocks = sfile.st_blocks;
+        nd->el[nd->size].blocks = sfile.st_blocks;
         #endif
 
-        grf->size++;
+        nd->size++;
     }
 
     #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
@@ -233,19 +254,29 @@ static void *LoadDir(void *arg)
     closedir(d);
     close(fd);
 
-    if (buffer_size != grf->size)
-        grf->el = (struct Element*)realloc(grf->el,(grf->size)*sizeof(struct Element));
+    if (buffer_size != nd->size)
+        nd->el = (struct Element*)realloc(nd->el,(nd->size)*sizeof(struct Element));
 
-    if (grf->size > 0)
+    if (nd->size > 0)
     {
         #ifdef __SORT_ELEMENTS_ENABLE__
-        SortEl(grf->el,grf->size,settings->SortMethod);
+        SortEl(nd->el,nd->size,settings->SortMethod);
+        #endif
+
+
+        #ifdef __FOLLOW_PARENT_DIR__
+        if (searched_name)
+            move_to(grf,workpace,which,searched_name);
         #endif
     }
 
+    #ifdef __FOLLOW_PARENT_DIR__
+    free(searched_name);
+    #endif
+
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    grf->enable = false;
-    pthread_detach(grf->thread);
+    nd->enable = false;
+    pthread_detach(nd->thread);
     pthread_exit(NULL);
     #else
     return NULL;
@@ -253,8 +284,11 @@ static void *LoadDir(void *arg)
 }
 
 void GetDir(const char* path, Basic* grf, const int workspace, const int Which, const char mode
+#ifdef __FOLLOW_PARENT_DIR__
+, char *searched_name
+#endif
 #ifdef __THREADS_FOR_DIR_ENABLE__
-,const bool threaded
+, const bool threaded
 #endif
 )
 {
@@ -342,34 +376,57 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     grf->base[found]->sort_m = settings->SortMethod;
     #endif
 
+    struct loaddir_s *arg = malloc(sizeof(struct loaddir_s));
+
+    arg->d = grf->base[found];
+    #ifdef __FOLLOW_PARENT_DIR__
+    arg->b = grf;
+    arg->workspace = workspace;
+    arg->which = Which;
+    if (searched_name)
+        arg->searched_name = strdup(searched_name);
+    else
+        arg->searched_name = NULL;
+    #endif
+
     #ifdef __THREADS_FOR_DIR_ENABLE__
     if (grf->base[found]->enable)
         pthread_join(grf->base[found]->thread,NULL);
     grf->base[found]->enable = true;
 
-    pthread_create(&grf->base[found]->thread,NULL,LoadDir,grf->base[found]);
+    pthread_create(&grf->base[found]->thread,NULL,LoadDir,arg);
     if (!threaded)
         pthread_join(grf->base[found]->thread,NULL);
     #else
-    LoadDir(grf->base[found]);
+    LoadDir(arg);
     #endif
     grf->base[found]->changed = false;
 }
 
 void CD(const char* path, const int workspace, Basic* grf)
 {
-    char npath[PATH_MAX];
-    if (realpath(path,npath) == NULL)
-       err(-1,NULL);
-    if (chdir(path) == -1)
+    char npath[PATH_MAX]
+    #ifdef __FOLLOW_PARENT_DIR__
+    , tpath[PATH_MAX]
+    , *t = NULL;
+    bool b = strcmp(path,"..") == 0
+    #endif
+    ;
+
+    #ifdef __FOLLOW_PARENT_DIR__
+    if (!settings->Win1Enable && b)
     {
-        if (errno == EACCES)
-        {
-            set_message(grf,COLOR_PAIR(1),"\t%s",strerror(errno));
-            return;
-        }
-        else
-            err(-1,NULL);
+        getcwd(tpath,PATH_MAX);
+        t = memrchr(tpath,'/',strlen(tpath));
+        if (t)
+            t++;
+    }
+    #endif
+
+    if (realpath(path,npath) == NULL || chdir(path) == -1)
+    {
+        set_message(grf,COLOR_PAIR(1),"%s: %s",path,strerror(errno));
+        return;
     }
 
     strcpy(grf->workspaces[workspace].path,npath);
@@ -382,6 +439,9 @@ void CD(const char* path, const int workspace, Basic* grf)
     wrefresh(grf->win[1]);
 
     GetDir(".",grf,workspace,1,settings->DirLoadingMode
+    #ifdef __FOLLOW_PARENT_DIR__
+    ,t
+    #endif
     #ifdef __THREADS_FOR_DIR_ENABLE__
     ,settings->ThreadsForDir
     #endif
@@ -398,26 +458,32 @@ void CD(const char* path, const int workspace, Basic* grf)
             settings->Win1Display = false;
         else
         {
+            #ifdef __FOLLOW_PARENT_DIR__
+            t = memrchr(npath,'/',strlen(npath));
+            if (t)
+                t++;
+            #endif
+
             GetDir("..",grf,workspace,0,settings->DirLoadingMode
+            #ifdef __FOLLOW_PARENT_DIR__
+            ,t
+            #endif
             #ifdef __THREADS_FOR_DIR_ENABLE__
             ,settings->ThreadsForDir
             #endif
             );
+
+            #ifdef __FOLLOW_PARENT_DIR__
+            if (t
+            #ifdef __THREADS_FOR_DIR_ENABLE__
+            && !GET_DIR(workspace,0)->enable
+            #endif
+            )
+                move_to(grf,workspace,0,t);
+            #endif
+
             settings->Win1Display = true;
         }
-
-
-        #ifndef __THREADS_FOR_DIR_ENABLE__
-        char *t = memrchr(npath,'/',strlen(npath));
-        if (t != NULL || t != npath)
-        {
-            t++;
-            if (strcmp(GET_ESELECTED(workspace,0).name,t) != 0)
-                for (size_t i = 0; i < GET_DIR(workspace,0)->size; i++)
-                    if (strcmp(GET_DIR(workspace,0)->el[i].name,t) == 0)
-                        GET_DIR(workspace,0)->selected[workspace] = i;
-        }
-        #endif
     }
 
     if (workspace == grf->current_workspace && settings->Win3Enable)

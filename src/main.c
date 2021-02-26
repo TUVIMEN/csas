@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,8 +26,8 @@ int main(int argc, char** argv)
     
     signal(SIGINT,SIG_IGN);
 
-    Basic* Main = InitBasic();
-    RunBasic(Main,argc,argv);
+    Basic* e = InitBasic();
+    RunBasic(e,argc,argv);
 
     return 0;
 }

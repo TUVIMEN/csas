@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,14 +16,15 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-//#define __THREADS_ENABLE__
+#define __THREADS_ENABLE__
 #ifdef __THREADS_ENABLE__
     #define __THREADS_FOR_DIR_ENABLE__
-    #define __THREADS_FOR_FILE_ENABLE__
+    //#define __THREADS_FOR_FILE_ENABLE__
 #endif
 
 #define __COLOR_FILES_BY_EXTENSION__
-//#define __SHOW_HIDDEN_FILES_ENABLE__
+//#define __HIDE_FILES__
+#define __FOLLOW_PARENT_DIR__
 #define __USER_NAME_ENABLE__
 #define __LOAD_CONFIG_ENABLE__
 #define __INODE_ENABLE__
