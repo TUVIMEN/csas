@@ -19,7 +19,7 @@
 #ifndef LOAD_H
 #define LOAD_H
 
-void GetDir(const char* path, Basic* grf, const int workspace, const int which, const char mode
+int GetDir(const char* path, Basic* grf, const int workspace, const int which, const char mode
 #ifdef __FOLLOW_PARENT_DIR__
 , char *searched_name
 #endif

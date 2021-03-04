@@ -79,7 +79,7 @@ void KeyInit()
     addKey("K","move -uc 16");
     addKey("h","move -l");
     addKey("l","move -r");
-    addKey("g/","/");
+    addKey("g/","/"); //!
     addKey("gh","cd \"${HOME}\"");
     addKey("gd","cd /dev");
     addKey("ge","cd /etc");
@@ -89,7 +89,7 @@ void KeyInit()
     addKey("gp","cd /tmp");
     addKey("gu","cd /usr");
     addKey("gv","cd /var");
-    addKey("gm","cd \"${MEDIA\"");
+    addKey("gm","cd \"${MEDIA}\"");
     addKey("gg","gotop");
     addKey("G","godown");
     addKey("z1","ChangeWorkSpace 0");
@@ -172,7 +172,7 @@ void KeyInit()
     addKey("cd","console -a 'cd '");
     addKey("s","console -a 'shell '");
     addKey("S","exec bash");
-    addKey("b","bulk -S sh -E nvim -b mv -s 0 -R .");
+    addKey("b","bulk -S sh -E vim -b mv -s 0 -R .");
     addKey("/","console -a 'search -N '");
     addKey("n","search -n 1");
     addKey("N","search -b 1");

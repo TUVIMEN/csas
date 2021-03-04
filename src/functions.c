@@ -73,6 +73,11 @@ int UpdateEvent(Basic* grf)
             theyPass = (int*)realloc(theyPass,(theyPass_t+1)*sizeof(int));
             theyPass_t++;
             theyPass[theyPass_t-1] = i;
+            #ifdef __SHOW_KEY_BINDINGS__
+            for (int j = 0; j < grf->wx; j++)
+                mvaddch(grf->wy-settings->Bar2Enable-theyPass_t,j,' ');
+            mvprintw(grf->wy-settings->Bar2Enable-theyPass_t,0," %c\t%s",wctob(keys[i].keys[1]),keys[i].value);
+            #endif
         }
     }
 
@@ -82,7 +87,23 @@ int UpdateEvent(Basic* grf)
     {
         DrawBasic(grf,-1);
         do {
-            if (Event == KEY_RESIZE) { UpdateSizeBasic(grf); DrawBasic(grf,-1); }
+            if (Event == KEY_RESIZE)
+            {
+                UpdateSizeBasic(grf);
+                #ifdef __SHOW_KEY_BINDINGS__
+                erase();
+                refresh();
+                #endif
+                DrawBasic(grf,-1);
+                #ifdef __SHOW_KEY_BINDINGS__
+                for (size_t j = 0; j < theyPass_t; j++)
+                {
+                    for (int g = 0; g < grf->wx; g++)
+                        mvaddch(grf->wy-1-settings->Bar2Enable-j,g,' ');
+                    mvprintw(grf->wy-1-settings->Bar2Enable-j,0," %c\t%s",wctob(keys[theyPass[j]].keys[i]),keys[theyPass[j]].value);
+                }
+                #endif
+            }
             if (Event > 47 && Event < 58) { grf->typed_keys[strlen(grf->typed_keys)] = Event; DrawBasic(grf,4); }
             Event = getch();
         } while (Event == -1 || Event == KEY_RESIZE || (StartsTheString && Event > 47 && Event < 58));
@@ -93,6 +114,11 @@ int UpdateEvent(Basic* grf)
         int* abcs = NULL;
         size_t abcs_t = 0;
 
+        #ifdef __SHOW_KEY_BINDINGS__
+        erase();
+        refresh();
+        #endif
+
         for (size_t j = 0; j < theyPass_t; j++)
         {
             if (Event == keys[theyPass[j]].keys[i])
@@ -100,6 +126,11 @@ int UpdateEvent(Basic* grf)
                 abcs = (int*)realloc(abcs,(abcs_t+1)*sizeof(int));
                 abcs_t++;
                 abcs[abcs_t-1] = theyPass[j];
+                #ifdef __SHOW_KEY_BINDINGS__
+                for (int g = 0; g < grf->wx; g++)
+                    mvaddch(grf->wy-settings->Bar2Enable-abcs_t,g,' ');
+                mvprintw(grf->wy-settings->Bar2Enable-abcs_t,0," %c\t%s",wctob(keys[theyPass[j]].keys[i+1]),keys[theyPass[j]].value);
+                #endif
             }
         }
 
@@ -109,6 +140,11 @@ int UpdateEvent(Basic* grf)
     }
 
     grf->was_typed = false;
+    #ifdef __SHOW_KEY_BINDINGS__
+    erase();
+    refresh();
+    DrawBasic(grf,-1);
+    #endif
     return (theyPass_t == 0) ? -1 : theyPass[0];
 }
 

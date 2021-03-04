@@ -38,6 +38,13 @@ void* PreviewRun(void* arg)
     struct stat sfile;
     if (fstat(fd,&sfile) == -1)
         goto END;
+    //#ifdef __SAVE_PREVIEW__
+    //if (sfile.st_mtim.tv_sec == GET_ESELECTED(grf->current_workspace,1).mtim && GET_ESELECTED(grf->current_workspace,1).preview)
+    //{
+
+    //    goto END;
+    //}
+    //#endif
     if (!(sfile.st_mode&S_IRUSR))
         goto END;
     if (sfile.st_size == 0)
@@ -86,8 +93,7 @@ void* PreviewRun(void* arg)
         {
             close(pipes[1]);
             wait(NULL);
-            grf->preview_settings |= F_TEXT;
-            grf->preview_settings |= F_WRAP;
+            grf->preview_settings |= F_TEXT|F_WRAP;
             grf->preview_fd = pipes[0];
         }
     }

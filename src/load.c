@@ -33,8 +33,10 @@ struct loaddir_s
 {
     struct Dir *d;
     #ifdef __FOLLOW_PARENT_DIR__
-    Basic *b;
     char *searched_name;
+    #endif
+    #if defined(__THREADS_FOR_DIR_ENABLE__) || defined(__FOLLOW_PARENT_DIR__)
+    Basic *b;
     int workspace;
     int which;
     #endif
@@ -62,9 +64,11 @@ static void *LoadDir(void *arg)
 
     struct Dir *nd = ((struct loaddir_s*)arg)->d;
     #ifdef __FOLLOW_PARENT_DIR__
-    Basic *grf = ((struct loaddir_s*)arg)->b;
     char *searched_name = ((struct loaddir_s*)arg)->searched_name;
-    int workpace = ((struct loaddir_s*)arg)->workspace;
+    #endif
+    #if defined(__THREADS_FOR_DIR_ENABLE__) || defined(__FOLLOW_PARENT_DIR__)
+    Basic *grf = ((struct loaddir_s*)arg)->b;
+    int workspace = ((struct loaddir_s*)arg)->workspace;
     int which = ((struct loaddir_s*)arg)->which;
     #endif
     free(arg);
@@ -138,6 +142,9 @@ static void *LoadDir(void *arg)
         nd->el[nd->size].name = memcpy(malloc(name_lenght),dir->d_name,name_lenght);
 
         nd->el[nd->size].type = 0;
+        //#ifdef __SAVE_PREVIEW__
+        //nd->el[nd->size].preview = NULL;
+        //#endif
 
         fstatat(fd,dir->d_name,&sfile,AT_SYMLINK_NOFOLLOW);
 
@@ -263,10 +270,9 @@ static void *LoadDir(void *arg)
         SortEl(nd->el,nd->size,settings->SortMethod);
         #endif
 
-
         #ifdef __FOLLOW_PARENT_DIR__
         if (searched_name)
-            move_to(grf,workpace,which,searched_name);
+            move_to(grf,workspace,which,searched_name);
         #endif
     }
 
@@ -276,6 +282,8 @@ static void *LoadDir(void *arg)
 
     #ifdef __THREADS_FOR_DIR_ENABLE__
     nd->enable = false;
+    if (which == 1 && workspace == grf->current_workspace && settings->Win3Enable)
+        Preview(grf);
     pthread_detach(nd->thread);
     pthread_exit(NULL);
     #else
@@ -283,7 +291,7 @@ static void *LoadDir(void *arg)
     #endif
 }
 
-void GetDir(const char* path, Basic* grf, const int workspace, const int Which, const char mode
+int GetDir(const char* path, Basic* grf, const int workspace, const int Which, const char mode
 #ifdef __FOLLOW_PARENT_DIR__
 , char *searched_name
 #endif
@@ -303,7 +311,7 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
 
     struct stat sfile1;
     if (stat(path,&sfile1) != 0)
-        return;
+        return -1;
 
     bool exists = false;
 
@@ -364,13 +372,13 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     }
 
     if (grf->base[found]->permission_denied)
-        return;
+        return -1;
 
     if (mode == 0 && exists)
-        return;
+        return -1;
 
     if (mode == 1 && exists && !grf->base[found]->changed)
-        return;
+        return -1;
 
     #ifdef __SORT_ELEMENTS_ENABLE__
     grf->base[found]->sort_m = settings->SortMethod;
@@ -401,6 +409,8 @@ void GetDir(const char* path, Basic* grf, const int workspace, const int Which, 
     LoadDir(arg);
     #endif
     grf->base[found]->changed = false;
+
+    return 0;
 }
 
 void CD(const char* path, const int workspace, Basic* grf)
@@ -438,6 +448,9 @@ void CD(const char* path, const int workspace, Basic* grf)
     werase(grf->win[1]);
     wrefresh(grf->win[1]);
 
+    #ifdef __THREADS_FOR_DIR_ENABLE__
+    int loaded = 
+    #endif
     GetDir(".",grf,workspace,1,settings->DirLoadingMode
     #ifdef __FOLLOW_PARENT_DIR__
     ,t
@@ -486,7 +499,11 @@ void CD(const char* path, const int workspace, Basic* grf)
         }
     }
 
-    if (workspace == grf->current_workspace && settings->Win3Enable)
+    if (
+    #ifdef __THREADS_FOR_DIR_ENABLE__
+    loaded == -1 &&
+    #endif
+        workspace == grf->current_workspace && settings->Win3Enable)
     {
         if (GET_DIR(workspace,1)->size == 0)
         {
@@ -502,4 +519,5 @@ void CD(const char* path, const int workspace, Basic* grf)
             GET_DIR(workspace,1)->size > 0)
             Preview(grf);
     }
+    
 }

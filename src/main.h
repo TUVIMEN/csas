@@ -241,6 +241,10 @@ struct Element
     time_t ctim;
     #endif
 
+    //#ifdef __SAVE_PREVIEW__
+    //uchar *preview;
+    //#endif
+
     #ifdef __FILE_GROUPS_ENABLE__
     gid_t gr;
     #endif
