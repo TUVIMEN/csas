@@ -19,7 +19,7 @@
 #ifndef LOAD_H
 #define LOAD_H
 
-int GetDir(const char* path, Basic* grf, const int workspace, const int which, const char mode
+int getdir(const char *path, Csas *cs, const int ws, const int which, const char mode
 #ifdef __FOLLOW_PARENT_DIR__
 , char *searched_name
 #endif
@@ -27,6 +27,6 @@ int GetDir(const char* path, Basic* grf, const int workspace, const int which, c
 , const bool threaded
 #endif
 );
-void CD(const char* path, const int workspace, Basic* grf);
+void csas_cd(const char *path, const int ws, Csas *cs);
 
 #endif

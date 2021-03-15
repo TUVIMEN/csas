@@ -22,60 +22,90 @@
 #include "draw.h"
 #include "useful.h"
 
-extern Settings* settings;
+extern Settings *cfg;
 
-void* PreviewRun(void* arg)
+void run_preview(WINDOW *w, uchar *c, ssize_t size, uli flags)
 {
-    Basic* grf = (Basic*)arg;
+    register int posx = 1+cfg->Borders*2, posy = cfg->Borders;
 
-    close(grf->preview_fd);
-    grf->preview_fd = -1;
+    for (register ssize_t i = 0; i < size && posy <= w->_maxy-cfg->Borders; i++)
+    {
+        if (flags&F_WRAP && w->_maxx-(cfg->Borders*2)-1 < posx)
+        {
+            posy++;
+            posx = 1+cfg->Borders*2;
+            mvwaddch(w,posy,posx++,c[i]);
+        }
+        else if (c[i] == '\n')
+        {
+            posy++;
+            posx = 1+(cfg->Borders<<1);
+        }
+        else
+            mvwaddch(w,posy,posx++,c[i]);
+    }
+}
 
-    char buffer[1024];
+static void *getfromfile(void *arg)
+{
+    Csas *cs = (Csas*)arg;
     int fd;
-    if ((fd = open(GET_ESELECTED(grf->current_workspace,1).name,O_RDONLY)) == -1)
+    #ifndef __SAVE_PREVIEW__
+    cs->previewl = 0;
+    #endif
+    if ((fd = open(G_ES(cs->current_ws,1).name,O_RDONLY)) == -1)
         goto END;
     struct stat sfile;
     if (fstat(fd,&sfile) == -1)
         goto END;
-    //#ifdef __SAVE_PREVIEW__
-    //if (sfile.st_mtim.tv_sec == GET_ESELECTED(grf->current_workspace,1).mtim && GET_ESELECTED(grf->current_workspace,1).preview)
-    //{
-
-    //    goto END;
-    //}
-    //#endif
     if (!(sfile.st_mode&S_IRUSR))
         goto END;
     if (sfile.st_size == 0)
         goto END;
-    size_t buf_t;
-    if ((buf_t = read(fd,buffer,1024)) < 1)
+    #ifdef __SAVE_PREVIEW__
+    if (sfile.st_mtim.tv_sec == G_ES(cs->current_ws,1).mtim && G_ES(cs->current_ws,1).cpreview)
+        goto END;
+    G_ES(cs->current_ws,1).previewl = 0;
+    #endif
+
+    ssize_t buffl;
+    char buffer[1024];
+    if ((buffl = read(fd,buffer,1024)) < 1)
         goto END;
 
-    size_t bina = 0;
-    bool binary = false;
+    uchar bina = 0;
 
-    for (size_t i = 0; i < buf_t; i++)
-        bina += 1*!(isascii(buffer[i]));
-
-    binary = (bina<<1);
-
-    if (!binary)
+    for (ssize_t i = 0; i < buffl; i++)
     {
-        if (!(settings->PreviewSettings&PREV_ASCII))
-        {
-            close(fd);
+        if ((buffer[i] >= 0x07 && buffer[i] <= 0xd) || (buffer[i] >= 0x20 && buffer[i] <= 0x7e))
+            continue;
+        bina = 1;
+        break;
+    }
+
+    #ifdef __SAVE_PREVIEW__
+    uchar buff[PREVIEW_MAX];
+    #endif
+
+    if (!bina)
+    {
+        if (!(cfg->PreviewSettings&PREV_ASCII))
             goto END;
-        }
-        grf->preview_settings |= F_TEXT;
-        grf->preview_settings ^= F_WRAP*((grf->preview_settings&F_WRAP) == F_WRAP);
-        grf->preview_fd = fd;
+        lseek(fd,0,SEEK_SET);
+        #ifndef __SAVE_PREVIEW__
+        cs->previewl = read(fd,cs->cpreview,PREVIEW_MAX);
+        cs->spreview = F_TEXT;
+        #else
+        buffl = read(fd,buff,PREVIEW_MAX);
+        G_ES(cs->current_ws,1).cpreview = realloc(G_ES(cs->current_ws,1).cpreview,buffl);
+        memcpy(G_ES(cs->current_ws,1).cpreview,buff,buffl);
+        G_ES(cs->current_ws,1).previewl = buffl;
+        G_ES(cs->current_ws,1).spreview = F_TEXT;
+        #endif
     }
     else
     {
-        close(fd);
-        if (!(settings->PreviewSettings&PREV_BINARY))
+        if (!(cfg->PreviewSettings&PREV_BINARY))
             goto END;
 
         int pipes[2];
@@ -86,21 +116,32 @@ void* PreviewRun(void* arg)
         {
             close(pipes[0]);
             dup2(pipes[1],1);
-            execlp("file","file","-b",GET_ESELECTED(grf->current_workspace,1).name,NULL);
+            execlp(cfg->BinaryPreview,cfg->BinaryPreview,G_ES(cs->current_ws,1).name,NULL);
             _exit(1);
         }
         else
         {
+            
             close(pipes[1]);
-            wait(NULL);
-            grf->preview_settings |= F_TEXT|F_WRAP;
-            grf->preview_fd = pipes[0];
+            while (wait(NULL) != -1);
+            #ifndef __SAVE_PREVIEW__
+            cs->previewl = read(pipes[0],cs->cpreview,PREVIEW_MAX);
+            cs->spreview = F_TEXT|F_WRAP;
+            #else
+            buffl = read(pipes[0],buff,PREVIEW_MAX);
+            G_ES(cs->current_ws,1).cpreview = realloc(G_ES(cs->current_ws,1).cpreview,buffl);
+            memcpy(G_ES(cs->current_ws,1).cpreview,buff,buffl);
+            G_ES(cs->current_ws,1).previewl = buffl;
+            G_ES(cs->current_ws,1).spreview = F_TEXT|F_WRAP;
+            #endif
+            close(pipes[0]);
         }
     }
 
     END: ;
+    close(fd);
     #ifdef __THREADS_FOR_FILE_ENABLE__
-    if (settings->ThreadsForFile)
+    if (cfg->ThreadsForFile)
     {
         pthread_detach(pthread_self());
         pthread_exit(NULL);
@@ -109,49 +150,47 @@ void* PreviewRun(void* arg)
     return NULL;
 }
 
-void Preview(Basic* grf)
+void get_preview(Csas *cs)
 {
-    if (grf->workspaces[grf->current_workspace].win[1] == -1 ||
+    if (cs->ws[cs->current_ws].win[1] == -1 ||
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    GET_DIR(grf->current_workspace,1)->enable ||
+    G_D(cs->current_ws,1)->enable ||
     #endif
-    GET_DIR(grf->current_workspace,1)->size < 1 || settings->PreviewSettings&PREV_NONE)
+    G_D(cs->current_ws,1)->size < 1)
         return;
 
-    werase(grf->win[2]);
-    if (settings->Borders)
-        SetBorders(grf,2);
+    werase(cs->win[2]);
+    if (cfg->Borders)
+        setborders(cs,2);
 
-    if ((GET_ESELECTED(grf->current_workspace,1).type&T_GT) == T_DIR)
+    if (cfg->PreviewSettings&PREV_DIR && (G_ES(cs->current_ws,1).type&T_GT) == T_DIR)
     {
-        settings->Win3Display = true;
-        GetDir(GET_ESELECTED(grf->current_workspace,1).name,grf,grf->current_workspace,2,settings->DirLoadingMode
+        cfg->Win3Display = true;
+        getdir(G_ES(cs->current_ws,1).name,cs,cs->current_ws,2,cfg->DirLoadingMode
         #ifdef __FOLLOW_PARENT_DIR__
         ,NULL
         #endif
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        ,settings->ThreadsForDir
+        ,cfg->ThreadsForDir
         #endif
         );
         return;
     }
 
-    settings->Win3Display = false;
+    cfg->Win3Display = false;
 
-    if ((GET_ESELECTED(grf->current_workspace,1).type&T_GT) == T_REG)
+    if (cfg->PreviewSettings&PREV_FILE && (G_ES(cs->current_ws,1).type&T_GT) == T_REG)
     {
         #ifdef __THREADS_FOR_FILE_ENABLE__
-        if (settings->ThreadsForFile)
+        if (cfg->ThreadsForFile)
         {
             pthread_t th;
-            pthread_create(&th,NULL,PreviewRun,(void*)grf);
+            pthread_create(&th,NULL,getfromfile,(void*)cs);
         }
         else
         #endif
-        PreviewRun((void*)grf);
-
+        getfromfile((void*)cs);
     }
 
-
-    wrefresh(grf->win[2]);
+    wrefresh(cs->win[2]);
 }

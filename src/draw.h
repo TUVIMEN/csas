@@ -19,9 +19,9 @@
 #ifndef DRAW_H
 #define DRAW_H
 
-void set_message(Basic* grf, const int attr, const char* fmt, ...);
-void DrawText(WINDOW* grf, int fd, off_t offset, int whence, bool wrap);
-void DrawBasic(Basic* grf,const int which);
-void SetBorders(Basic* grf, const int which);
+void set_message(Csas *cs, const int attr, const char *fmt, ...);
+void run_preview(WINDOW *w, uchar *c, ssize_t size, uli flags);
+void csas_draw(Csas *cs,const int which);
+void setborders(Csas *cs, const int which);
 
 #endif

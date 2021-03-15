@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#define __THREADS_ENABLE__
+//#define __THREADS_ENABLE__
 #ifdef __THREADS_ENABLE__
     #define __THREADS_FOR_DIR_ENABLE__
     //#define __THREADS_FOR_FILE_ENABLE__
@@ -28,7 +28,7 @@
 #define __USER_NAME_ENABLE__
 #define __LOAD_CONFIG_ENABLE__
 #define __INODE_ENABLE__
-//#define __SHOW_KEY_BINDINGS__
+#define __SHOW_KEY_BINDINGS__
 
 #define __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
 #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
@@ -49,9 +49,9 @@
 #define __NLINK_ENABLE__
 //#define __RDEV_ENABLE__
 #define __MTIME_ENABLE__
-//#ifdef __MTIME_ENABLE__ //!
-//#define __SAVE_PREVIEW__
-//#endif
+#ifdef __MTIME_ENABLE__
+    #define __SAVE_PREVIEW__
+#endif
 //#define __ATIME_ENABLE__
 //#define __CTIME_ENABLE__
 
@@ -59,4 +59,6 @@
 
 #define __SORT_ELEMENTS_ENABLE__
 #define __FILESYSTEM_INFO_ENABLE__
+
 #define WORKSPACE_N 10
+#define PREVIEW_MAX (1<<14)

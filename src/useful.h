@@ -21,34 +21,34 @@
 
 void die(int status, const char *p, ...);
 
-int spawn(char* file, char* arg1, char* arg2, const uchar mode);
+int spawn(char *file, char *arg1, char *arg2, const uchar mode);
 
-char* MakeHumanReadAble(ull value);
+char *stoa(ull value); //size to string
 
-void GetDirSize(const int fd, ull* count, ull* size, const bool recursive);
+void get_dirsize(const int fd, ull *count, ull *size, const bool recursive);
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
-uchar check_extension(const char* name);
+uchar check_extension(const char *name);
 #endif
 
-char* lsperms(const int mode);
+char *lsperms(const int mode);
 
-size_t TimeToStr(const time_t* time, char* result);
+size_t ttoa(const time_t *time, char *result); //time to string
 
-void RunFile(char* path);
-void MakePathShorter(char* path, const int max_size);
+void file_run(char *path);
+void path_shrink(char *path, const int max_size);
 
-void DeleteFile(const int fd, const char* name);
-void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, const mode_t arg);
-void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, const mode_t arg);
+void file_rm(const int fd, const char *name);
+void file_cp(const int fd1, const int fd2, const char *name, char *buffer, const mode_t arg);
+void file_mv(const int fd1, const int fd2, const char *name, char *buffer, const mode_t arg);
 
-char* MakePathRunAble(char* temp);
-char* MakePath(const char* dir, const char* name);
-size_t FindFirstCharacter(const char* src);
-size_t StrToValue(void* dest, const char* src);
-wchar_t CharConv(const char c);
-size_t StrToPath(char* dest, const char* src);
-wchar_t *StrToKeys(char *src,  wchar_t * dest);
-size_t FindEndOf(const char* src, const char res);
+char *atob(char *temp); //path to shell arg
+char *mkpath(const char *dir, const char *name); //combines dir and file name to path
+size_t findfirst(const char *src, int (*func)(int));
+size_t atov(void *dest, const char *src); //converts string to value
+wchar_t charconv(const char c); //changes char after '\'
+size_t atop(char *dest, const char *src); //changes string to path
+wchar_t *atok(char *src,  wchar_t  *dest); //changes string to keys
+size_t find_endof(const char *src, const char res);
 
 #endif

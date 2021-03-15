@@ -24,9 +24,9 @@
 
 #ifdef __LOAD_CONFIG_ENABLE__
 extern struct AliasesT aliases[];
-extern Settings* settings;
+extern Settings *cfg;
 
-void GetFullLine(char* dest, const char* src, size_t* n)
+void get_clearline(char *dest, const char *src, size_t *n)
 {
     size_t x = 0;
 
@@ -68,7 +68,7 @@ void GetFullLine(char* dest, const char* src, size_t* n)
         {
             char temp = src[*n];
             dest[x++] = src[(*n)++];
-            temp = FindEndOf(src+*n,temp == '"' ? '"' : '\'');
+            temp = find_endof(src+*n,temp == '"' ? '"' : '\'');
             strncpy(dest+x,src+*n,temp);
             dest[x+temp] = '\0';
             (*n) += temp;
@@ -79,7 +79,7 @@ void GetFullLine(char* dest, const char* src, size_t* n)
     }
 }
 
-void LoadConfig(const char* path, Basic* grf)
+void config_load(const char *path, Csas *cs)
 {
     int fd;
     if ((fd = open(path,O_RDONLY)) == -1)
@@ -103,7 +103,7 @@ void LoadConfig(const char* path, Basic* grf)
         return;
     }
 
-    char* file = mmap(NULL,sfile.st_size,PROT_READ,MAP_PRIVATE,fd,0);
+    char *file = mmap(NULL,sfile.st_size,PROT_READ,MAP_PRIVATE,fd,0);
     close(fd);
 
     char line[16384];
@@ -112,14 +112,13 @@ void LoadConfig(const char* path, Basic* grf)
 
     while (file[pos])
     {
-        GetFullLine(line,file,&pos);
-        RunCommand(line,grf);
+        get_clearline(line,file,&pos);
+        command_run(line,cs);
         pos++;
     }
 
     munmap(file,sfile.st_size);
-
-    chdir(grf->workspaces[grf->current_workspace].path);
+    chdir(cs->ws[cs->current_ws].path);
 }
 
 #endif

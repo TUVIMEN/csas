@@ -19,6 +19,6 @@
 #ifndef SORT_H
 #define SORT_H
 
-void SortEl(struct Element* el, const size_t size, ull flag);
+void sort_el(struct Element *el, const size_t size, ull flag);
 
 #endif

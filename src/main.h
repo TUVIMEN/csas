@@ -94,9 +94,9 @@ typedef unsigned long long int ull;
 
 #define TEMPTEMP "/tmp/CSAS-XXXXXX"
 
-#define GET_DIR(x,y) grf->base[grf->workspaces[x].win[y]]
-#define GET_SELECTED(x,y) GET_DIR(x,y)->selected[x]
-#define GET_ESELECTED(x,y) GET_DIR(x,y)->el[GET_SELECTED(x,y)]
+#define G_D(x,y) cs->base[cs->ws[x].win[y]] // GET_DIR
+#define G_S(x,y) G_D(x,y)->selected[x]      // GET_SELECTED
+#define G_ES(x,y) G_D(x,y)->el[G_S(x,y)]    // GET_ESELECTED
 
 #define F_SILENT 0x1
 #define F_NORMAL 0x2
@@ -139,9 +139,10 @@ typedef unsigned long long int ull;
 #define D_C 0x4 //count
 #define D_H 0x8 //human readable
 
-#define PREV_NONE 0x1
-#define PREV_BINARY 0x2
-#define PREV_ASCII 0x4
+#define PREV_DIR 0x1
+#define PREV_FILE 0x2
+#define PREV_BINARY 0x4
+#define PREV_ASCII 0x8
 
 #define F_TEXT 0x2
 #define F_WRAP 0x4
@@ -207,7 +208,7 @@ typedef unsigned long long int ull;
 
 struct Element
 {
-    char* name;
+    char *name;
 
     uchar list[WORKSPACE_N];
 
@@ -241,9 +242,11 @@ struct Element
     time_t ctim;
     #endif
 
-    //#ifdef __SAVE_PREVIEW__
-    //uchar *preview;
-    //#endif
+    #ifdef __SAVE_PREVIEW__
+    uchar *cpreview;
+    ssize_t previewl;
+    uli spreview;
+    #endif
 
     #ifdef __FILE_GROUPS_ENABLE__
     gid_t gr;
@@ -272,7 +275,7 @@ struct Element
 #ifdef __COLOR_FILES_BY_EXTENSION__
 typedef struct
 {
-    char* name;
+    char *name;
     char group;
 } Extensions;
 #endif
@@ -283,9 +286,9 @@ typedef struct
     bool binary;
     long pos;
     int from;
-    char* sig;
+    char *sig;
     int len;
-    char* comma_com;
+    char *comma_com;
 } FileSignatures;
 
 #endif
@@ -295,7 +298,7 @@ struct Dir
     char *path;
     size_t size;
     size_t oldsize;
-    struct Element* el;
+    struct Element *el;
     size_t *selected;
     char **move_to;
     size_t *ltop;
@@ -314,7 +317,7 @@ struct Dir
 
 typedef struct
 {
-    char* path;
+    char *path;
     int win[3];
     bool show_message;
     bool visual;
@@ -331,13 +334,13 @@ typedef struct
     li ThreadsForFile;
     #endif
     #ifdef __LOAD_CONFIG_ENABLE__
-    li LoadConfig;
+    li config_load;
     #endif
-    char* shell;
-    char* Values;
-    char* editor;
-    char* FileOpener;
-    char* UserHostPattern;
+    char *shell;
+    char *Values;
+    char *editor;
+    char *FileOpener;
+    char *UserHostPattern;
     li Bar1Settings;
     li Bar2Settings;
     li CopyBufferSize;
@@ -353,10 +356,11 @@ typedef struct
     li Win3Display;
     li Bar1Enable;
     li Bar2Enable;
-    double* WinSizeMod;
+    double *WinSizeMod;
     li Borders;
+    char *BinaryPreview;
     li FillBlankSpace;
-    li* WindowBorder;
+    li *WindowBorder;
     li EnableColor;
     li DelayBetweenFrames;
     li SDelayBetweenFrames;
@@ -368,7 +372,7 @@ typedef struct
     ll PreviewSettings;
     #ifdef __SORT_ELEMENTS_ENABLE__
     li SortMethod;
-    li* BetterFiles;
+    li *BetterFiles;
     #endif
     li DirSizeMethod;
     li C_Error;
@@ -390,15 +394,15 @@ typedef struct
     WINDOW *win[6];
     size_t size;
     size_t asize;
-    struct Dir** base;
-    int current_workspace;
-    WorkSpace workspaces[WORKSPACE_N];
+    struct Dir* *base;
+    int current_ws;
+    WorkSpace ws[WORKSPACE_N];
     #ifdef __USER_NAME_ENABLE__
-    char* usern;
-    char* hostn;
+    char *usern;
+    char *hostn;
     #endif
     bool exit_time;
-    char* typed_keys;
+    char *typed_keys;
     bool was_typed;
     #ifdef __FILESYSTEM_INFO_ENABLE__
     struct statfs fs;
@@ -410,32 +414,35 @@ typedef struct
         size_t max_size;
         size_t inc_r;
         size_t alloc_r;
-        char** history;
-    } ConsoleHistory;
+        char* *history;
+    } consolehistory;
     struct
     {
         size_t allocated;
         size_t size;
         size_t inc_r;
         size_t pos;
-        char** list;
+        char* *list;
     } SearchList;
-    int preview_fd;
-    li preview_settings;
-} Basic;
+    #ifndef __SAVE_PREVIEW__
+    uchar *cpreview;
+    ssize_t previewl;
+    uli spreview;
+    #endif
+} Csas;
 
 typedef struct {
-    wchar_t* keys;
-    char* value;
+    wchar_t *keys;
+    char *value;
 } Key;
 
 struct SetEntry {
-    char* name;
-    void* value;
+    char *name;
+    void *value;
 };
 
 struct AliasesT {
-    char* name;
+    char *name;
     ll v;
 };
 
@@ -450,7 +457,7 @@ typedef struct {
 } Vector2f;
 
 struct WinArgs {
-    WINDOW* place;
+    WINDOW *place;
     Vector2i s_size;
     Vector2f p_size;
     Vector2i min_size;
@@ -459,5 +466,5 @@ struct WinArgs {
     Vector2f p_pos;
     Vector2i min_pos;
     Vector2i max_pos;
-    int settings;
+    int cfg;
 };

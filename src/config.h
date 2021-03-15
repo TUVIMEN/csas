@@ -48,7 +48,8 @@ struct AliasesT aliases[] = {
     {"A_STANDOUT",A_STANDOUT},
     {"A_DIM",A_DIM},
     {"A_BLINK",A_BLINK},
-    {"PREV_NONE",PREV_NONE},
+    {"PREV_DIR",PREV_DIR},
+    {"PREV_FILE",PREV_FILE},
     {"PREV_BINARY",PREV_BINARY},
     {"PREV_ASCII",PREV_ASCII},
     {"NAME_MAX",NAME_MAX},
@@ -181,7 +182,7 @@ struct AliasesT aliases[] = {
     {NULL,0}
 };
 
-Settings* settings;
+Settings *cfg;
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
 Extensions extensions[] = {

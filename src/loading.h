@@ -20,7 +20,7 @@
 #define LOADING_H
 
 #ifdef __LOAD_CONFIG_ENABLE__
-void LoadConfig(const char* dest, Basic* src);
+void config_load(const char *dest, Csas *src);
 #endif
 
 #endif

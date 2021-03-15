@@ -19,12 +19,12 @@
 #ifndef INITS_H
 #define INITS_H
 
-void addKey(char *c, char *v);
+void addkey(char *c, char *v);
 int initcurs();
-Basic* InitBasic();
-void RunBasic(Basic* grf, const int argc, char** argv);
-void UpdateSizeBasic(Basic* grf);
-void freeEl(struct Element** el, size_t* size);
-void freeBasic(Basic* grf);
+Csas *csas_init();
+void csas_run(Csas *cs, const int argc, char **argv);
+void update_size(Csas *cs);
+void free_el(struct Element **el, size_t *size);
+void csas_free(Csas *cs);
 
 #endif

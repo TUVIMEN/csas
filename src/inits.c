@@ -32,7 +32,7 @@
 #include "loading.h"
 #endif
 
-void addKey(char *c, char *v)
+void addkey(char *c, char *v)
 {
     if (keys_t == keys_a)
     {
@@ -46,7 +46,7 @@ void addKey(char *c, char *v)
 
     wchar_t temp[64];
 
-    StrToKeys(c,temp);
+    atok(c,temp);
 
     li found = -1;
 
@@ -71,208 +71,209 @@ void addKey(char *c, char *v)
 
 void KeyInit()
 {
-    addKey("q","quit");
-    addKey("Q","quit -f");
-    addKey("j","move -d");
-    addKey("J","move -dc 16");
-    addKey("k","move -u");
-    addKey("K","move -uc 16");
-    addKey("h","move -l");
-    addKey("l","move -r");
-    addKey("g/","/"); //!
-    addKey("gh","cd \"${HOME}\"");
-    addKey("gd","cd /dev");
-    addKey("ge","cd /etc");
-    addKey("gM","cd /mnt");
-    addKey("go","cd /opt");
-    addKey("gs","cd /srv");
-    addKey("gp","cd /tmp");
-    addKey("gu","cd /usr");
-    addKey("gv","cd /var");
-    addKey("gm","cd \"${MEDIA}\"");
-    addKey("gg","gotop");
-    addKey("G","godown");
-    addKey("z1","ChangeWorkSpace 0");
-    addKey("z2","ChangeWorkSpace 1");
-    addKey("z3","ChangeWorkSpace 2");
-    addKey("z4","ChangeWorkSpace 3");
-    addKey("z5","ChangeWorkSpace 4");
-    addKey("z6","ChangeWorkSpace 5");
-    addKey("z7","ChangeWorkSpace 6");
-    addKey("z8","ChangeWorkSpace 7");
-    addKey("z9","ChangeWorkSpace 8");
-    addKey("z0","ChangeWorkSpace 9");
+    addkey("q","quit");
+    addkey("Q","quit -f");
+    addkey("j","move -d");
+    addkey("J","move -dc 16");
+    addkey("k","move -u");
+    addkey("K","move -uc 16");
+    addkey("h","move -l");
+    addkey("l","move -r");
+    addkey("g/","cd /");
+    addkey("gh","cd \"${HOME}\"");
+    addkey("gd","cd /dev");
+    addkey("ge","cd /etc");
+    addkey("gM","cd /mnt");
+    addkey("go","cd /opt");
+    addkey("gs","cd /srv");
+    addkey("gp","cd /tmp");
+    addkey("gu","cd /usr");
+    addkey("gv","cd /var");
+    addkey("gm","cd \"${MEDIA}\"");
+    addkey("gg","gotop");
+    addkey("G","godown");
+    addkey("z1","change_workspace 0");
+    addkey("z2","change_workspace 1");
+    addkey("z3","change_workspace 2");
+    addkey("z4","change_workspace 3");
+    addkey("z5","change_workspace 4");
+    addkey("z6","change_workspace 5");
+    addkey("z7","change_workspace 6");
+    addkey("z8","change_workspace 7");
+    addkey("z9","change_workspace 8");
+    addkey("z0","change_workspace 9");
     #ifdef __SORT_ELEMENTS_ENABLE__
-    addKey("oe","set SortMethod SORT_NONE");
-    addKey("oE","set SortMethod SORT_NONE|SORT_REVERSE");
-    addKey("or","set SortMethod SORT_TYPE|SORT_BETTER_FILES");
-    addKey("oR","set SortMethod SORT_TYPE|SORT_REVERSE|SORT_BETTER_FILES'");
-    addKey("ob","set SortMethod SORT_NONE|SORT_BETTER_FILES");
-    addKey("oB","set SortMethod SORT_NONE|SORT_REVERSE|SORT_BETTER_FILES");
-    addKey("os","set SortMethod SORT_SIZE|SORT_BETTER_FILES");
-    addKey("oS","set SortMethod SORT_SIZE|SORT_REVERSE|SORT_BETTER_FILES");
-    addKey("otm","set SortMethod SORT_MTIME|SORT_BETTER_FILES");
-    addKey("otM","set SortMethod SORT_MTIME|SORT_REVERSE|SORT_BETTER_FILES");
-    addKey("otc","set SortMethod SORT_CTIME|SORT_BETTER_FILES");
-    addKey("otC","set SortMethod SORT_CTIME|SORT_REVERSE|SORT_BETTER_FILES");
-    addKey("ota","set SortMethod SORT_ATIME|SORT_BETTER_FILES");
-    addKey("otA","set SortMethod SORT_ATIME|SORT_REVERSE|SORT_BETTER_FILES");
-    addKey("og","set SortMethod SORT_GID|SORT_BETTER_FILES");
-    addKey("oG","set SortMethod SORT_GID|SORT_REVERSE|SORT_BETTER_FILES");
-    addKey("ou","set SortMethod SORT_UID|SORT_BETTER_FILES");
-    addKey("oU","set SortMethod SORT_UID|SORT_REVERSE|SORT_BETTER_FILES");
-    addKey("om","set SortMethod SORT_LNAME|SORT_BETTER_FILES");
-    addKey("oM","set SortMethod SORT_LNAME|SORT_REVERSE|SORT_BETTER_FILES");
-    addKey("on","set SortMethod SORT_NAME|SORT_BETTER_FILES");
-    addKey("oN","set SortMethod SORT_NAME|SORT_REVERSE|SORT_BETTER_FILES");
+    addkey("oe","set SortMethod SORT_NONE");
+    addkey("oE","set SortMethod SORT_NONE|SORT_REVERSE");
+    addkey("or","set SortMethod SORT_TYPE|SORT_BETTER_FILES");
+    addkey("oR","set SortMethod SORT_TYPE|SORT_REVERSE|SORT_BETTER_FILES'");
+    addkey("ob","set SortMethod SORT_NONE|SORT_BETTER_FILES");
+    addkey("oB","set SortMethod SORT_NONE|SORT_REVERSE|SORT_BETTER_FILES");
+    addkey("os","set SortMethod SORT_SIZE|SORT_BETTER_FILES");
+    addkey("oS","set SortMethod SORT_SIZE|SORT_REVERSE|SORT_BETTER_FILES");
+    addkey("otm","set SortMethod SORT_MTIME|SORT_BETTER_FILES");
+    addkey("otM","set SortMethod SORT_MTIME|SORT_REVERSE|SORT_BETTER_FILES");
+    addkey("otc","set SortMethod SORT_CTIME|SORT_BETTER_FILES");
+    addkey("otC","set SortMethod SORT_CTIME|SORT_REVERSE|SORT_BETTER_FILES");
+    addkey("ota","set SortMethod SORT_ATIME|SORT_BETTER_FILES");
+    addkey("otA","set SortMethod SORT_ATIME|SORT_REVERSE|SORT_BETTER_FILES");
+    addkey("og","set SortMethod SORT_GID|SORT_BETTER_FILES");
+    addkey("oG","set SortMethod SORT_GID|SORT_REVERSE|SORT_BETTER_FILES");
+    addkey("ou","set SortMethod SORT_UID|SORT_BETTER_FILES");
+    addkey("oU","set SortMethod SORT_UID|SORT_REVERSE|SORT_BETTER_FILES");
+    addkey("om","set SortMethod SORT_LNAME|SORT_BETTER_FILES");
+    addkey("oM","set SortMethod SORT_LNAME|SORT_REVERSE|SORT_BETTER_FILES");
+    addkey("on","set SortMethod SORT_NAME|SORT_BETTER_FILES");
+    addkey("oN","set SortMethod SORT_NAME|SORT_REVERSE|SORT_BETTER_FILES");
     #endif
-    addKey("dct","getsize -cs s");
-    addKey("dCt","getsize -crs s");
-    addKey("dst","getsize -s s");
-    addKey("dSt","getsize -rs s");
-    addKey("dft","getsize -fs s");
-    addKey("dch","getsize -cs .");
-    addKey("dCh","getsize -crs .");
-    addKey("dsh","getsize -s .");
-    addKey("dSh","getsize -rs .");
-    addKey("dfh","getsize -fs .");
-    addKey("x1","setgroup 0");
-    addKey("x2","setgroup 1");
-    addKey("x3","setgroup 2");
-    addKey("x4","setgroup 3");
-    addKey("x5","setgroup 4");
-    addKey("x6","setgroup 5");
-    addKey("x7","setgroup 6");
-    addKey("x8","setgroup 7");
-    addKey(" ","fastselect");
-    addKey("V","togglevisual");
-    addKey("vta","select -ts - -o .");
-    addKey("vth","select -ts - -o . .");
-    addKey("vda","select -ds - -o .");
-    addKey("vdh","select -ds - -o . .");
-    addKey("vea","select -es - -o .");
-    addKey("veh","select -es - -o . .");
-    addKey("mm","f_mod m -s . -c -o .");
-    addKey("mr","f_mod m -s . -r -o .");
-    addKey("md","f_mod m -s . -d -o .");
-    addKey("mM","f_mod m -s . -cm -o .");
-    addKey("mR","f_mod m -s . -rm -o .");
-    addKey("mD","f_mod m -s . -dm -o .");
-    addKey("pp","f_mod c -s . -c -o .");
-    addKey("pr","f_mod c -s . -r -o .");
-    addKey("pd","f_mod c -s . -d -o .");
-    addKey("pP","f_mod c -s . -cm -o .");
-    addKey("pR","f_mod c -s . -rm -o .");
-    addKey("pD","f_mod c -s . -dm -o .");
-    addKey("Dd","f_mod d -s . .");
-    addKey("DD","f_mod d -s .");
-    addKey("Dt","f_mod d -s s");
-    addKey("R","load -tm 2");
-    addKey(":","console");
-    addKey("cd","console -a 'cd '");
-    addKey("s","console -a 'shell '");
-    addKey("S","exec bash");
-    addKey("b","bulk -S sh -E vim -b mv -s 0 -R .");
-    addKey("/","console -a 'search -N '");
-    addKey("n","search -n 1");
-    addKey("N","search -b 1");
+    addkey("dct","getsize -cs s");
+    addkey("dCt","getsize -crs s");
+    addkey("dst","getsize -s s");
+    addkey("dSt","getsize -rs s");
+    addkey("dft","getsize -fs s");
+    addkey("dch","getsize -cs .");
+    addkey("dCh","getsize -crs .");
+    addkey("dsh","getsize -s .");
+    addkey("dSh","getsize -rs .");
+    addkey("dfh","getsize -fs .");
+    addkey("x1","setgroup 0");
+    addkey("x2","setgroup 1");
+    addkey("x3","setgroup 2");
+    addkey("x4","setgroup 3");
+    addkey("x5","setgroup 4");
+    addkey("x6","setgroup 5");
+    addkey("x7","setgroup 6");
+    addkey("x8","setgroup 7");
+    addkey(" ","fastselect");
+    addkey("V","togglevisual");
+    addkey("vta","select -ts - -o .");
+    addkey("vth","select -ts - -o . .");
+    addkey("vda","select -ds - -o .");
+    addkey("vdh","select -ds - -o . .");
+    addkey("vea","select -es - -o .");
+    addkey("veh","select -es - -o . .");
+    addkey("mm","f_mod m -s . -c -o .");
+    addkey("mr","f_mod m -s . -r -o .");
+    addkey("md","f_mod m -s . -d -o .");
+    addkey("mM","f_mod m -s . -cm -o .");
+    addkey("mR","f_mod m -s . -rm -o .");
+    addkey("mD","f_mod m -s . -dm -o .");
+    addkey("pp","f_mod c -s . -c -o .");
+    addkey("pr","f_mod c -s . -r -o .");
+    addkey("pd","f_mod c -s . -d -o .");
+    addkey("pP","f_mod c -s . -cm -o .");
+    addkey("pR","f_mod c -s . -rm -o .");
+    addkey("pD","f_mod c -s . -dm -o .");
+    addkey("Dd","f_mod d -s . .");
+    addkey("DD","f_mod d -s .");
+    addkey("Dt","f_mod d -s s");
+    addkey("R","load -tm 2");
+    addkey(":","console");
+    addkey("cd","console -a 'cd '");
+    addkey("s","console -a 'shell '");
+    addkey("S","exec bash");
+    addkey("b","bulk -S sh -E vim -b mv -s 0 -R .");
+    addkey("/","console -a 'search -N '");
+    addkey("n","search -n 1");
+    addkey("N","search -b 1");
 }
 
-Settings* SettingsInit()
+Settings *settings_init()
 {
-    Settings* grf = (Settings*)malloc(sizeof(Settings));
+    Settings *cfg = (Settings*)malloc(sizeof(Settings));
 
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    grf->ThreadsForDir = 0;
+    cfg->ThreadsForDir = 0;
     #endif
     #ifdef __THREADS_FOR_FILE_ENABLE__
-    grf->ThreadsForFile = 0;
+    cfg->ThreadsForFile = 0;
     #endif
-    grf->FileOpener                    = strcpy(malloc(PATH_MAX),"NULL");
-    grf->shell                         = strcpy(malloc(PATH_MAX),"sh");
-    grf->editor                        = strcpy(malloc(PATH_MAX),"vim");
-    grf->Values                        = strcpy(malloc(16),"KMGTPEZY");
-    grf->Bar1Settings                  = B_DIR | B_WORKSPACES | B_POSITION | B_FGROUP | B_MODES | B_CSF;
-    grf->Bar2Settings                  = DP_LSPERMS | DP_SMTIME | DP_HSIZE;
-    grf->UserHostPattern               = strcpy(malloc(NAME_MAX),"%s@%s");
-    grf->UserRHost                     = false;
-    grf->CopyBufferSize                = 131072;
-    grf->MoveOffSet                    = 0.1;
-    grf->WrapScroll                    = true;
-    grf->JumpScroll                    = false;
-    grf->JumpScrollValue               = 0.5;
-    grf->StatusBarOnTop                = false;
-    grf->Win1Enable                    = false;
-    grf->Win3Enable                    = false;
-    grf->Bar1Enable                    = true;
-    grf->Bar2Enable                    = true;
-    grf->WinSizeMod                    = (double*)malloc(2*sizeof(double));
-    grf->WinSizeMod[0]                 = 0.132f;
-    grf->WinSizeMod[1]                 = 0.368f;
-    grf->Borders                       = false;
-    grf->FillBlankSpace                = false;
-    grf->WindowBorder                  = (li*)malloc(8*sizeof(li));
-    grf->WindowBorder[0]               = 0;
-    grf->WindowBorder[1]               = 0;
-    grf->WindowBorder[2]               = 0;
-    grf->WindowBorder[3]               = 0;
-    grf->WindowBorder[4]               = 0;
-    grf->WindowBorder[5]                = 0;
-    grf->WindowBorder[6]                = 0;
-    grf->WindowBorder[7]                = 0;
-    grf->EnableColor                    = true;
-    grf->DelayBetweenFrames             = 1024;
-    grf->SDelayBetweenFrames            = 1;
-    grf->NumberLines                    = false;
-    grf->NumberLinesOff                 = false;
-    grf->NumberLinesFromOne             = false;
-    grf->DirLoadingMode                 = 0;
-    grf->DisplayingC                    = 0;
-    grf->PreviewSettings                = PREV_ASCII|PREV_BINARY;
+    cfg->FileOpener                    = strcpy(malloc(PATH_MAX),"NULL");
+    cfg->shell                         = strcpy(malloc(PATH_MAX),"sh");
+    cfg->editor                        = strcpy(malloc(PATH_MAX),"vim");
+    cfg->BinaryPreview                 = strcpy(malloc(PATH_MAX),"file");
+    cfg->Values                        = strcpy(malloc(16),"KMGTPEZY");
+    cfg->Bar1Settings                  = B_DIR | B_WORKSPACES | B_POSITION | B_FGROUP | B_MODES | B_CSF;
+    cfg->Bar2Settings                  = DP_LSPERMS | DP_SMTIME | DP_HSIZE;
+    cfg->UserHostPattern               = strcpy(malloc(NAME_MAX),"%s@%s");
+    cfg->UserRHost                     = false;
+    cfg->CopyBufferSize                = 131072;
+    cfg->MoveOffSet                    = 0.1;
+    cfg->WrapScroll                    = true;
+    cfg->JumpScroll                    = false;
+    cfg->JumpScrollValue               = 0.5;
+    cfg->StatusBarOnTop                = false;
+    cfg->Win1Enable                    = false;
+    cfg->Win3Enable                    = false;
+    cfg->Bar1Enable                    = true;
+    cfg->Bar2Enable                    = true;
+    cfg->WinSizeMod                    = (double*)malloc(2*sizeof(double));
+    cfg->WinSizeMod[0]                 = 0.132f;
+    cfg->WinSizeMod[1]                 = 0.368f;
+    cfg->Borders                       = false;
+    cfg->FillBlankSpace                = false;
+    cfg->WindowBorder                  = (li*)malloc(8*sizeof(li));
+    cfg->WindowBorder[0]               = 0;
+    cfg->WindowBorder[1]               = 0;
+    cfg->WindowBorder[2]               = 0;
+    cfg->WindowBorder[3]               = 0;
+    cfg->WindowBorder[4]               = 0;
+    cfg->WindowBorder[5]                = 0;
+    cfg->WindowBorder[6]                = 0;
+    cfg->WindowBorder[7]                = 0;
+    cfg->EnableColor                    = true;
+    cfg->DelayBetweenFrames             = 1024;
+    cfg->SDelayBetweenFrames            = 1;
+    cfg->NumberLines                    = false;
+    cfg->NumberLinesOff                 = false;
+    cfg->NumberLinesFromOne             = false;
+    cfg->DirLoadingMode                 = 0;
+    cfg->DisplayingC                    = 0;
+    cfg->PreviewSettings                = PREV_DIR|PREV_FILE|PREV_ASCII;
     #ifdef __SORT_ELEMENTS_ENABLE__
-    grf->SortMethod                     = SORT_NAME|SORT_BETTER_FILES;
-    grf->BetterFiles                    = (li*)calloc(16,sizeof(li));
-    grf->BetterFiles[0]                 = T_DIR;
-    grf->BetterFiles[1]                 = T_DIR|T_SYMLINK;
+    cfg->SortMethod                     = SORT_NAME|SORT_BETTER_FILES;
+    cfg->BetterFiles                    = (li*)calloc(16,sizeof(li));
+    cfg->BetterFiles[0]                 = T_DIR;
+    cfg->BetterFiles[1]                 = T_DIR|T_SYMLINK;
     #endif
-    grf->DirSizeMethod                  = D_F;
-    grf->C_Error                        = COLOR_PAIR(1) | A_BOLD | A_REVERSE;
+    cfg->DirSizeMethod                  = D_F;
+    cfg->C_Error                        = COLOR_PAIR(1) | A_BOLD | A_REVERSE;
     #ifdef __COLOR_FILES_BY_EXTENSION__
-    grf->C_FType_A                      = COLOR_PAIR(1);
-    grf->C_FType_I                      = COLOR_PAIR(3);
-    grf->C_FType_V                      = COLOR_PAIR(5);
+    cfg->C_FType_A                      = COLOR_PAIR(1);
+    cfg->C_FType_I                      = COLOR_PAIR(3);
+    cfg->C_FType_V                      = COLOR_PAIR(5);
     #endif
-    grf->C_Selected		                = A_REVERSE | A_BOLD;
-    grf->C_Exec_set		                = A_BOLD;
-    grf->C_Exec_col	                    = COLOR_PAIR(2);
-    grf->C_Dir		                    = COLOR_PAIR(4) | A_BOLD;
-    grf->C_Reg		                    = A_NORMAL;
-    grf->C_Fifo		                    = COLOR_PAIR(3) | A_ITALIC;
-    grf->C_Sock		                    = COLOR_PAIR(3) | A_ITALIC;
-    grf->C_Dev		                    = COLOR_PAIR(3);
-    grf->C_BDev		                    = COLOR_PAIR(6);
-    grf->C_Other		                = COLOR_PAIR(0);
-    grf->C_FileMissing                  = COLOR_PAIR(5);
-    grf->C_SymLink                      = COLOR_PAIR(6);
-    grf->C_User_S_D		                = COLOR_PAIR(2) | A_BOLD;
-    grf->C_Bar_Dir		                = COLOR_PAIR(4) | A_BOLD;
-    grf->C_Bar_Name		                = A_NORMAL | A_BOLD;
-    grf->C_Bar_WorkSpace		        = A_NORMAL | A_BOLD;
-    grf->C_Bar_WorkSpace_Selected	    = COLOR_PAIR(2) | A_REVERSE | A_BOLD;
-    grf->C_Group                        = malloc(sizeof(ll)*8);
-    grf->C_Group[0]		                = COLOR_PAIR(3);
-    grf->C_Group[1]		                = COLOR_PAIR(2);
-    grf->C_Group[2]		                = COLOR_PAIR(1);
-    grf->C_Group[3]		                = COLOR_PAIR(4);
-    grf->C_Group[4]		                = COLOR_PAIR(5);
-    grf->C_Group[5]		                = COLOR_PAIR(6);
-    grf->C_Group[6]		                = COLOR_PAIR(7);
-    grf->C_Group[7]		                = COLOR_PAIR(8);
-    grf->C_Bar_E                        = COLOR_PAIR(0);
-    grf->C_Bar_F                        = COLOR_PAIR(0);
-    grf->C_Borders                      = 0;
+    cfg->C_Selected		                = A_REVERSE | A_BOLD;
+    cfg->C_Exec_set		                = A_BOLD;
+    cfg->C_Exec_col	                    = COLOR_PAIR(2);
+    cfg->C_Dir		                    = COLOR_PAIR(4) | A_BOLD;
+    cfg->C_Reg		                    = A_NORMAL;
+    cfg->C_Fifo		                    = COLOR_PAIR(3) | A_ITALIC;
+    cfg->C_Sock		                    = COLOR_PAIR(3) | A_ITALIC;
+    cfg->C_Dev		                    = COLOR_PAIR(3);
+    cfg->C_BDev		                    = COLOR_PAIR(6);
+    cfg->C_Other		                = COLOR_PAIR(0);
+    cfg->C_FileMissing                  = COLOR_PAIR(5);
+    cfg->C_SymLink                      = COLOR_PAIR(6);
+    cfg->C_User_S_D		                = COLOR_PAIR(2) | A_BOLD;
+    cfg->C_Bar_Dir		                = COLOR_PAIR(4) | A_BOLD;
+    cfg->C_Bar_Name		                = A_NORMAL | A_BOLD;
+    cfg->C_Bar_WorkSpace		        = A_NORMAL | A_BOLD;
+    cfg->C_Bar_WorkSpace_Selected	    = COLOR_PAIR(2) | A_REVERSE | A_BOLD;
+    cfg->C_Group                        = malloc(sizeof(ll)*8);
+    cfg->C_Group[0]		                = COLOR_PAIR(3);
+    cfg->C_Group[1]		                = COLOR_PAIR(2);
+    cfg->C_Group[2]		                = COLOR_PAIR(1);
+    cfg->C_Group[3]		                = COLOR_PAIR(4);
+    cfg->C_Group[4]		                = COLOR_PAIR(5);
+    cfg->C_Group[5]		                = COLOR_PAIR(6);
+    cfg->C_Group[6]		                = COLOR_PAIR(7);
+    cfg->C_Group[7]		                = COLOR_PAIR(8);
+    cfg->C_Bar_E                        = COLOR_PAIR(0);
+    cfg->C_Bar_F                        = COLOR_PAIR(0);
+    cfg->C_Borders                      = 0;
 
-    return grf;
+    return cfg;
 }
 
 int initcurs()
@@ -289,7 +290,7 @@ int initcurs()
     notimeout(stdscr,true);
 	set_escdelay(25);
 
-    if (has_colors() && settings->EnableColor)
+    if (has_colors() && cfg->EnableColor)
     {
         start_color();
         use_default_colors();
@@ -301,97 +302,97 @@ int initcurs()
     return 0;
 }
 
-Basic* InitBasic()
+Csas *csas_init()
 {
-    Basic* grf = (Basic*)malloc(sizeof(Basic));
+    Csas *cs = (Csas*)malloc(sizeof(Csas));
 
     #ifdef __FILESYSTEM_INFO_ENABLE__
-    statfs(".",&grf->fs);
+    statfs(".",&cs->fs);
     #endif
 
-    grf->exit_time = false;
-    grf->was_typed = false;
-    grf->typed_keys = (char*)malloc(64);
+    cs->exit_time = false;
+    cs->was_typed = false;
+    cs->typed_keys = (char*)malloc(64);
 
-    grf->ConsoleHistory.allocated = 0;
-    grf->ConsoleHistory.size = 0;
-    grf->ConsoleHistory.history = NULL;
-    grf->ConsoleHistory.max_size = 32;
-    grf->ConsoleHistory.alloc_r = 8192;
-    grf->ConsoleHistory.inc_r = 8;
+    cs->consolehistory.allocated = 0;
+    cs->consolehistory.size = 0;
+    cs->consolehistory.history = NULL;
+    cs->consolehistory.max_size = 32;
+    cs->consolehistory.alloc_r = 8192;
+    cs->consolehistory.inc_r = 8;
 
-    grf->SearchList.allocated = 0;
-    grf->SearchList.inc_r = 16;
-    grf->SearchList.pos = 0;
-    grf->SearchList.size = 0;
-    grf->SearchList.list = NULL;
+    cs->SearchList.allocated = 0;
+    cs->SearchList.inc_r = 16;
+    cs->SearchList.pos = 0;
+    cs->SearchList.size = 0;
+    cs->SearchList.list = NULL;
 
     KeyInit();
-    settings = SettingsInit();
+    cfg = settings_init();
 
     #ifdef __LOAD_CONFIG_ENABLE__
-    settings->LoadConfig = 1;
-    if (settings->LoadConfig)
+    cfg->config_load = 1;
+    if (cfg->config_load)
     {
-        LoadConfig("/etc/csasrc",grf);
+        config_load("/etc/csasrc",cs);
         char *HomeTemp = getenv("HOME");
         if (HomeTemp != NULL)
         {
             char temp[PATH_MAX];
             sprintf(temp,"%s/.csasrc",HomeTemp);
-            LoadConfig(temp,grf);
+            config_load(temp,cs);
             sprintf(temp,"%s/.config/csas/.csasrc",HomeTemp);
-            LoadConfig(temp,grf);
+            config_load(temp,cs);
         }
     }
     #endif
 
-    settings->Win1Display = settings->Win1Enable;
-    settings->Win3Display = settings->Win3Enable;
+    cfg->Win1Display = cfg->Win1Enable;
+    cfg->Win3Display = cfg->Win3Enable;
 
-    grf->preview_fd = -1;
+    #ifndef __SAVE_PREVIEW__
+    cs->cpreview = (uchar*)malloc(PREVIEW_MAX);
+    #endif
 
     initcurs();
 
     for (int i = 0; i < 6; i++)
-        grf->win[i] = newwin(0,0,0,0);
+        cs->win[i] = newwin(0,0,0,0);
 
-    grf->win_middle = 0;
+    cs->win_middle = 0;
 
-    grf->size = 0;
-    grf->asize = 0;
-    grf->base = NULL;
-
-    grf->preview_settings = 0;
+    cs->size = 0;
+    cs->asize = 0;
+    cs->base = NULL;
 
     #ifdef __USER_NAME_ENABLE__
-    grf->hostn = (char*)malloc(64);
-    grf->usern = (char*)malloc(64);
-    getlogin_r(grf->usern,63);
-    gethostname(grf->hostn,63);
+    cs->hostn = (char*)malloc(64);
+    cs->usern = (char*)malloc(64);
+    getlogin_r(cs->usern,63);
+    gethostname(cs->hostn,63);
     #endif
 
     for (int i = 0; i < WORKSPACE_N; i++)
     {
-        grf->workspaces[i].path = NULL;
-        grf->workspaces[i].exists = 0;
-        grf->workspaces[i].sel_group = 0;
-        grf->workspaces[i].visual = 0;
+        cs->ws[i].path = NULL;
+        cs->ws[i].exists = 0;
+        cs->ws[i].sel_group = 0;
+        cs->ws[i].visual = 0;
         for (int j = 0; j < 3; j++)
-            grf->workspaces[i].win[j] = -1;
+            cs->ws[i].win[j] = -1;
     }
 
-    grf->current_workspace = 0;
-    grf->workspaces[grf->current_workspace].exists = true;
-    grf->workspaces[grf->current_workspace].show_message = false;
-    grf->workspaces[grf->current_workspace].path = (char*)malloc(PATH_MAX);
+    cs->current_ws = 0;
+    cs->ws[cs->current_ws].exists = true;
+    cs->ws[cs->current_ws].show_message = false;
+    cs->ws[cs->current_ws].path = (char*)malloc(PATH_MAX);
 
-    UpdateSizeBasic(grf);
+    update_size(cs);
 
-    return grf;
+    return cs;
 }
 
-void RunBasic(Basic* grf, const int argc, char** argv)
+void csas_run(Csas *cs, const int argc, char* *argv)
 {
     time_t ActualTime, PastTime = 0;
     struct timespec MainTimer;
@@ -400,9 +401,9 @@ void RunBasic(Basic* grf, const int argc, char** argv)
 
     chdir(getenv("PWD"));
     if (argc > 1)
-        CD(argv[1],0,grf);
+        csas_cd(argv[1],0,cs);
     else
-        CD(".",0,grf);
+        csas_cd(".",0,cs);
 
     bool ccs = 0;
 
@@ -412,128 +413,128 @@ void RunBasic(Basic* grf, const int argc, char** argv)
 
         #ifdef __THREADS_FOR_DIR_ENABLE__
 
-        if (grf->workspaces[grf->current_workspace].win[2] != -1 && GET_DIR(grf->current_workspace,2)->enable)
+        if (cs->ws[cs->current_ws].win[2] != -1 && G_D(cs->current_ws,2)->enable)
             ccs = 1;
 
-        if (grf->workspaces[grf->current_workspace].win[0] != -1 && GET_DIR(grf->current_workspace,0)->enable)
+        if (cs->ws[cs->current_ws].win[0] != -1 && G_D(cs->current_ws,0)->enable)
             ccs = 1;
         
-        if (GET_DIR(grf->current_workspace,1)->enable)
+        if (G_D(cs->current_ws,1)->enable)
             ccs = 1;
         
         if (ccs)
-            timeout(settings->SDelayBetweenFrames);
+            timeout(cfg->SDelayBetweenFrames);
         else
-            timeout(settings->DelayBetweenFrames);
+            timeout(cfg->DelayBetweenFrames);
         
         ccs = 0;
         #endif
 
-        DrawBasic(grf,-1);
+        csas_draw(cs,-1);
 
-        if ((si = UpdateEvent(grf)) != -1)
-            RunCommand(keys[si].value,grf);
+        if ((si = update_event(cs)) != -1)
+            command_run(keys[si].value,cs);
 
         if (ActualTime != PastTime)
         {
             PastTime = ActualTime;
-            GetDir(".",grf,grf->current_workspace,1,settings->DirLoadingMode
+            getdir(".",cs,cs->current_ws,1,cfg->DirLoadingMode
                 #ifdef __FOLLOW_PARENT_DIR__
                 ,NULL
                 #endif
                 #ifdef __THREADS_FOR_DIR_ENABLE__
-                ,settings->ThreadsForDir
+                ,cfg->ThreadsForDir
                 #endif
                 );
-            if (settings->Win1Display)
-                GetDir("..",grf,grf->current_workspace,0,settings->DirLoadingMode
+            if (cfg->Win1Display)
+                getdir("..",cs,cs->current_ws,0,cfg->DirLoadingMode
                 #ifdef __FOLLOW_PARENT_DIR__
                 ,NULL
                 #endif
                 #ifdef __THREADS_FOR_DIR_ENABLE__
-                ,settings->ThreadsForDir
+                ,cfg->ThreadsForDir
                 #endif
                 );
         }
 
 
-    } while (!grf->exit_time);
+    } while (!cs->exit_time);
 
     endwin();
 
-    freeBasic(grf);
+    csas_free(cs);
 }
 
-void UpdateSizeBasic(Basic* grf)
+void update_size(Csas *cs)
 {
     clear();
-    getmaxyx(stdscr,grf->wy,grf->wx);
+    getmaxyx(stdscr,cs->wy,cs->wx);
 
-    if (settings->Bar1Enable)
+    if (cfg->Bar1Enable)
     {
-        wresize(grf->win[3],1,grf->wx);
-        mvwin(grf->win[3],0,1);
-        werase(grf->win[3]);
+        wresize(cs->win[3],1,cs->wx);
+        mvwin(cs->win[3],0,1);
+        werase(cs->win[3]);
     }
-    if (settings->Bar2Enable)
+    if (cfg->Bar2Enable)
     {
-        wresize(grf->win[4],1,grf->wx);
-        mvwin(grf->win[4],(grf->wy-1)*!settings->StatusBarOnTop+settings->StatusBarOnTop-(!settings->Bar1Enable*settings->StatusBarOnTop),0);
-        werase(grf->win[4]);
+        wresize(cs->win[4],1,cs->wx);
+        mvwin(cs->win[4],(cs->wy-1)*!cfg->StatusBarOnTop+cfg->StatusBarOnTop-(!cfg->Bar1Enable*cfg->StatusBarOnTop),0);
+        werase(cs->win[4]);
     }
 
-    if (settings->Win1Enable)
+    if (cfg->Win1Enable)
     {
-        wresize(grf->win[0],grf->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,grf->wx*settings->WinSizeMod[0]);
-        mvwin(grf->win[0],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),0);
-        grf->win_middle = grf->win[0]->_maxx;
-        werase(grf->win[0]);
+        wresize(cs->win[0],cs->wy-2+!cfg->Bar1Enable+!cfg->Bar2Enable,cs->wx*cfg->WinSizeMod[0]);
+        mvwin(cs->win[0],1+cfg->StatusBarOnTop-!cfg->Bar1Enable-(!cfg->Bar2Enable*cfg->StatusBarOnTop),0);
+        cs->win_middle = cs->win[0]->_maxx;
+        werase(cs->win[0]);
     }
-    wresize(grf->win[1],grf->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,(grf->wx*(settings->WinSizeMod[1]*settings->Win3Enable))+(!settings->Win3Enable*(grf->wx-grf->win_middle)));
-    mvwin(grf->win[1],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),grf->win_middle);
-    werase(grf->win[1]);
-    if (settings->Win3Enable)
+    wresize(cs->win[1],cs->wy-2+!cfg->Bar1Enable+!cfg->Bar2Enable,(cs->wx*(cfg->WinSizeMod[1]*cfg->Win3Enable))+(!cfg->Win3Enable*(cs->wx-cs->win_middle)));
+    mvwin(cs->win[1],1+cfg->StatusBarOnTop-!cfg->Bar1Enable-(!cfg->Bar2Enable*cfg->StatusBarOnTop),cs->win_middle);
+    werase(cs->win[1]);
+    if (cfg->Win3Enable)
     {
-        wresize(grf->win[2],grf->wy-2+!settings->Bar1Enable+!settings->Bar2Enable,grf->wx-grf->win[1]->_maxx-grf->win_middle);
-        mvwin(grf->win[2],1+settings->StatusBarOnTop-!settings->Bar1Enable-(!settings->Bar2Enable*settings->StatusBarOnTop),grf->win[1]->_maxx+grf->win_middle);
-        werase(grf->win[2]);
+        wresize(cs->win[2],cs->wy-2+!cfg->Bar1Enable+!cfg->Bar2Enable,cs->wx-cs->win[1]->_maxx-cs->win_middle);
+        mvwin(cs->win[2],1+cfg->StatusBarOnTop-!cfg->Bar1Enable-(!cfg->Bar2Enable*cfg->StatusBarOnTop),cs->win[1]->_maxx+cs->win_middle);
+        werase(cs->win[2]);
     }
 
     refresh();
-    if (settings->Borders)
-        SetBorders(grf,-1);
+    if (cfg->Borders)
+        setborders(cs,-1);
 
     for (int i = 0; i < 3; i++)
     {
-        if (grf->workspaces[grf->current_workspace].win[i] == -1)
+        if (cs->ws[cs->current_ws].win[i] == -1)
             continue;
-        if (i == 0 && (!settings->Win1Enable || !settings->Win1Display))
+        if (i == 0 && (!cfg->Win1Enable || !cfg->Win1Display))
             continue;
-        if (i == 2 && (!settings->Win3Enable
+        if (i == 2 && (!cfg->Win3Enable
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        || GET_DIR(grf->current_workspace,1)->enable
+        || G_D(cs->current_ws,1)->enable
         #endif
         ))
             continue;
 
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        if (GET_DIR(grf->current_workspace,i)->enable)
+        if (G_D(cs->current_ws,i)->enable)
             continue;
         #endif
-        if (GET_DIR(grf->current_workspace,i)->permission_denied)
+        if (G_D(cs->current_ws,i)->permission_denied)
             continue;
-        if (GET_DIR(grf->current_workspace,i)->size == 0)
+        if (G_D(cs->current_ws,i)->size == 0)
             continue;
 
-        if (GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace]+grf->win[i]->_maxy < GET_SELECTED(grf->current_workspace,i))
-            GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace] = GET_SELECTED(grf->current_workspace,i)-grf->win[i]->_maxy;
+        if (G_D(cs->current_ws,i)->ltop[cs->current_ws]+cs->win[i]->_maxy < G_S(cs->current_ws,i))
+            G_D(cs->current_ws,i)->ltop[cs->current_ws] = G_S(cs->current_ws,i)-cs->win[i]->_maxy;
 
-        for (size_t j = GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace]; j-GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace] < (size_t)grf->win[i]->_maxy-(settings->Borders*2)+1; j++)
+        for (size_t j = G_D(cs->current_ws,i)->ltop[cs->current_ws]; j-G_D(cs->current_ws,i)->ltop[cs->current_ws] < (size_t)cs->win[i]->_maxy-(cfg->Borders*2)+1; j++)
         {
-            if (j == GET_DIR(grf->current_workspace,i)->size)
+            if (j == G_D(cs->current_ws,i)->size)
             {
-                if (GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace] != 0)
-                    GET_DIR(grf->current_workspace,i)->ltop[grf->current_workspace] = GET_DIR(grf->current_workspace,i)->size-1-grf->win[i]->_maxy;
+                if (G_D(cs->current_ws,i)->ltop[cs->current_ws] != 0)
+                    G_D(cs->current_ws,i)->ltop[cs->current_ws] = G_D(cs->current_ws,i)->size-1-cs->win[i]->_maxy;
                 break;
             }
         }
@@ -541,52 +542,57 @@ void UpdateSizeBasic(Basic* grf)
 }
 
 
-void freeEl(struct Element** el, size_t* size)
+void free_el(struct Element* *el, size_t *size)
 {
     for (size_t i = 0; i < *size; i++)
+    {
         free((*el)[i].name);
+        #ifdef __SAVE_PREVIEW__
+        free((*el)[i].cpreview);
+        #endif
+    }
     free(*el);
     *el = NULL;
     *size = 0;
 }
 
-void freeBasic(Basic* grf)
+void csas_free(Csas *cs)
 {
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    for (size_t i = 0; i < grf->size; i++)
-        if (grf->base[i]->enable)
-            pthread_cancel(grf->base[i]->thread);
+    for (size_t i = 0; i < cs->size; i++)
+        if (cs->base[i]->enable)
+            pthread_cancel(cs->base[i]->thread);
     #endif
 
     for (int i = 0; i < 6; i++)
-        delwin(grf->win[i]);
+        delwin(cs->win[i]);
 
-    free(grf->typed_keys);
+    free(cs->typed_keys);
     #ifdef __USER_NAME_ENABLE__
-    free(grf->hostn);
-    free(grf->usern);
+    free(cs->hostn);
+    free(cs->usern);
     #endif
 
     for (int i = 0; i < WORKSPACE_N; i++)
-        free(grf->workspaces[i].path);
+        free(cs->ws[i].path);
 
-    for (size_t i = 0; i < grf->size; i++)
+    for (size_t i = 0; i < cs->size; i++)
     {
-        free(grf->base[i]->path);
-        free(grf->base[i]->selected);
-        free(grf->base[i]->ltop);
-        free(grf->base[i]->filter);
+        free(cs->base[i]->path);
+        free(cs->base[i]->selected);
+        free(cs->base[i]->ltop);
+        free(cs->base[i]->filter);
 
-        if (grf->base[i]->oldsize > grf->base[i]->size)
-            grf->base[i]->size = grf->base[i]->oldsize;
+        if (cs->base[i]->oldsize > cs->base[i]->size)
+            cs->base[i]->size = cs->base[i]->oldsize;
 
-        freeEl(&grf->base[i]->el,&grf->base[i]->size);
+        free_el(&cs->base[i]->el,&cs->base[i]->size);
     }
-    free(grf->base);
+    free(cs->base);
 
-    for (size_t i = 0; i < grf->ConsoleHistory.allocated; i++)
-        free(grf->ConsoleHistory.history[i]);
-    free(grf->ConsoleHistory.history);
+    for (size_t i = 0; i < cs->consolehistory.allocated; i++)
+        free(cs->consolehistory.history[i]);
+    free(cs->consolehistory.history);
 
-    free(grf);
+    free(cs);
 }

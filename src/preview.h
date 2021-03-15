@@ -19,6 +19,7 @@
 #ifndef PREVIEW_H
 #define PREVIEW_H
 
-void Preview(Basic* grf);
+void run_preview(WINDOW *w, uchar *c, ssize_t size, uli flags);
+void get_preview(Csas *cs);
 
 #endif

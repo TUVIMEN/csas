@@ -20,14 +20,13 @@
 #include "inits.h"
 #include <signal.h>
 
-int main(int argc, char** argv)
+int main(int argc, char* *argv)
 {
     setlocale(LC_ALL, "");
-    
     signal(SIGINT,SIG_IGN);
 
-    Basic* e = InitBasic();
-    RunBasic(e,argc,argv);
+    Csas *e = csas_init();
+    csas_run(e,argc,argv);
 
     return 0;
 }

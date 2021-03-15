@@ -25,228 +25,228 @@
 #include "console.h"
 #include "loading.h"
 
-extern Key* keys;
+extern Key *keys;
 extern size_t keys_t;
-extern Settings* settings;
+extern Settings *cfg;
 
-void ChangeWorkSpace(Basic* grf, const int num)
+void change_workspace(Csas *cs, const int num)
 {
-    register int temp = grf->current_workspace;
-    grf->current_workspace = num;
+    register int temp = cs->current_ws;
+    cs->current_ws = num;
 
-    if (!grf->workspaces[num].exists)
+    if (!cs->ws[num].exists)
     {
-        grf->workspaces[num].exists = 1;
-        grf->workspaces[num].show_message = false;
-        grf->workspaces[num].path = strcpy(malloc(PATH_MAX),GET_DIR(temp,1)->path);
-        CD(GET_DIR(temp,1)->path,num,grf);
+        cs->ws[num].exists = 1;
+        cs->ws[num].show_message = false;
+        cs->ws[num].path = strcpy(malloc(PATH_MAX),G_D(temp,1)->path);
+        csas_cd(G_D(temp,1)->path,num,cs);
     }
     else
-        CD(GET_DIR(num,1)->path,num,grf);
+        csas_cd(G_D(num,1)->path,num,cs);
 }
 
-int UpdateEvent(Basic* grf)
+int update_event(Csas *cs)
 {
-    int Event = getch();
-    if (Event == -1) { return -1; }
+    int event = getch();
+    if (event == -1) { return -1; }
 
-    memset(grf->typed_keys,0,63);
-    grf->was_typed = true;
+    memset(cs->typed_keys,0,63);
+    cs->was_typed = true;
 
-    while (Event == -1 || Event == KEY_RESIZE || (Event > 47 && Event < 58))
+    while (event == -1 || event == KEY_RESIZE || (event > 47 && event < 58))
     {
-        if (Event == KEY_RESIZE) { UpdateSizeBasic(grf); DrawBasic(grf,-1); }
-        if (Event > 47 && Event < 58) { grf->typed_keys[strlen(grf->typed_keys)] = Event; DrawBasic(grf,4); }
-        Event = getch();
+        if (event == KEY_RESIZE) { update_size(cs); csas_draw(cs,-1); }
+        if (event > 47 && event < 58) { cs->typed_keys[strlen(cs->typed_keys)] = event; csas_draw(cs,4); }
+        event = getch();
     }
 
-    int* theyPass = NULL;
-    size_t theyPass_t = 0;
+    int *passed = NULL;
+    size_t passedl = 0;
 
-    if ((int)Event == 27) { grf->was_typed = false; return -1; }
-    grf->typed_keys[strlen(grf->typed_keys)] = Event;
+    if ((int)event == 27) { cs->was_typed = false; return -1; }
+    cs->typed_keys[strlen(cs->typed_keys)] = event;
 
     for (size_t i = 0; i < keys_t; i++)
     {
-        if (Event == keys[i].keys[0])
+        if (event == keys[i].keys[0])
         {
-            theyPass = (int*)realloc(theyPass,(theyPass_t+1)*sizeof(int));
-            theyPass_t++;
-            theyPass[theyPass_t-1] = i;
+            passed = (int*)realloc(passed,(passedl+1)*sizeof(int));
+            passedl++;
+            passed[passedl-1] = i;
             #ifdef __SHOW_KEY_BINDINGS__
-            for (int j = 0; j < grf->wx; j++)
-                mvaddch(grf->wy-settings->Bar2Enable-theyPass_t,j,' ');
-            mvprintw(grf->wy-settings->Bar2Enable-theyPass_t,0," %c\t%s",wctob(keys[i].keys[1]),keys[i].value);
+            for (int j = 0; j < cs->wx; j++)
+                mvaddch(cs->wy-cfg->Bar2Enable-passedl,j,' ');
+            mvprintw(cs->wy-cfg->Bar2Enable-passedl,0," %c\t%s",wctob(keys[i].keys[1]),keys[i].value);
             #endif
         }
     }
 
-    bool StartsTheString = 0;
+    bool starts_string = 0;
 
-    for (int i = 1; theyPass_t > 1; i++)
+    for (int i = 1; passedl > 1; i++)
     {
-        DrawBasic(grf,-1);
+        csas_draw(cs,-1);
         do {
-            if (Event == KEY_RESIZE)
+            if (event == KEY_RESIZE)
             {
-                UpdateSizeBasic(grf);
+                update_size(cs);
                 #ifdef __SHOW_KEY_BINDINGS__
                 erase();
                 refresh();
                 #endif
-                DrawBasic(grf,-1);
+                csas_draw(cs,-1);
                 #ifdef __SHOW_KEY_BINDINGS__
-                for (size_t j = 0; j < theyPass_t; j++)
+                for (size_t j = 0; j < passedl; j++)
                 {
-                    for (int g = 0; g < grf->wx; g++)
-                        mvaddch(grf->wy-1-settings->Bar2Enable-j,g,' ');
-                    mvprintw(grf->wy-1-settings->Bar2Enable-j,0," %c\t%s",wctob(keys[theyPass[j]].keys[i]),keys[theyPass[j]].value);
+                    for (int g = 0; g < cs->wx; g++)
+                        mvaddch(cs->wy-1-cfg->Bar2Enable-j,g,' ');
+                    mvprintw(cs->wy-1-cfg->Bar2Enable-j,0," %c\t%s",wctob(keys[passed[j]].keys[i]),keys[passed[j]].value);
                 }
                 #endif
             }
-            if (Event > 47 && Event < 58) { grf->typed_keys[strlen(grf->typed_keys)] = Event; DrawBasic(grf,4); }
-            Event = getch();
-        } while (Event == -1 || Event == KEY_RESIZE || (StartsTheString && Event > 47 && Event < 58));
-        if (Event == 27) { grf->was_typed = false; return -1; }
-        grf->typed_keys[strlen(grf->typed_keys)] = Event;
-        StartsTheString = 1;
+            if (event > 47 && event < 58) { cs->typed_keys[strlen(cs->typed_keys)] = event; csas_draw(cs,4); }
+            event = getch();
+        } while (event == -1 || event == KEY_RESIZE || (starts_string && event > 47 && event < 58));
+        if (event == 27) { cs->was_typed = false; return -1; }
+        cs->typed_keys[strlen(cs->typed_keys)] = event;
+        starts_string = 1;
 
-        int* abcs = NULL;
-        size_t abcs_t = 0;
+        int *tmp_passed = NULL;
+        size_t tmp_passedl = 0;
 
         #ifdef __SHOW_KEY_BINDINGS__
         erase();
         refresh();
         #endif
 
-        for (size_t j = 0; j < theyPass_t; j++)
+        for (size_t j = 0; j < passedl; j++)
         {
-            if (Event == keys[theyPass[j]].keys[i])
+            if (event == keys[passed[j]].keys[i])
             {
-                abcs = (int*)realloc(abcs,(abcs_t+1)*sizeof(int));
-                abcs_t++;
-                abcs[abcs_t-1] = theyPass[j];
+                tmp_passed = (int*)realloc(tmp_passed,(tmp_passedl+1)*sizeof(int));
+                tmp_passedl++;
+                tmp_passed[tmp_passedl-1] = passed[j];
                 #ifdef __SHOW_KEY_BINDINGS__
-                for (int g = 0; g < grf->wx; g++)
-                    mvaddch(grf->wy-settings->Bar2Enable-abcs_t,g,' ');
-                mvprintw(grf->wy-settings->Bar2Enable-abcs_t,0," %c\t%s",wctob(keys[theyPass[j]].keys[i+1]),keys[theyPass[j]].value);
+                for (int g = 0; g < cs->wx; g++)
+                    mvaddch(cs->wy-cfg->Bar2Enable-tmp_passedl,g,' ');
+                mvprintw(cs->wy-cfg->Bar2Enable-tmp_passedl,0," %c\t%s",wctob(keys[passed[j]].keys[i+1]),keys[passed[j]].value);
                 #endif
             }
         }
 
-        free(theyPass);
-        theyPass = abcs;
-        theyPass_t = abcs_t;
+        free(passed);
+        passed = tmp_passed;
+        passedl = tmp_passedl;
     }
 
-    grf->was_typed = false;
+    cs->was_typed = false;
     #ifdef __SHOW_KEY_BINDINGS__
     erase();
     refresh();
-    DrawBasic(grf,-1);
+    csas_draw(cs,-1);
     #endif
-    return (theyPass_t == 0) ? -1 : theyPass[0];
+    return (passedl == 0) ? -1 : passed[0];
 }
 
-static void GoDown(Basic* grf, const int workspace, const int which)
+static void godown(Csas *cs, const int ws, const int which)
 {
-    if (grf->workspaces[workspace].visual)
+    if (cs->ws[ws].visual)
     {
-        for (size_t i = GET_SELECTED(workspace,which); i < GET_DIR(workspace,which)->size; i++)
-            GET_DIR(workspace,which)->el[i].list[workspace] |= 1<<grf->workspaces[workspace].sel_group;
+        for (size_t i = G_S(ws,which); i < G_D(ws,which)->size; i++)
+            G_D(ws,which)->el[i].list[ws] |= 1<<cs->ws[ws].sel_group;
     }
-    if (GET_DIR(workspace,which)->size > (size_t)grf->win[which]->_maxy-!settings->Borders+settings->Borders)
-        GET_DIR(workspace,which)->ltop[workspace] = GET_DIR(workspace,which)->size-grf->win[which]->_maxy-!settings->Borders+settings->Borders;
+    if (G_D(ws,which)->size > (size_t)cs->win[which]->_maxy-!cfg->Borders+cfg->Borders)
+        G_D(ws,which)->ltop[ws] = G_D(ws,which)->size-cs->win[which]->_maxy-!cfg->Borders+cfg->Borders;
     else
-        GET_DIR(workspace,which)->ltop[workspace] = 0;
-    GET_SELECTED(workspace,which) = GET_DIR(workspace,which)->size-1;
+        G_D(ws,which)->ltop[ws] = 0;
+    G_S(ws,which) = G_D(ws,which)->size-1;
 }
 
-static void GoTop(Basic* grf, const int workspace, const int which)
+static void gotop(Csas *cs, const int ws, const int which)
 {
-    if (grf->workspaces[workspace].visual)
+    if (cs->ws[ws].visual)
     {
-        for (int i = GET_SELECTED(workspace,which); i > -1; i--)
-            GET_DIR(workspace,which)->el[i].list[workspace] |= 1<<grf->workspaces[workspace].sel_group;
+        for (int i = G_S(ws,which); i > -1; i--)
+            G_D(ws,which)->el[i].list[ws] |= 1<<cs->ws[ws].sel_group;
     }
-    GET_SELECTED(workspace,which) = 0;
-    GET_DIR(workspace,which)->ltop[workspace] = 0;
+    G_S(ws,which) = 0;
+    G_D(ws,which)->ltop[ws] = 0;
 }
 
-static void MoveD(const char how, Basic* grf, const int workspace, const int which)
+static void move_d(const char how, Csas *cs, const int ws, const int which)
 {
-    if (GET_SELECTED(workspace,which) == GET_DIR(workspace,which)->size-1 && how == 1)
+    if (G_S(ws,which) == G_D(ws,which)->size-1 && how == 1)
     {
-        if (settings->WrapScroll) GoTop(grf,workspace,which);
+        if (cfg->WrapScroll) gotop(cs,ws,which);
         return;
     }
-    else if (GET_SELECTED(workspace,which) == 0 && how == -1)
+    else if (G_S(ws,which) == 0 && how == -1)
     {
-        if (settings->WrapScroll) GoDown(grf,workspace,which);
+        if (cfg->WrapScroll) godown(cs,ws,which);
         return;
     }
 
-    GET_SELECTED(workspace,which) += how;
+    G_S(ws,which) += how;
 
-    if ((how == 1)*((grf->win[which]->_maxy+GET_DIR(workspace,which)->ltop[workspace]-(settings->Borders*2)) < GET_DIR(workspace,which)->size-1)+(how == -1)*((grf->win[which]->_maxy+GET_DIR(workspace,which)->ltop[workspace]-(settings->Borders*2)) > 0) &&
-        (how == 1)*(grf->win[which]->_maxy+GET_DIR(workspace,which)->ltop[workspace]-(settings->Borders*2) < GET_SELECTED(workspace,which)+(int)(grf->win[which]->_maxy*settings->MoveOffSet))+(how == -1)*(GET_DIR(workspace,which)->ltop[workspace] > GET_SELECTED(workspace,which)-(int)(grf->win[which]->_maxy*settings->MoveOffSet)))
+    if ((how == 1)*((cs->win[which]->_maxy+G_D(ws,which)->ltop[ws]-(cfg->Borders*2)) < G_D(ws,which)->size-1)+(how == -1)*((cs->win[which]->_maxy+G_D(ws,which)->ltop[ws]-(cfg->Borders*2)) > 0) &&
+        (how == 1)*(cs->win[which]->_maxy+G_D(ws,which)->ltop[ws]-(cfg->Borders*2) < G_S(ws,which)+(int)(cs->win[which]->_maxy*cfg->MoveOffSet))+(how == -1)*(G_D(ws,which)->ltop[ws] > G_S(ws,which)-(int)(cs->win[which]->_maxy*cfg->MoveOffSet)))
     {
-        if (settings->JumpScroll)
+        if (cfg->JumpScroll)
         {
-            if ((how == 1)*((grf->win[which]->_maxy+GET_DIR(workspace,which)->ltop[workspace]-(settings->Borders*2)+(int)(grf->win[which]->_maxy*settings->JumpScrollValue)) > GET_DIR(workspace,which)->size-1)
-                +(how == -1)*(GET_DIR(workspace,which)->ltop[workspace] > GET_SELECTED(workspace,which)-(int)(grf->win[which]->_maxy*settings->MoveOffSet)))
-                GET_DIR(workspace,which)->ltop[workspace] = (how == 1)*(GET_DIR(workspace,which)->size-grf->win[which]->_maxy-!settings->Borders+settings->Borders);
+            if ((how == 1)*((cs->win[which]->_maxy+G_D(ws,which)->ltop[ws]-(cfg->Borders*2)+(int)(cs->win[which]->_maxy*cfg->JumpScrollValue)) > G_D(ws,which)->size-1)
+                +(how == -1)*(G_D(ws,which)->ltop[ws] > G_S(ws,which)-(int)(cs->win[which]->_maxy*cfg->MoveOffSet)))
+                G_D(ws,which)->ltop[ws] = (how == 1)*(G_D(ws,which)->size-cs->win[which]->_maxy-!cfg->Borders+cfg->Borders);
             else
-                GET_DIR(workspace,which)->ltop[workspace] += (int)(how*grf->win[which]->_maxy*settings->JumpScrollValue);
+                G_D(ws,which)->ltop[ws] += (int)(how*cs->win[which]->_maxy*cfg->JumpScrollValue);
         }
         else
-            GET_DIR(workspace,which)->ltop[workspace] += how;
+            G_D(ws,which)->ltop[ws] += how;
     }
 
-    GET_ESELECTED(workspace,which).list[workspace] |= (1<<grf->workspaces[workspace].sel_group)*grf->workspaces[workspace].visual;
+    G_ES(ws,which).list[ws] |= (1<<cs->ws[ws].sel_group)*cs->ws[ws].visual;
 }
 
-void ExitBasic(Basic* grf, const bool force)
+void csas_exit(Csas *cs, const bool force)
 {
     if (force)
         goto END;
 
     int count = 0;
     for (int i = 0; i < WORKSPACE_N; i++)
-        count += grf->workspaces[i].exists;
+        count += cs->ws[i].exists;
 
-    grf->workspaces[grf->current_workspace].exists = 0;
+    cs->ws[cs->current_ws].exists = 0;
 
     if (count > 1)
     {
-        for (int i = grf->current_workspace+1; i < WORKSPACE_N; i++)
-            if (grf->workspaces[i].exists)
+        for (int i = cs->current_ws+1; i < WORKSPACE_N; i++)
+            if (cs->ws[i].exists)
             {
-                ChangeWorkSpace(grf,i);
+                change_workspace(cs,i);
                 return;
             }
-        for (int i = 0; i < grf->current_workspace; i++)
-            if (grf->workspaces[i].exists)
+        for (int i = 0; i < cs->current_ws; i++)
+            if (cs->ws[i].exists)
             {
-                ChangeWorkSpace(grf,i);
+                change_workspace(cs,i);
                 return;
             }
     }
 
     END: ;
-    grf->exit_time = true;
+    cs->exit_time = true;
 }
 
-void move_to(Basic* grf, const int workspace, const int which, const char* name)
+void move_to(Csas *cs, const int ws, const int which, const char *name)
 {
-    if (strcmp(GET_ESELECTED(workspace,which).name,name) == 0)
+    if (strcmp(G_ES(ws,which).name,name) == 0)
         return;
 
     register size_t i, j;
     register char found = 0;
 
-    for (i = 0; i < GET_DIR(workspace,which)->size; i++)
-        if (strcmp(GET_DIR(workspace,which)->el[i].name,name) == 0)
+    for (i = 0; i < G_D(ws,which)->size; i++)
+        if (strcmp(G_D(ws,which)->el[i].name,name) == 0)
         {
             found = 1;
             break;
@@ -255,15 +255,15 @@ void move_to(Basic* grf, const int workspace, const int which, const char* name)
     if (!found)
         return;
 
-    if (i > GET_SELECTED(workspace,which))
-        for (j = GET_SELECTED(workspace,which); j < i; j++)
-            MoveD(1,grf,workspace,which);
-    else if (i < GET_SELECTED(workspace,which))
-        for (j = GET_SELECTED(workspace,which); j > i; j--)
-            MoveD(-1,grf,workspace,which);
+    if (i > G_S(ws,which))
+        for (j = G_S(ws,which); j < i; j++)
+            move_d(1,cs,ws,which);
+    else if (i < G_S(ws,which))
+        for (j = G_S(ws,which); j > i; j--)
+            move_d(-1,cs,ws,which);
 }
 
-static void bulk(Basic* grf, const int workspace, const int selected, char** args, const uchar flag)
+static void bulk(Csas *cs, const int ws, const int selected, char* *args, const uchar flag)
 {
     int fd[2];
     char buf[2][PATH_MAX];
@@ -288,41 +288,41 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
 
     size_t path_t = strlen(args[0]);
     bool CommentWrite;
-    char* temp;
+    char *temp;
 
-    for (size_t i = 0; i < grf->size; i++)
+    for (size_t i = 0; i < cs->size; i++)
     {
         if (!(
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        !grf->base[i]->enable &&
+        !cs->base[i]->enable &&
         #endif
-        grf->base[i]->size > 0))
+        cs->base[i]->size > 0))
             continue;
 
         if (path_t)
         {
             if (flag & 0x2)
             {
-                if (!strstr(grf->base[i]->path,args[0]))
+                if (!strstr(cs->base[i]->path,args[0]))
                     continue;
             }
-            else if ((strcmp(grf->base[i]->path,args[0]) != 0))
+            else if ((strcmp(cs->base[i]->path,args[0]) != 0))
                 continue;
         }
 
         CommentWrite = 0;
-        for (size_t j = 0; j < grf->base[i]->size; j++)
+        for (size_t j = 0; j < cs->base[i]->size; j++)
         {
-            if (selected == -1 ? 1 : (grf->base[i]->el[j].list[workspace]&selected))
+            if (selected == -1 ? 1 : (cs->base[i]->el[j].list[ws]&selected))
             {
                 if (!CommentWrite)
                 {
                     write(fd[0],"//\t",3);
-                    write(fd[0],grf->base[i]->path,strlen(grf->base[i]->path));
+                    write(fd[0],cs->base[i]->path,strlen(cs->base[i]->path));
                     write(fd[0],"\n",1);
                     CommentWrite = 1;
                 }
-                temp = (flag & 0x1) ? MakePath(grf->base[i]->path,grf->base[i]->el[j].name) : grf->base[i]->el[j].name;
+                temp = (flag & 0x1) ? mkpath(cs->base[i]->path,cs->base[i]->el[j].name) : cs->base[i]->el[j].name;
                 write(fd[0],temp,strlen(temp));
                 write(fd[0],"\n",1);
             }
@@ -336,7 +336,7 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
 
     struct stat sFile;
     fstat(fd[0],&sFile);
-    char* file = (char*)malloc(sFile.st_size+1);
+    char *file = (char*)malloc(sFile.st_size+1);
     read(fd[0],file,sFile.st_size);
 
     char buffer[PATH_MAX];
@@ -347,29 +347,29 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
 
     if (file[pos])
     {
-        for (size_t i = 0; i < grf->size; i++)
+        for (size_t i = 0; i < cs->size; i++)
         {
             if (!(
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !grf->base[i]->enable &&
+            !cs->base[i]->enable &&
             #endif
-            grf->base[i]->size > 0))
+            cs->base[i]->size > 0))
                 continue;
 
             if (path_t)
             {
                 if (flag & 0x2)
                 {
-                    if (!strstr(grf->base[i]->path,args[0]))
+                    if (!strstr(cs->base[i]->path,args[0]))
                         continue;
                 }
-                else if ((strcmp(grf->base[i]->path,args[0]) != 0))
+                else if ((strcmp(cs->base[i]->path,args[0]) != 0))
                     continue;
             }
 
-            for (size_t j = 0; j < grf->base[i]->size; j++)
+            for (size_t j = 0; j < cs->base[i]->size; j++)
             {
-                if (selected == -1 ? 1 : (grf->base[i]->el[j].list[workspace]&selected))
+                if (selected == -1 ? 1 : (cs->base[i]->el[j].list[ws]&selected))
                 {
                     while (file[pos] == '\n')
                     {
@@ -389,19 +389,19 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
                         x = 0;
                         while (file[pos] && file[pos] != '\n') buffer[x++] = file[pos++];
                         buffer[x] = '\0';
-                        temp = (flag & 0x1) ? MakePath(grf->base[i]->path,grf->base[i]->el[j].name) : grf->base[i]->el[j].name;
+                        temp = (flag & 0x1) ? mkpath(cs->base[i]->path,cs->base[i]->el[j].name) : cs->base[i]->el[j].name;
                         if (x > 0 && strcmp(temp,buffer) != 0)
                         {
                             if (write(fd[1],args[3],strlen(args[3])) > 0) write(fd[1]," ",1);
 
-                            if (!(flag & 0x1)) temp = MakePath(grf->base[i]->path,temp);
-                            MakePathRunAble(temp);
+                            if (!(flag & 0x1)) temp = mkpath(cs->base[i]->path,temp);
+                            atob(temp);
                             if (write(fd[1],temp,strlen(temp)) > 0) write(fd[1]," ",1);
 
                             if (write(fd[1],args[4],strlen(args[4])) > 0) write(fd[1]," ",1);
 
-                            temp = MakePath(grf->base[i]->path,buffer);
-                            MakePathRunAble(temp);
+                            temp = mkpath(cs->base[i]->path,buffer);
+                            atob(temp);
                             if (write(fd[1],temp,strlen(temp)) > 0) write(fd[1]," ",1);
 
                             write(fd[1],args[5],strlen(args[5]));
@@ -428,46 +428,46 @@ static void bulk(Basic* grf, const int workspace, const int selected, char** arg
     }
 }
 
-void ___SET(const char* src, Basic* grf)
+void ___SET(const char *src, Csas *cs)
 {
     size_t pos = 0;
 
     struct SetEntry SetEntries[] = {
-        {"FileOpener",&settings->FileOpener},
-        {"shell",&settings->shell},{"editor",&settings->editor},{"Bar1Settings",&settings->Bar1Settings},
-        {"Bar2Settings",&settings->Bar2Settings},{"C_Borders",&settings->C_Borders},
-        {"UserHostPattern",&settings->UserHostPattern},{"CopyBufferSize",&settings->CopyBufferSize},
-        {"MoveOffSet",&settings->MoveOffSet},{"SDelayBetweenFrames",&settings->SDelayBetweenFrames},
-        {"WrapScroll",&settings->WrapScroll},{"JumpScrollValue",&settings->JumpScrollValue},
-        {"StatusBarOnTop",&settings->StatusBarOnTop},{"WinSizeMod",&settings->WinSizeMod},
-        {"Win1Enable",&settings->Win1Enable},{"Win3Enable",&settings->Win3Enable},{"UserRHost",&settings->UserRHost},
-        {"Bar1Enable",&settings->Bar1Enable},{"Bar2Enable",&settings->Bar2Enable},
-        {"Borders",&settings->Borders},{"FillBlankSpace",&settings->FillBlankSpace},
-        {"WindowBorder",&settings->WindowBorder},{"EnableColor",&settings->EnableColor},
-        {"DelayBetweenFrames",&settings->DelayBetweenFrames},{"NumberLines",&settings->NumberLines},
-        {"NumberLinesOff",&settings->NumberLinesOff},{"NumberLinesFromOne",&settings->NumberLinesFromOne},
-        {"DisplayingC",&settings->DisplayingC},{"JumpScroll",&settings->JumpScroll},{"Values",&settings->Values},
-        {"DirLoadingMode",&settings->DirLoadingMode},{"PreviewSettings",&settings->PreviewSettings},
+        {"FileOpener",&cfg->FileOpener},{"BinaryPreview",&cfg->BinaryPreview},
+        {"shell",&cfg->shell},{"editor",&cfg->editor},{"Bar1Settings",&cfg->Bar1Settings},
+        {"Bar2Settings",&cfg->Bar2Settings},{"C_Borders",&cfg->C_Borders},
+        {"UserHostPattern",&cfg->UserHostPattern},{"CopyBufferSize",&cfg->CopyBufferSize},
+        {"MoveOffSet",&cfg->MoveOffSet},{"SDelayBetweenFrames",&cfg->SDelayBetweenFrames},
+        {"WrapScroll",&cfg->WrapScroll},{"JumpScrollValue",&cfg->JumpScrollValue},
+        {"StatusBarOnTop",&cfg->StatusBarOnTop},{"WinSizeMod",&cfg->WinSizeMod},
+        {"Win1Enable",&cfg->Win1Enable},{"Win3Enable",&cfg->Win3Enable},{"UserRHost",&cfg->UserRHost},
+        {"Bar1Enable",&cfg->Bar1Enable},{"Bar2Enable",&cfg->Bar2Enable},
+        {"Borders",&cfg->Borders},{"FillBlankSpace",&cfg->FillBlankSpace},
+        {"WindowBorder",&cfg->WindowBorder},{"EnableColor",&cfg->EnableColor},
+        {"DelayBetweenFrames",&cfg->DelayBetweenFrames},{"NumberLines",&cfg->NumberLines},
+        {"NumberLinesOff",&cfg->NumberLinesOff},{"NumberLinesFromOne",&cfg->NumberLinesFromOne},
+        {"DisplayingC",&cfg->DisplayingC},{"JumpScroll",&cfg->JumpScroll},{"Values",&cfg->Values},
+        {"DirLoadingMode",&cfg->DirLoadingMode},{"PreviewSettings",&cfg->PreviewSettings},
         #ifdef __SORT_ELEMENTS_ENABLE__
-        {"SortMethod",&settings->SortMethod},{"BetterFiles",&settings->BetterFiles},
+        {"SortMethod",&cfg->SortMethod},{"BetterFiles",&cfg->BetterFiles},
         #endif
-        {"DirSizeMethod",&settings->DirSizeMethod},{"C_Error",&settings->C_Error},
+        {"DirSizeMethod",&cfg->DirSizeMethod},{"C_Error",&cfg->C_Error},
         #ifdef __COLOR_FILES_BY_EXTENSION__
-        {"C_FType_A",&settings->C_FType_A},{"C_FType_I",&settings->C_FType_I},{"C_FType_V",&settings->C_FType_V},
+        {"C_FType_A",&cfg->C_FType_A},{"C_FType_I",&cfg->C_FType_I},{"C_FType_V",&cfg->C_FType_V},
         #endif
-        {"C_Selected",&settings->C_Selected},{"C_Exec_set",&settings->C_Exec_set},{"C_Exec_col",&settings->C_Exec_col},
-        {"C_Dir",&settings->C_Dir},{"C_Reg",&settings->C_Reg},{"C_Fifo",&settings->C_Fifo},
-        {"C_Sock",&settings->C_Sock},{"C_Dev",&settings->C_Dev},{"C_BDev",&settings->C_BDev},
-        {"C_SymLink",&settings->C_SymLink},{"C_FileMissing",&settings->C_FileMissing},
-        {"C_Other",&settings->C_Other},{"C_User_S_D",&settings->C_User_S_D},
-        {"C_Bar_Dir",&settings->C_Bar_Dir},{"C_Bar_Name",&settings->C_Bar_Name},{"C_Bar_WorkSpace",&settings->C_Bar_WorkSpace},
-        {"C_Bar_WorkSpace_Selected",&settings->C_Bar_WorkSpace_Selected},{"C_Group",&settings->C_Group},
-        {"C_Bar_F",&settings->C_Bar_F},{"C_Bar_E",&settings->C_Bar_E},
+        {"C_Selected",&cfg->C_Selected},{"C_Exec_set",&cfg->C_Exec_set},{"C_Exec_col",&cfg->C_Exec_col},
+        {"C_Dir",&cfg->C_Dir},{"C_Reg",&cfg->C_Reg},{"C_Fifo",&cfg->C_Fifo},
+        {"C_Sock",&cfg->C_Sock},{"C_Dev",&cfg->C_Dev},{"C_BDev",&cfg->C_BDev},
+        {"C_SymLink",&cfg->C_SymLink},{"C_FileMissing",&cfg->C_FileMissing},
+        {"C_Other",&cfg->C_Other},{"C_User_S_D",&cfg->C_User_S_D},
+        {"C_Bar_Dir",&cfg->C_Bar_Dir},{"C_Bar_Name",&cfg->C_Bar_Name},{"C_Bar_WorkSpace",&cfg->C_Bar_WorkSpace},
+        {"C_Bar_WorkSpace_Selected",&cfg->C_Bar_WorkSpace_Selected},{"C_Group",&cfg->C_Group},
+        {"C_Bar_F",&cfg->C_Bar_F},{"C_Bar_E",&cfg->C_Bar_E},
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        {"ThreadsForDir",&settings->ThreadsForDir},
+        {"ThreadsForDir",&cfg->ThreadsForDir},
         #endif
         #ifdef __THREADS_FOR_FILE_ENABLE__
-        {"ThreadsForFile",&settings->ThreadsForFile},
+        {"ThreadsForFile",&cfg->ThreadsForFile},
         #endif
         {NULL,NULL}
     };
@@ -482,22 +482,22 @@ void ___SET(const char* src, Basic* grf)
     if (gga == -1) return;
 
     pos += end;
-    pos += FindFirstCharacter(src+pos);
+    pos += findfirst(src+pos,isspace);
 
-    pos += StrToValue(SetEntries[gga].value,src+pos);
+    pos += atov(SetEntries[gga].value,src+pos);
 }
 
 #ifdef __LOAD_CONFIG_ENABLE__
-void ___INCLUDE(const char* src, Basic* grf)
+void ___INCLUDE(const char *src, Csas *cs)
 {
     char temp[8192];
 
-    StrToPath(temp,src);
-    LoadConfig(temp,grf);
+    atop(temp,src);
+    config_load(temp,cs);
 }
 #endif
 
-void ___MAP(const char* src, Basic* grf)
+void ___MAP(const char *src, Csas *cs)
 {
     size_t pos = 0, end = 0;
     char temp1[64];
@@ -507,18 +507,18 @@ void ___MAP(const char* src, Basic* grf)
     temp1[end] = '\0';
     pos += end;
 
-    pos += FindFirstCharacter(src+pos);
+    pos += findfirst(src+pos,isspace);
 
-    pos += StrToPath(temp2,src+pos);
+    pos += atop(temp2,src+pos);
 
-    addKey(temp1,temp2);
+    addkey(temp1,temp2);
 }
 
-void ___MOVE(const char* src, Basic* grf)
+void ___MOVE(const char *src, Csas *cs)
 {
     size_t pos = 0;
     char rot = -1;
-    int workspace = grf->current_workspace, mul1 = 1, mul2 = 0;
+    int ws = cs->current_ws, mul1 = 1, mul2 = 0;
 
     while (src[pos])
     {
@@ -546,11 +546,11 @@ void ___MOVE(const char* src, Basic* grf)
                         {
                             char ctemp = src[pos];
                             pos++;
-                            pos += FindFirstCharacter(src+pos);
+                            pos += findfirst(src+pos,isspace);
                             if (ctemp == 'c')
                                 mul1 = atoi(src+pos);
                             else
-                                workspace = atoi(src+pos);
+                                ws = atoi(src+pos);
                             while (isdigit(src[pos])) pos++;
                         }
                         break;
@@ -561,7 +561,7 @@ void ___MOVE(const char* src, Basic* grf)
         pos++;
     }
 
-    if (!grf->workspaces[workspace].exists)
+    if (!cs->ws[ws].exists)
         return;
 
     switch (rot)
@@ -570,34 +570,34 @@ void ___MOVE(const char* src, Basic* grf)
         case 1:
             if (
                 #ifdef __THREADS_FOR_DIR_ENABLE__
-                !GET_DIR(workspace,1)->enable &&
+                !G_D(ws,1)->enable &&
                 #endif
-                GET_DIR(workspace,1)->size > 0)
+                G_D(ws,1)->size > 0)
             {
-                mul2 = atoi(grf->typed_keys);
+                mul2 = atoi(cs->typed_keys);
                 for (register int i = 0; i < (mul2+(mul2 == 0))*mul1; i++)
-                    MoveD(rot,grf,workspace,1);
-                if (settings->Win3Enable)
-                    Preview(grf);
+                    move_d(rot,cs,ws,1);
+                if (cfg->Win3Enable)
+                    get_preview(cs);
             }
             break;
         case 3:
-            if (grf->workspaces[workspace].path[0] == '/' && grf->workspaces[grf->current_workspace].path[1] == '\0')
+            if (cs->ws[ws].path[0] == '/' && cs->ws[cs->current_ws].path[1] == '\0')
                 break;
-            CD("..",workspace,grf);
-            grf->workspaces[workspace].visual = 0;
+            csas_cd("..",ws,cs);
+            cs->ws[ws].visual = 0;
             break;
         case 4:
-            if (GET_DIR(workspace,1)->size > 0)
+            if (G_D(ws,1)->size > 0)
             {
-                switch (GET_ESELECTED(workspace,1).type&T_GT)
+                switch (G_ES(ws,1).type&T_GT)
                 {
                     case T_DIR:
-                        CD(GET_ESELECTED(workspace,1).name,workspace,grf);
-                        grf->workspaces[workspace].visual = 0;
+                        csas_cd(G_ES(ws,1).name,ws,cs);
+                        cs->ws[ws].visual = 0;
                         break;
                     case T_REG:
-                        RunFile(GET_ESELECTED(workspace,1).name);
+                        file_run(G_ES(ws,1).name);
                         break;
                 }
             }
@@ -605,18 +605,18 @@ void ___MOVE(const char* src, Basic* grf)
     }
 }
 
-void ___QUIT(const char* src, Basic* grf)
+void ___QUIT(const char *src, Csas *cs)
 {
     bool force = false;
     if (src[0] && src[0] == '-' && src[1] && src[1] == 'f')
         force = true;
-    ExitBasic(grf,force);
+    csas_exit(cs,force);
 }
 
-void ___CD(const char* src, Basic* grf)
+void ___CD(const char *src, Csas *cs)
 {
     size_t pos = 0;
-    int workspace = grf->current_workspace;
+    int ws = cs->current_ws;
     char path[8192];
     memset(path,0,8191);
 
@@ -625,26 +625,26 @@ void ___CD(const char* src, Basic* grf)
         if (src[pos] == '-' && src[pos+1] && src[pos+1] == 'w')
         {
             pos += 2;
-            pos += FindFirstCharacter(src+pos);
-            workspace = atoi(src+pos);
+            pos += findfirst(src+pos,isspace);
+            ws = atoi(src+pos);
             while (isdigit(src[pos])) pos++;
         }
         else
-            pos += StrToPath(path,src+pos);
+            pos += atop(path,src+pos);
 
-        pos += FindFirstCharacter(src+pos);
+        pos += findfirst(src+pos,isspace);
     }
 
-    grf->workspaces[workspace].exists = true;
-    ChangeWorkSpace(grf,workspace);
+    cs->ws[ws].exists = true;
+    change_workspace(cs,ws);
 
-    CD(path,workspace,grf);
+    csas_cd(path,ws,cs);
 }
 
-void ___GOTOP(const char* src, Basic* grf)
+void ___GOTOP(const char *src, Csas *cs)
 {
-    size_t pos = 0, target = atol(grf->typed_keys);
-    int workspace = grf->current_workspace;
+    size_t pos = 0, target = atol(cs->typed_keys);
+    int ws = cs->current_ws;
 
     while (src[pos])
     {
@@ -657,49 +657,49 @@ void ___GOTOP(const char* src, Basic* grf)
                     case 't':
                     case 'w':
                         pos++;
-                        pos += FindFirstCharacter(src+pos);
+                        pos += findfirst(src+pos,isspace);
                         if (src[pos] == 't')
                             target = atol(src+pos);
                         else
-                            workspace = atoi(src+pos);
+                            ws = atoi(src+pos);
                         while (isdigit(src[pos])) pos++;
                         break;
                 }
             } while (src[pos] && !isspace(src[pos]));
         }
 
-        pos += FindFirstCharacter(src+pos);
+        pos += findfirst(src+pos,isspace);
         if (src[pos+1] == '\0')
             break;
     }
 
     if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        !GET_DIR(workspace,1)->enable &&
+        !G_D(ws,1)->enable &&
         #endif
-        GET_DIR(workspace,1)->size > 0)
+        G_D(ws,1)->size > 0)
     {
         if (target == 0)
-            GoTop(grf,workspace,1);
-        else if (target > GET_SELECTED(workspace,1))
+            gotop(cs,ws,1);
+        else if (target > G_S(ws,1))
         {
-            for (size_t i = GET_SELECTED(workspace,1); i < target-1; i++)
-                MoveD(1,grf,workspace,1);
+            for (size_t i = G_S(ws,1); i < target-1; i++)
+                move_d(1,cs,ws,1);
         }
-        else if (target < GET_SELECTED(workspace,1))
+        else if (target < G_S(ws,1))
         {
-            for (size_t i = GET_SELECTED(workspace,1); i > target-1; i--)
-                MoveD(-1,grf,workspace,1);
+            for (size_t i = G_S(ws,1); i > target-1; i--)
+                move_d(-1,cs,ws,1);
         }
-        if (workspace == grf->current_workspace && settings->Win3Enable)
-            Preview(grf);
+        if (ws == cs->current_ws && cfg->Win3Enable)
+            get_preview(cs);
     }
 }
 
-void ___GODOWN(const char* src, Basic* grf)
+void ___GODOWN(const char *src, Csas *cs)
 {
-    size_t pos = 0, target = atol(grf->typed_keys);
-    int workspace = grf->current_workspace;
+    size_t pos = 0, target = atol(cs->typed_keys);
+    int ws = cs->current_ws;
 
     while (src[pos])
     {
@@ -712,52 +712,52 @@ void ___GODOWN(const char* src, Basic* grf)
                     case 't':
                     case 'w':
                         pos++;
-                        pos += FindFirstCharacter(src+pos);
+                        pos += findfirst(src+pos,isspace);
                         if (src[pos] == 't')
                             target = atol(src+pos);
                         else
-                            workspace = atoi(src+pos);
+                            ws = atoi(src+pos);
                         while (isdigit(src[pos])) pos++;
                         break;
                 }
             } while (src[pos] && !isspace(src[pos]));
         }
 
-        pos += FindFirstCharacter(src+pos);
+        pos += findfirst(src+pos,isspace);
         if (src[pos+1] == '\0') break;
     }
 
     if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        !GET_DIR(workspace,1)->enable &&
+        !G_D(ws,1)->enable &&
         #endif
-        GET_DIR(workspace,1)->size > 0)
+        G_D(ws,1)->size > 0)
     {
         if (target == 0)
-            GoDown(grf,target,1);
-        else if (target > GET_SELECTED(workspace,1))
+            godown(cs,target,1);
+        else if (target > G_S(ws,1))
         {
-            for (size_t i = GET_SELECTED(workspace,1); i < target-1; i++)
-                MoveD(1,grf,workspace,1);
+            for (size_t i = G_S(ws,1); i < target-1; i++)
+                move_d(1,cs,ws,1);
         }
-        else if (target < GET_SELECTED(workspace,1))
+        else if (target < G_S(ws,1))
         {
-            for (size_t i = GET_SELECTED(workspace,1); i > target-1; i--)
-                MoveD(-1,grf,workspace,1);
+            for (size_t i = G_S(ws,1); i > target-1; i--)
+                move_d(-1,cs,ws,1);
         }
-        if (workspace == grf->current_workspace && settings->Win3Enable)
-            Preview(grf);
+        if (ws == cs->current_ws && cfg->Win3Enable)
+            get_preview(cs);
     }
 }
 
-void ___CHANGEWORKSPACE(const char* src, Basic* grf)
+void ___CHANGEWORKSPACE(const char *src, Csas *cs)
 {
-    ChangeWorkSpace(grf,atoi(src));
+    change_workspace(cs,atoi(src));
 }
 
 #ifdef __FILE_SIZE_ENABLE__
 
-static void GETSIZE(struct Element* el, const int fd, const uchar flag)
+static void GETSIZE(struct Element *el, const int fd, const uchar flag)
 {
     if ((el->type&T_GT) == T_DIR)
     {
@@ -767,7 +767,7 @@ static void GETSIZE(struct Element* el, const int fd, const uchar flag)
             if ((flag&0x8) != 0x8)
             {
                 ull size = 0, count = 0;
-                GetDirSize(tfd,&count,&size,(flag&0x2)==0x2);
+                get_dirsize(tfd,&count,&size,(flag&0x2)==0x2);
                 el->size = (flag&0x4)==0x4 ? count : size;
             }
             else
@@ -781,16 +781,16 @@ static void GETSIZE(struct Element* el, const int fd, const uchar flag)
     }
 }
 
-void ___GETSIZE(const char* src, Basic* grf)
+void ___GETSIZE(const char *src, Csas *cs)
 {
     size_t pos = 0;
     uchar flag = 0;
-    int selected = -1, workspace = grf->current_workspace;
-    char* path = (char*)calloc(sizeof(char),PATH_MAX);
+    int selected = -1, ws = cs->current_ws;
+    char *path = (char*)calloc(sizeof(char),PATH_MAX);
 
     while (src[pos])
     {
-        pos += FindFirstCharacter(src+pos);
+        pos += findfirst(src+pos,isspace);
 
         if (src[pos] == '-')
         {
@@ -803,9 +803,9 @@ void ___GETSIZE(const char* src, Basic* grf)
                         {
                             int itemp = (src[pos] == 'w' ? 1 : 0);
                             pos++;
-                            pos += FindFirstCharacter(src+pos);
+                            pos += findfirst(src+pos,isspace);
                             if (itemp)
-                                workspace = atoi(src+pos);
+                                ws = atoi(src+pos);
                             else
                             {
                                 switch (src[pos])
@@ -827,45 +827,45 @@ void ___GETSIZE(const char* src, Basic* grf)
             } while (src[pos] && !isspace(src[pos]));
         }
         else
-            pos += StrToPath(path,src+pos);
+            pos += atop(path,src+pos);
 
         if (src[pos+1] == '\0')
             break;
     }
 
-    if (!grf->workspaces[grf->current_workspace].exists)
+    if (!cs->ws[cs->current_ws].exists)
     {
         free(path);
         return;
     }
 
-    if (workspace != grf->current_workspace)
-		if (chdir(GET_DIR(workspace,1)->path) != 0)
+    if (ws != cs->current_ws)
+		if (chdir(G_D(ws,1)->path) != 0)
 			return;
 
     if (selected == -2)
-        selected = grf->workspaces[workspace].sel_group;
+        selected = cs->ws[ws].sel_group;
     if (selected == -3)
     {
         int fd;
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !GET_DIR(workspace,1)->enable &&
+            !G_D(ws,1)->enable &&
             #endif
-            GET_DIR(workspace,1)->size > 0 && (fd = open(GET_DIR(workspace,1)->path,O_DIRECTORY)) != -1)
-        GETSIZE(&GET_ESELECTED(workspace,1),fd,flag);
+            G_D(ws,1)->size > 0 && (fd = open(G_D(ws,1)->path,O_DIRECTORY)) != -1)
+        GETSIZE(&G_ES(ws,1),fd,flag);
         if (!(flag&0x1))
         {
             free(path);
             return;
         }
         else
-            strcpy(path,MakePath(GET_DIR(workspace,1)->path,GET_ESELECTED(workspace,1).name));
+            strcpy(path,mkpath(G_D(ws,1)->path,G_ES(ws,1).name));
     }
 
     if (path[0])
     {
-        char* stemp = (char*)malloc(PATH_MAX);
+        char *stemp = (char*)malloc(PATH_MAX);
         realpath(path,stemp);
         free(path);
         path = stemp;
@@ -873,71 +873,71 @@ void ___GETSIZE(const char* src, Basic* grf)
 
     int temp;
 
-    for (size_t i = 0; i < grf->size; i++)
+    for (size_t i = 0; i < cs->size; i++)
     {
         if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        grf->base[i]->enable ||
+        cs->base[i]->enable ||
         #endif
-        grf->base[i]->size < 1)
+        cs->base[i]->size < 1)
             continue;
         if (path[0])
         {
             if (flag&0x1)
             {
-                if (!strstr(grf->base[i]->path,path))
+                if (!strstr(cs->base[i]->path,path))
                     continue;
             }
-            else if (strcmp(grf->base[i]->path,path) != 0)
+            else if (strcmp(cs->base[i]->path,path) != 0)
                 continue;
         }
 
-        if ((temp = open(grf->base[i]->path,O_DIRECTORY)) == -1)
+        if ((temp = open(cs->base[i]->path,O_DIRECTORY)) == -1)
             continue;
 
-        for (size_t j = 0; j < grf->base[i]->size; j++)
-            if (selected < 0 ? 1 : (grf->base[i]->el[j].list[workspace]&(1<<selected)))
-                GETSIZE(&grf->base[i]->el[j],temp,flag);
+        for (size_t j = 0; j < cs->base[i]->size; j++)
+            if (selected < 0 ? 1 : (cs->base[i]->el[j].list[ws]&(1<<selected)))
+                GETSIZE(&cs->base[i]->el[j],temp,flag);
         close(temp);
     }
 
     free(path);
-    if (workspace != grf->current_workspace)
-        chdir(GET_DIR(grf->current_workspace,1)->path);
+    if (ws != cs->current_ws)
+        chdir(G_D(cs->current_ws,1)->path);
 }
 
 #endif
 
-void ___SETGROUP(const char* src, Basic* grf)
+void ___SETGROUP(const char *src, Csas *cs)
 {
-    grf->workspaces[grf->current_workspace].sel_group = atoi(src);
-    if (grf->workspaces[grf->current_workspace].visual && GET_DIR(grf->current_workspace,1)->size > 0)
-        GET_ESELECTED(grf->current_workspace,1).list[grf->current_workspace] |= 1<<grf->workspaces[grf->current_workspace].sel_group;
+    cs->ws[cs->current_ws].sel_group = atoi(src);
+    if (cs->ws[cs->current_ws].visual && G_D(cs->current_ws,1)->size > 0)
+        G_ES(cs->current_ws,1).list[cs->current_ws] |= 1<<cs->ws[cs->current_ws].sel_group;
 }
 
-void ___FASTSELECT(const char* src, Basic* grf)
+void ___FASTSELECT(const char *src, Csas *cs)
 {
     if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        !GET_DIR(grf->current_workspace,1)->enable &&
+        !G_D(cs->current_ws,1)->enable &&
         #endif
-        GET_DIR(grf->current_workspace,1)->size > 0)
+        G_D(cs->current_ws,1)->size > 0)
     {
-        GET_ESELECTED(grf->current_workspace,1).list[grf->current_workspace] ^= 1<<grf->workspaces[grf->current_workspace].sel_group;
-        MoveD(1,grf,grf->current_workspace,1);
-        if (settings->Win3Enable)
-            Preview(grf);
+        G_ES(cs->current_ws,1).list[cs->current_ws] ^= 1<<cs->ws[cs->current_ws].sel_group;
+        move_d(1,cs,cs->current_ws,1);
+        if (cfg->Win3Enable)
+            get_preview(cs);
     }
 }
 
-void ___TOGGLEVISUAL(const char* src, Basic* grf)
+void ___TOGGLEVISUAL(const char *src, Csas *cs)
 {
-    grf->workspaces[grf->current_workspace].visual = !grf->workspaces[grf->current_workspace].visual;
-    if (grf->workspaces[grf->current_workspace].visual && GET_DIR(grf->current_workspace,1)->size > 0)
-        GET_ESELECTED(grf->current_workspace,1).list[grf->current_workspace] |= 1<<grf->workspaces[grf->current_workspace].sel_group;
+    cs->ws[cs->current_ws].visual = !cs->ws[cs->current_ws].visual;
+    if (cs->ws[cs->current_ws].visual && G_D(cs->current_ws,1)->size > 0)
+        G_ES(cs->current_ws,1).list[cs->current_ws] |= 1<<cs->ws[cs->current_ws].sel_group;
 }
 
-void ___F_MOD(const char* src, Basic* grf)
+void ___F_MOD(const char *src, Csas *cs)
 {
     uchar Action = 0;
     mode_t arg = 0;
@@ -952,17 +952,17 @@ void ___F_MOD(const char* src, Basic* grf)
     }
 
     pos++;
-    pos += FindFirstCharacter(src+pos);
+    pos += findfirst(src+pos,isspace);
 
-    int selected = -1, workspace = grf->current_workspace;
-    char* path = (char*)calloc(sizeof(char),PATH_MAX);
-    char* target = (char*)calloc(sizeof(char),PATH_MAX);
+    int selected = -1, ws = cs->current_ws;
+    char *path = (char*)calloc(sizeof(char),PATH_MAX);
+    char *target = (char*)calloc(sizeof(char),PATH_MAX);
     int fd1, fd2, fd3;
-    char* buffer = Action == 1 ? NULL : (char*)malloc(settings->CopyBufferSize);
+    char *buffer = Action == 1 ? NULL : (char*)malloc(cfg->CopyBufferSize);
 
     while (src[pos])
     {
-        pos += FindFirstCharacter(src+pos);
+        pos += findfirst(src+pos,isspace);
 
         if (src[pos] == '-')
         {
@@ -972,17 +972,17 @@ void ___F_MOD(const char* src, Basic* grf)
                 {
                     case 'o':
                         pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        pos += StrToPath(target,src+pos);
+                        pos += findfirst(src+pos,isspace);
+                        pos += atop(target,src+pos);
                         break;
                     case 'w':
                     case 's':
                         {
                             int itemp = (src[pos] == 'w' ? 1 : 0);
                             pos++;
-                            pos += FindFirstCharacter(src+pos);
+                            pos += findfirst(src+pos,isspace);
                             if (itemp)
-                                workspace = atoi(src+pos);
+                                ws = atoi(src+pos);
                             else
                             {
                                 switch (src[pos])
@@ -1004,21 +1004,21 @@ void ___F_MOD(const char* src, Basic* grf)
             } while (src[pos] && !isspace(src[pos]));
         }
         else
-            pos += StrToPath(path,src+pos);
+            pos += atop(path,src+pos);
 
         if (src[pos+1] == '\0')
             break;
     }
 
-    if (!grf->workspaces[grf->current_workspace].exists)
+    if (!cs->ws[cs->current_ws].exists)
         goto END;
 
-    if (workspace != grf->current_workspace)
-        if (chdir(GET_DIR(workspace,1)->path) != 0)
+    if (ws != cs->current_ws)
+        if (chdir(G_D(ws,1)->path) != 0)
 			return;
 
     if (selected == -2)
-        selected = grf->workspaces[workspace].sel_group;
+        selected = cs->ws[ws].sel_group;
 
     if (!target[0])
         strcpy(target,".");
@@ -1026,7 +1026,7 @@ void ___F_MOD(const char* src, Basic* grf)
     if ((fd1 = open(target,O_DIRECTORY)) == -1)
         goto END;
 
-    char* ActionName = NULL;
+    char *ActionName = NULL;
     switch (Action)
     {
         case 1: ActionName = "delete"; break;
@@ -1041,48 +1041,48 @@ void ___F_MOD(const char* src, Basic* grf)
     {
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !GET_DIR(workspace,1)->enable &&
+            !G_D(ws,1)->enable &&
             #endif
-            GET_DIR(workspace,1)->size > 0 && (fd2 = open(GET_DIR(workspace,1)->path,O_DIRECTORY)) != -1)
+            G_D(ws,1)->size > 0 && (fd2 = open(G_D(ws,1)->path,O_DIRECTORY)) != -1)
         {
-            if (fstatat(fd2,GET_ESELECTED(workspace,1).name,&ST,AT_SYMLINK_NOFOLLOW) == -1)
+            if (fstatat(fd2,G_ES(ws,1).name,&ST,AT_SYMLINK_NOFOLLOW) == -1)
                 goto END2;
 
             if ((ST.st_mode&S_IFMT) == S_IFDIR)
             {
-				if ((fd3 = openat(fd2,GET_ESELECTED(workspace,1).name,O_RDONLY)) == -1)
+				if ((fd3 = openat(fd2,G_ES(ws,1).name,O_RDONLY)) == -1)
 					goto END2;
-                GetDirSize(fd3,&count,&size,true);
+                get_dirsize(fd3,&count,&size,true);
 				close(fd3);
                 count++;
                 size += ST.st_size;
-                set_message(grf,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,MakeHumanReadAble(size));
+                set_message(cs,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,stoa(size));
             }
             else
                 #ifdef __FILE_SIZE_ENABLE__
-                set_message(grf,0,"Do you want to %s \"%s\" (%s)? (Y/n)",ActionName,GET_ESELECTED(workspace,1).name,MakeHumanReadAble(GET_ESELECTED(workspace,1).size));
+                set_message(cs,0,"Do you want to %s \"%s\" (%s)? (Y/n)",ActionName,G_ES(ws,1).name,stoa(G_ES(ws,1).size));
                 #else
-                set_message(grf,0,"Do you want to %s \"%s\"? (Y/n)",ActionName,GET_ESELECTED(workspace,1).name);
+                set_message(cs,0,"Do you want to %s \"%s\"? (Y/n)",ActionName,G_ES(ws,1).name);
                 #endif
 
-            wrefresh(grf->win[5]);
+            wrefresh(cs->win[5]);
             int si = -1;
             for (;;)
             {
                 si = getch();
                 if (si == KEY_RESIZE)
                 {
-                    UpdateSizeBasic(grf);
-                    DrawBasic(grf,-1);
+                    update_size(cs);
+                    csas_draw(cs,-1);
                     if ((ST.st_mode&S_IFMT) == S_IFDIR)
-                        set_message(grf,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,MakeHumanReadAble(size));
+                        set_message(cs,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,stoa(size));
                     else
                         #ifdef __FILE_SIZE_ENABLE__
-                        set_message(grf,0,"Do you want to %s \"%s\" (%s)? (Y/n)",ActionName,GET_ESELECTED(workspace,1).name,MakeHumanReadAble(GET_ESELECTED(workspace,1).size));
+                        set_message(cs,0,"Do you want to %s \"%s\" (%s)? (Y/n)",ActionName,G_ES(ws,1).name,stoa(G_ES(ws,1).size));
                         #else
-                        set_message(grf,0,"Do you want to %s \"%s\"? (Y/n)",ActionName,GET_ESELECTED(workspace,1).name);
+                        set_message(cs,0,"Do you want to %s \"%s\"? (Y/n)",ActionName,G_ES(ws,1).name);
                         #endif
-                    wrefresh(grf->win[5]);
+                    wrefresh(cs->win[5]);
                 }
                 else if (si == 'y' || si == 'Y')
                     break;
@@ -1092,9 +1092,9 @@ void ___F_MOD(const char* src, Basic* grf)
 
             switch (Action)
             {
-                case 1: DeleteFile(fd2,GET_ESELECTED(workspace,1).name); break;
-                case 2: CopyFile(fd1,fd2,GET_ESELECTED(workspace,1).name,buffer,arg); break;
-                case 3: MoveFile(fd1,fd2,GET_ESELECTED(workspace,1).name,buffer,arg); break;
+                case 1: file_rm(fd2,G_ES(ws,1).name); break;
+                case 2: file_cp(fd1,fd2,G_ES(ws,1).name,buffer,arg); break;
+                case 3: file_mv(fd1,fd2,G_ES(ws,1).name,buffer,arg); break;
             }
             END2: ;
             close(fd2);
@@ -1105,39 +1105,39 @@ void ___F_MOD(const char* src, Basic* grf)
 
     if (path[0])
     {
-        char* stemp = (char*)malloc(PATH_MAX);
+        char *stemp = (char*)malloc(PATH_MAX);
         realpath(path,stemp);
         free(path);
         path = stemp;
     }
 
-    for (size_t i = 0; i < grf->size; i++)
+    for (size_t i = 0; i < cs->size; i++)
     {
         if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        grf->base[i]->enable ||
+        cs->base[i]->enable ||
         #endif
-        grf->base[i]->size < 1)
+        cs->base[i]->size < 1)
             continue;
-        if (path[0] && strcmp(grf->base[i]->path,path) != 0)
+        if (path[0] && strcmp(cs->base[i]->path,path) != 0)
                 continue;
 
-        if ((fd2 = open(grf->base[i]->path,O_DIRECTORY)) == -1)
+        if ((fd2 = open(cs->base[i]->path,O_DIRECTORY)) == -1)
             continue;
 
-        for (size_t j = 0; j < grf->base[i]->size; j++)
+        for (size_t j = 0; j < cs->base[i]->size; j++)
         {
-            if (selected < 0 ? 1 : (grf->base[i]->el[j].list[workspace]&(1<<selected)))
+            if (selected < 0 ? 1 : (cs->base[i]->el[j].list[ws]&(1<<selected)))
             {
-                if (fstatat(fd2,grf->base[i]->el[j].name,&ST,AT_SYMLINK_NOFOLLOW) == -1)
+                if (fstatat(fd2,cs->base[i]->el[j].name,&ST,AT_SYMLINK_NOFOLLOW) == -1)
                     continue;
                 count++;
                 size += ST.st_size;
                 if ((ST.st_mode&S_IFMT) == S_IFDIR)
 				{
-					if ((fd3 = openat(fd2,grf->base[i]->el[j].name,O_RDONLY)) != -1)
+					if ((fd3 = openat(fd2,cs->base[i]->el[j].name,O_RDONLY)) != -1)
 					{
-						GetDirSize(fd3,&count,&size,true);
+						get_dirsize(fd3,&count,&size,true);
 						close(fd3);
 					}
 				}
@@ -1146,18 +1146,18 @@ void ___F_MOD(const char* src, Basic* grf)
         close(fd2);
     }
 
-    set_message(grf,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,MakeHumanReadAble(size));
-    wrefresh(grf->win[5]);
+    set_message(cs,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,stoa(size));
+    wrefresh(cs->win[5]);
     int si = -1;
     for (;;)
     {
         si = getch();
         if (si == KEY_RESIZE)
         {
-            UpdateSizeBasic(grf);
-            DrawBasic(grf,-1);
-            set_message(grf,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,MakeHumanReadAble(size));
-            wrefresh(grf->win[5]);
+            update_size(cs);
+            csas_draw(cs,-1);
+            set_message(cs,0,"Do you want to %s %ld files(%s)? (Y/n)",ActionName,count,stoa(size));
+            wrefresh(cs->win[5]);
         }
         else if (si == 'y' || si == 'Y')
             break;
@@ -1165,29 +1165,29 @@ void ___F_MOD(const char* src, Basic* grf)
             goto END;
     }
 
-    for (size_t i = 0; i < grf->size; i++)
+    for (size_t i = 0; i < cs->size; i++)
     {
         if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        grf->base[i]->enable ||
+        cs->base[i]->enable ||
         #endif
-        grf->base[i]->size < 1)
+        cs->base[i]->size < 1)
             continue;
-        if (path[0] && strcmp(grf->base[i]->path,path) != 0)
+        if (path[0] && strcmp(cs->base[i]->path,path) != 0)
                 continue;
 
-        if ((fd2 = open(grf->base[i]->path,O_DIRECTORY)) == -1)
+        if ((fd2 = open(cs->base[i]->path,O_DIRECTORY)) == -1)
             continue;
 
-        for (size_t j = 0; j < grf->base[i]->size; j++)
+        for (size_t j = 0; j < cs->base[i]->size; j++)
         {
-            if (selected < 0 ? 1 : (grf->base[i]->el[j].list[workspace]&(1<<selected)))
+            if (selected < 0 ? 1 : (cs->base[i]->el[j].list[ws]&(1<<selected)))
             {
                 switch (Action)
                 {
-                    case 1: DeleteFile(fd2,grf->base[i]->el[j].name); break;
-                    case 2: CopyFile(fd1,fd2,grf->base[i]->el[j].name,buffer,arg); break;
-                    case 3: MoveFile(fd1,fd2,grf->base[i]->el[j].name,buffer,arg); break;
+                    case 1: file_rm(fd2,cs->base[i]->el[j].name); break;
+                    case 2: file_cp(fd1,fd2,cs->base[i]->el[j].name,buffer,arg); break;
+                    case 3: file_mv(fd1,fd2,cs->base[i]->el[j].name,buffer,arg); break;
                 }
             }
         }
@@ -1195,28 +1195,28 @@ void ___F_MOD(const char* src, Basic* grf)
     }
     close(fd1);
 
-    UpdateSizeBasic(grf);
-    CD(".",grf->current_workspace,grf);
+    update_size(cs);
+    csas_cd(".",cs->current_ws,cs);
 
     END: ;
-    grf->workspaces[grf->current_workspace].show_message = false;
+    cs->ws[cs->current_ws].show_message = false;
     free(buffer);
     free(path);
     free(target);
-    if (workspace != grf->current_workspace)
-        chdir(GET_DIR(grf->current_workspace,1)->path);
+    if (ws != cs->current_ws)
+        chdir(G_D(cs->current_ws,1)->path);
 }
 
-static void GETDIR(char* path, Basic* grf, uchar mode
+static void GETDIR(char *path, Csas *cs, uchar mode
 #ifdef __THREADS_FOR_DIR_ENABLE__
 , bool threads
 #endif
 )
 {
-    DIR* d;
+    DIR *d;
     if ((d = opendir(path)) == NULL)
         return;
-    struct dirent* dir;
+    struct dirent *dir;
     while ((dir = readdir(d)))
     {
         if (dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
@@ -1227,7 +1227,7 @@ static void GETDIR(char* path, Basic* grf, uchar mode
             strcpy(path1,path);
             strcat(path1,"/");
             strcat(path1,dir->d_name);
-            GetDir(path1,grf,grf->current_workspace,1,mode
+            getdir(path1,cs,cs->current_ws,1,mode
             #ifdef __FOLLOW_PARENT_DIR__
             ,NULL
             #endif
@@ -1235,7 +1235,7 @@ static void GETDIR(char* path, Basic* grf, uchar mode
             ,threads
             #endif
             );
-            GETDIR(path1,grf,mode
+            GETDIR(path1,cs,mode
             #ifdef __THREADS_FOR_DIR_ENABLE__
             ,threads
             #endif
@@ -1245,16 +1245,16 @@ static void GETDIR(char* path, Basic* grf, uchar mode
     closedir(d);
 }
 
-void ___LOAD(const char* src, Basic* grf)
+void ___LOAD(const char *src, Csas *cs)
 {
     size_t pos = 0;
-    int mode = settings->DirLoadingMode;
+    int mode = cfg->DirLoadingMode;
     uchar flag = 0;
-	werase(grf->win[0]);
-	if (settings->Win1Enable)
-		werase(grf->win[1]);
-	if (settings->Win3Enable)
-		werase(grf->win[2]);
+	werase(cs->win[0]);
+	if (cfg->Win1Enable)
+		werase(cs->win[1]);
+	if (cfg->Win3Enable)
+		werase(cs->win[2]);
 
     while (src[pos])
     {
@@ -1267,7 +1267,7 @@ void ___LOAD(const char* src, Basic* grf)
                 {
                     case 'm':
                         pos++;
-                        pos += FindFirstCharacter(src+pos);
+                        pos += findfirst(src+pos,isspace);
                         mode += atoi(src+pos);
                         while (isdigit(src[pos])) pos++;
                         break;
@@ -1283,10 +1283,10 @@ void ___LOAD(const char* src, Basic* grf)
         if (src[pos+1] == '\0')
             break;
         else
-            pos += FindFirstCharacter(src+pos);
+            pos += findfirst(src+pos,isspace);
     }
 
-    GetDir(".",grf,grf->current_workspace,1,mode
+    getdir(".",cs,cs->current_ws,1,mode
     #ifdef __FOLLOW_PARENT_DIR__
     ,NULL
     #endif
@@ -1298,7 +1298,7 @@ void ___LOAD(const char* src, Basic* grf)
     {
         char path[PATH_MAX];
         strcpy(path,".");
-        GETDIR(path,grf,mode
+        GETDIR(path,cs,mode
         #ifdef __THREADS_FOR_DIR_ENABLE__
         ,(flag&0x1)
         #endif
@@ -1306,17 +1306,17 @@ void ___LOAD(const char* src, Basic* grf)
     }
 }
 
-void ___SELECT(const char* src, Basic* grf)
+void ___SELECT(const char *src, Csas *cs)
 {
     size_t pos = 0;
     int mode = 1;
     bool recursive = 0;
-    int selected = -1, workspace1 = grf->current_workspace, workspace2 = grf->current_workspace, toselected = -1;
-    char* path = (char*)calloc(sizeof(char),PATH_MAX);
+    int selected = -1, workspace1 = cs->current_ws, workspace2 = cs->current_ws, toselected = -1;
+    char *path = (char*)calloc(sizeof(char),PATH_MAX);
 
     while (src[pos])
     {
-        pos += FindFirstCharacter(src+pos);
+        pos += findfirst(src+pos,isspace);
 
         if (src[pos] == '-')
         {
@@ -1330,7 +1330,7 @@ void ___SELECT(const char* src, Basic* grf)
                         break;
                     case 'o':
                         pos++;
-                        pos+= FindFirstCharacter(src+pos);
+                        pos+= findfirst(src+pos,isspace);
                         switch(src[pos])
                         {
                             case '.':
@@ -1348,7 +1348,7 @@ void ___SELECT(const char* src, Basic* grf)
                         {
                             int itemp = (src[pos] == 'w' ? 1 : 0);
                             pos++;
-                            pos += FindFirstCharacter(src+pos);
+                            pos += findfirst(src+pos,isspace);
                             if (itemp)
                                 workspace1 = atoi(src+pos);
                             else
@@ -1358,7 +1358,7 @@ void ___SELECT(const char* src, Basic* grf)
                         break;
                     case 's':
                         pos++;
-                        pos += FindFirstCharacter(src+pos);
+                        pos += findfirst(src+pos,isspace);
                         switch (src[pos])
                         {
                             case '-':
@@ -1387,26 +1387,26 @@ void ___SELECT(const char* src, Basic* grf)
             } while (src[pos] && !isspace(src[pos]));
         }
         else
-            pos += StrToPath(path,src+pos);
+            pos += atop(path,src+pos);
 
         if (src[pos+1] == '\0')
             break;
     }
 
-    if (!grf->workspaces[grf->current_workspace].exists)
+    if (!cs->ws[cs->current_ws].exists)
     {
         free(path);
         return;
     }
 
-    if (workspace1 != grf->current_workspace)
-        if (chdir(GET_DIR(workspace1,1)->path) != 0)
+    if (workspace1 != cs->current_ws)
+        if (chdir(G_D(workspace1,1)->path) != 0)
 			return;
 
     if (selected == -2)
-        selected = grf->workspaces[workspace1].sel_group;
+        selected = cs->ws[workspace1].sel_group;
     if (toselected == -1)
-        toselected = grf->workspaces[workspace2].sel_group;
+        toselected = cs->ws[workspace2].sel_group;
     if (selected == -3)
     {
         if (!recursive)
@@ -1415,62 +1415,62 @@ void ___SELECT(const char* src, Basic* grf)
             return;
         }
 
-        strcpy(path,MakePath(GET_DIR(workspace1,1)->path,GET_ESELECTED(workspace1,1).name));
+        strcpy(path,mkpath(G_D(workspace1,1)->path,G_ES(workspace1,1).name));
         switch (mode)
         {
-            case -1: GET_ESELECTED(workspace1,1).list[workspace2] ^= 1<<toselected; break;
-            case 0: GET_ESELECTED(workspace1,1).list[workspace2] ^= (1<<toselected)*((GET_ESELECTED(workspace1,1).list[workspace2]&(1<<toselected)) != toselected); break;
-            case 1: GET_ESELECTED(workspace1,1).list[workspace2] |= 1<<toselected; break;
+            case -1: G_ES(workspace1,1).list[workspace2] ^= 1<<toselected; break;
+            case 0: G_ES(workspace1,1).list[workspace2] ^= (1<<toselected)*((G_ES(workspace1,1).list[workspace2]&(1<<toselected)) != toselected); break;
+            case 1: G_ES(workspace1,1).list[workspace2] |= 1<<toselected; break;
         }
     }
 
     if (path[0])
     {
-        char* stemp = (char*)malloc(PATH_MAX);
+        char *stemp = (char*)malloc(PATH_MAX);
         realpath(path,stemp);
         free(path);
         path = stemp;
     }
 
-    for (size_t i = 0; i < grf->size; i++)
+    for (size_t i = 0; i < cs->size; i++)
     {
         if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        grf->base[i]->enable ||
+        cs->base[i]->enable ||
         #endif
-        grf->base[i]->size < 1)
+        cs->base[i]->size < 1)
             continue;
         if (path[0])
         {
             if (recursive)
             {
-                if (!strstr(grf->base[i]->path,path))
+                if (!strstr(cs->base[i]->path,path))
                     continue;
             }
-            else if (strcmp(grf->base[i]->path,path) != 0)
+            else if (strcmp(cs->base[i]->path,path) != 0)
                 continue;
         }
 
-        for (size_t j = 0; j < grf->base[i]->size; j++)
+        for (size_t j = 0; j < cs->base[i]->size; j++)
         {
-            if (selected < 0 ? 1 : (grf->base[i]->el[j].list[workspace1]&(1<<selected)))
+            if (selected < 0 ? 1 : (cs->base[i]->el[j].list[workspace1]&(1<<selected)))
             {
                 switch (mode)
                 {
-                    case -1: grf->base[i]->el[j].list[workspace2] ^= 1<<toselected; break;
-                    case 0: grf->base[i]->el[j].list[workspace2] ^= (1<<toselected)*((grf->base[i]->el[j].list[workspace2]&(1<<toselected)) != toselected); break;
-                    case 1: grf->base[i]->el[j].list[workspace2] |= 1<<toselected; break;
+                    case -1: cs->base[i]->el[j].list[workspace2] ^= 1<<toselected; break;
+                    case 0: cs->base[i]->el[j].list[workspace2] ^= (1<<toselected)*((cs->base[i]->el[j].list[workspace2]&(1<<toselected)) != toselected); break;
+                    case 1: cs->base[i]->el[j].list[workspace2] |= 1<<toselected; break;
                 }
             }
         }
     }
 
     free(path);
-    if (workspace1 != grf->current_workspace)
-        chdir(GET_DIR(grf->current_workspace,1)->path);
+    if (workspace1 != cs->current_ws)
+        chdir(G_D(cs->current_ws,1)->path);
 }
 
-void ___EXEC(const char* src, Basic* grf)
+void ___EXEC(const char *src, Csas *cs)
 {
     size_t pos = 0;
     int background = 0;
@@ -1493,23 +1493,23 @@ void ___EXEC(const char* src, Basic* grf)
             } while (src[pos] && !isspace(src[pos]));
         }
         else
-            pos += StrToPath(temp,src+pos);
+            pos += atop(temp,src+pos);
 
-        pos += FindFirstCharacter(src+pos);
+        pos += findfirst(src+pos,isspace);
     }
 
     spawn(temp,NULL,NULL,background ? F_SILENT : F_NORMAL|F_WAIT);
 }
 
-void ___BULK(const char* src, Basic* grf)
+void ___BULK(const char *src, Csas *cs)
 {
     size_t pos = 0;
-    int workspace = grf->current_workspace, selected = -1;
+    int ws = cs->current_ws, selected = -1;
     uchar flag = 0;
-    char** temp = (char**)malloc(6*sizeof(char*));
+    char* *temp = (char**)malloc(6*sizeof(char*));
     for (int i = 0; i < 6; i++)
         temp[i] = (char*)calloc(sizeof(char),PATH_MAX);
-    char* path = (char*)calloc(sizeof(char),PATH_MAX);
+    char *path = (char*)calloc(sizeof(char),PATH_MAX);
 
     while (src[pos])
     {
@@ -1524,20 +1524,20 @@ void ___BULK(const char* src, Basic* grf)
                         break;
                     case 'w':
                         pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        workspace = atoi(src+pos);
+                        pos += findfirst(src+pos,isspace);
+                        ws = atoi(src+pos);
                         while (isdigit(src[pos])) pos++;
                         break;
                     case 's':
                         pos++;
-                        pos += FindFirstCharacter(src+pos);
+                        pos += findfirst(src+pos,isspace);
                         if (src[pos] == '-')
                         {
                             selected = -1;
                             pos++;
                         } else if (src[pos] == 's')
                         {
-                            selected = grf->workspaces[workspace].sel_group;
+                            selected = cs->ws[ws].sel_group;
                             pos++;
                         }
                         else
@@ -1565,8 +1565,8 @@ void ___BULK(const char* src, Basic* grf)
                                 default: itemp = 5; break;
                             }
                             pos++;
-                            pos += FindFirstCharacter(src+pos);
-                            pos += StrToPath(temp[itemp],src+pos);
+                            pos += findfirst(src+pos,isspace);
+                            pos += atop(temp[itemp],src+pos);
                         }
                         break;
                 }
@@ -1574,29 +1574,29 @@ void ___BULK(const char* src, Basic* grf)
             } while (src[pos] && !isspace(src[pos]));
         }
         else
-            pos += StrToPath(path,src+pos);
+            pos += atop(path,src+pos);
         pos++;
     }
 
-    if (!grf->workspaces[workspace].exists)
+    if (!cs->ws[ws].exists)
         return;
 
-    if (grf->current_workspace != workspace)
-        if (chdir(GET_DIR(workspace,1)->path) != 0)
+    if (cs->current_ws != ws)
+        if (chdir(G_D(ws,1)->path) != 0)
 			return;
 
     if (path[0])
         realpath(path,temp[0]);
     free(path);
-    bulk(grf,workspace,selected,temp,flag);
+    bulk(cs,ws,selected,temp,flag);
     for (int i = 0; i < 6; i++)
         free(temp[i]);
     free(temp);
-    if (grf->current_workspace != workspace)
-        chdir(GET_DIR(workspace,1)->path);
+    if (cs->current_ws != ws)
+        chdir(G_D(ws,1)->path);
 }
 
-void ___CONSOLE(const char* src, Basic* grf)
+void ___CONSOLE(const char *src, Csas *cs)
 {
     size_t pos = 0;
     char temp[1024];
@@ -1612,8 +1612,8 @@ void ___CONSOLE(const char* src, Basic* grf)
                 {
                     case 'a':
                         pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        pos += StrToPath(temp,src+pos);
+                        pos += findfirst(src+pos,isspace);
+                        pos += atop(temp,src+pos);
                         break;
                 }
 
@@ -1622,39 +1622,39 @@ void ___CONSOLE(const char* src, Basic* grf)
         pos++;
     }
 
-    if (grf->ConsoleHistory.size == grf->ConsoleHistory.max_size)
+    if (cs->consolehistory.size == cs->consolehistory.max_size)
     {
-        memset(grf->ConsoleHistory.history[0],0,grf->ConsoleHistory.alloc_r-1);
-        char* temp = grf->ConsoleHistory.history[0];
-        for (size_t i = 0; i < grf->ConsoleHistory.size-1; i++)
-            grf->ConsoleHistory.history[i] = grf->ConsoleHistory.history[i+1];
-        grf->ConsoleHistory.history[grf->ConsoleHistory.size-1] = temp;
-        grf->ConsoleHistory.size--;
+        memset(cs->consolehistory.history[0],0,cs->consolehistory.alloc_r-1);
+        char *temp = cs->consolehistory.history[0];
+        for (size_t i = 0; i < cs->consolehistory.size-1; i++)
+            cs->consolehistory.history[i] = cs->consolehistory.history[i+1];
+        cs->consolehistory.history[cs->consolehistory.size-1] = temp;
+        cs->consolehistory.size--;
     }
 
-    if (grf->ConsoleHistory.size == grf->ConsoleHistory.allocated)
+    if (cs->consolehistory.size == cs->consolehistory.allocated)
     {
-        grf->ConsoleHistory.history = (char**)realloc(grf->ConsoleHistory.history,(grf->ConsoleHistory.allocated += grf->ConsoleHistory.inc_r)*sizeof(char*));
-        for (size_t i = grf->ConsoleHistory.allocated-grf->ConsoleHistory.inc_r; i < grf->ConsoleHistory.allocated; i++)
-            grf->ConsoleHistory.history[i] = (char*)calloc(sizeof(char),grf->ConsoleHistory.alloc_r);
+        cs->consolehistory.history = (char**)realloc(cs->consolehistory.history,(cs->consolehistory.allocated += cs->consolehistory.inc_r)*sizeof(char*));
+        for (size_t i = cs->consolehistory.allocated-cs->consolehistory.inc_r; i < cs->consolehistory.allocated; i++)
+            cs->consolehistory.history[i] = (char*)calloc(sizeof(char),cs->consolehistory.alloc_r);
     }
-    grf->ConsoleHistory.size++;
+    cs->consolehistory.size++;
 
     struct WinArgs args = {stdscr,
     {-1,1},{1,-1},{-1,-1},{-1,-1},
     {-1,-1},{-1,1},{-1,-1},{-1,-1},
     0};
-    ConsoleGetLine(grf->win[5],grf,grf->ConsoleHistory.history,grf->ConsoleHistory.size,grf->ConsoleHistory.alloc_r-1,args,":",temp[0] ? temp : NULL);
-    RunCommand(grf->ConsoleHistory.history[grf->ConsoleHistory.size-1],grf);
+    console_getline(cs->win[5],cs,cs->consolehistory.history,cs->consolehistory.size,cs->consolehistory.alloc_r-1,args,":",temp[0] ? temp : NULL);
+    command_run(cs->consolehistory.history[cs->consolehistory.size-1],cs);
 }
 
-void ___SEARCH(char* src, Basic* grf)
+void ___SEARCH(char *src, Csas *cs)
 {
     if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        GET_DIR(grf->current_workspace,1)->enable ||
+        G_D(cs->current_ws,1)->enable ||
         #endif
-        GET_DIR(grf->current_workspace,1)->size < 1)
+        G_D(cs->current_ws,1)->size < 1)
         return;
     size_t pos = 0, mul = 1;
     int selected = -1;
@@ -1671,7 +1671,7 @@ void ___SEARCH(char* src, Basic* grf)
                 {
                     case 's':
                         pos++;
-                        pos += FindFirstCharacter(src+pos);
+                        pos += findfirst(src+pos,isspace);
                         if (src[pos] == '-')
                         {
                             selected = -1;
@@ -1687,7 +1687,7 @@ void ___SEARCH(char* src, Basic* grf)
                     case 'n':
                         action = (src[pos] == 'n' ? 2 : 1);
                         pos++;
-                        pos += FindFirstCharacter(src+pos);
+                        pos += findfirst(src+pos,isspace);
                         mul = atoi(src+pos);
                         while (isdigit(src[pos])) pos++;
                         break;
@@ -1701,8 +1701,8 @@ void ___SEARCH(char* src, Basic* grf)
                             case 'E': action = 5; break;
                         }
                         pos++;
-                        pos += FindFirstCharacter(src+pos);
-                        pos += StrToPath(temp,src+pos);
+                        pos += findfirst(src+pos,isspace);
+                        pos += atop(temp,src+pos);
                         break;
                 }
 
@@ -1715,38 +1715,38 @@ void ___SEARCH(char* src, Basic* grf)
     {
         case 1:
         case 2:
-            if (!grf->SearchList.size)
+            if (!cs->SearchList.size)
                 break;
             for (size_t i = 0; i < mul; i++)
             {
-                if (GET_ESELECTED(grf->current_workspace,1).name == grf->SearchList.list[grf->SearchList.pos])
+                if (G_ES(cs->current_ws,1).name == cs->SearchList.list[cs->SearchList.pos])
                 {
                     if (action == 1)
                     {
-                        if (grf->SearchList.pos == 0)
-                            grf->SearchList.pos = grf->SearchList.size-1;
+                        if (cs->SearchList.pos == 0)
+                            cs->SearchList.pos = cs->SearchList.size-1;
                         else
-                            grf->SearchList.pos--;
+                            cs->SearchList.pos--;
                     }
                     else
                     {
-                        if (grf->SearchList.pos == grf->SearchList.size-1)
-                            grf->SearchList.pos = 0;
+                        if (cs->SearchList.pos == cs->SearchList.size-1)
+                            cs->SearchList.pos = 0;
                         else
-                            grf->SearchList.pos++;
+                            cs->SearchList.pos++;
                     }
                 }
 
-                for (size_t j = 0; j < GET_DIR(grf->current_workspace,1)->size; j++)
+                for (size_t j = 0; j < G_D(cs->current_ws,1)->size; j++)
                 {
-                    if (GET_DIR(grf->current_workspace,1)->el[j].name == grf->SearchList.list[grf->SearchList.pos])
+                    if (G_D(cs->current_ws,1)->el[j].name == cs->SearchList.list[cs->SearchList.pos])
                     {
-                        if (j > GET_SELECTED(grf->current_workspace,1))
-                            for (size_t g = GET_SELECTED(grf->current_workspace,1); g < j; g++)
-                                MoveD(1,grf,grf->current_workspace,1);
-                        else if (j < GET_SELECTED(grf->current_workspace,1))
-                            for (size_t g = GET_SELECTED(grf->current_workspace,1); g > j; g--)
-                                MoveD(-1,grf,grf->current_workspace,1);
+                        if (j > G_S(cs->current_ws,1))
+                            for (size_t g = G_S(cs->current_ws,1); g < j; g++)
+                                move_d(1,cs,cs->current_ws,1);
+                        else if (j < G_S(cs->current_ws,1))
+                            for (size_t g = G_S(cs->current_ws,1); g > j; g--)
+                                move_d(-1,cs,cs->current_ws,1);
                         break;
                     }
                 }
@@ -1755,16 +1755,16 @@ void ___SEARCH(char* src, Basic* grf)
         case 3:
         case 4:
         case 5:
-            free(grf->SearchList.list);
-            grf->SearchList.list = NULL;
-            grf->SearchList.allocated = 0;
-            grf->SearchList.size = 0;
-            grf->SearchList.pos = 0;
+            free(cs->SearchList.list);
+            cs->SearchList.list = NULL;
+            cs->SearchList.allocated = 0;
+            cs->SearchList.size = 0;
+            cs->SearchList.pos = 0;
             int reti;
 
-            for (size_t i = 0; i < GET_DIR(grf->current_workspace,1)->size; i++)
+            for (size_t i = 0; i < G_D(cs->current_ws,1)->size; i++)
             {
-                if (selected == -1 ? 1 : (GET_DIR(grf->current_workspace,1)->el[i].list[grf->current_workspace]&selected))
+                if (selected == -1 ? 1 : (G_D(cs->current_ws,1)->el[i].list[cs->current_ws]&selected))
                 {
                     if (action == 4 || action == 5)
                     {
@@ -1772,62 +1772,62 @@ void ___SEARCH(char* src, Basic* grf)
                         reti = 0;
                         reti = regcomp(&regex,temp,0);
                         if (reti) continue;
-                        reti = regexec(&regex,GET_DIR(grf->current_workspace,1)->el[i].name,0,NULL,action == 5 ? REG_EXTENDED : 0);
+                        reti = regexec(&regex,G_D(cs->current_ws,1)->el[i].name,0,NULL,action == 5 ? REG_EXTENDED : 0);
                         if (reti) continue;
                         regfree(&regex);
                     }
-                    else if (!strstr(GET_DIR(grf->current_workspace,1)->el[i].name,temp))
+                    else if (!strstr(G_D(cs->current_ws,1)->el[i].name,temp))
                         continue;
 
-                    if (grf->SearchList.size == grf->SearchList.allocated)
-                        grf->SearchList.list = (char**)realloc(grf->SearchList.list,(grf->SearchList.allocated+=grf->SearchList.inc_r)*(sizeof(char*)));
-                    grf->SearchList.size++;
-                    grf->SearchList.list[grf->SearchList.size-1] = GET_DIR(grf->current_workspace,1)->el[i].name;
+                    if (cs->SearchList.size == cs->SearchList.allocated)
+                        cs->SearchList.list = (char**)realloc(cs->SearchList.list,(cs->SearchList.allocated+=cs->SearchList.inc_r)*(sizeof(char*)));
+                    cs->SearchList.size++;
+                    cs->SearchList.list[cs->SearchList.size-1] = G_D(cs->current_ws,1)->el[i].name;
                 }
             }
-            ___SEARCH("-n 1",grf);
+            ___SEARCH("-n 1",cs);
             break;
     }
 
 }
 
-void ___SHELL(char* src, Basic* grf)
+void ___SHELL(char *src, Csas *cs)
 {
-	spawn(settings->shell,"-c",src,F_NORMAL|F_WAIT|F_CONFIRM);
+	spawn(cfg->shell,"-c",src,F_NORMAL|F_WAIT|F_CONFIRM);
 
 	return;
 }
 
-void ___FILTER(char* src, Basic* grf)
+void ___FILTER(char *src, Csas *cs)
 {
-    if (GET_DIR(grf->current_workspace,1)->oldsize == 0)
-        GET_DIR(grf->current_workspace,1)->oldsize = GET_DIR(grf->current_workspace,1)->size;
+    if (G_D(cs->current_ws,1)->oldsize == 0)
+        G_D(cs->current_ws,1)->oldsize = G_D(cs->current_ws,1)->size;
     else
-        GET_DIR(grf->current_workspace,1)->size = GET_DIR(grf->current_workspace,1)->oldsize;
+        G_D(cs->current_ws,1)->size = G_D(cs->current_ws,1)->oldsize;
 
     if (src[0] == '/')
     {
-        GET_DIR(grf->current_workspace,1)->filter_set = false;
+        G_D(cs->current_ws,1)->filter_set = false;
         return;
     }
 
-    GET_DIR(grf->current_workspace,1)->filter_set = true;
-    if (!GET_DIR(grf->current_workspace,1)->filter)
-        GET_DIR(grf->current_workspace,1)->filter = (char*)malloc(NAME_MAX);
+    G_D(cs->current_ws,1)->filter_set = true;
+    if (!G_D(cs->current_ws,1)->filter)
+        G_D(cs->current_ws,1)->filter = (char*)malloc(NAME_MAX);
 
-    strcpy(GET_DIR(grf->current_workspace,1)->filter,src);
+    strcpy(G_D(cs->current_ws,1)->filter,src);
 
     struct Element temp;
 
-    for (size_t i = 0; i < GET_DIR(grf->current_workspace,1)->size; i++)
+    for (size_t i = 0; i < G_D(cs->current_ws,1)->size; i++)
     {
-        if (!strstr(GET_DIR(grf->current_workspace,1)->el[i].name,src))
+        if (!strstr(G_D(cs->current_ws,1)->el[i].name,src))
         {
-            temp = GET_DIR(grf->current_workspace,1)->el[i];
-            for (size_t j = i; j < GET_DIR(grf->current_workspace,1)->size-1; j++)
-                GET_DIR(grf->current_workspace,1)->el[j] = GET_DIR(grf->current_workspace,1)->el[j+1];
-            GET_DIR(grf->current_workspace,1)->el[GET_DIR(grf->current_workspace,1)->size-1] = temp;
-            --GET_DIR(grf->current_workspace,1)->size;
+            temp = G_D(cs->current_ws,1)->el[i];
+            for (size_t j = i; j < G_D(cs->current_ws,1)->size-1; j++)
+                G_D(cs->current_ws,1)->el[j] = G_D(cs->current_ws,1)->el[j+1];
+            G_D(cs->current_ws,1)->el[G_D(cs->current_ws,1)->size-1] = temp;
+            --G_D(cs->current_ws,1)->size;
             i--;
         }
     }

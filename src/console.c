@@ -26,19 +26,19 @@
 #include "draw.h"
 
 extern struct AliasesT aliases[];
-extern Settings* settings;
+extern Settings *cfg;
 
 struct command
 {
-    char* name;
-    void (*function)(const char*, Basic*);
+    char *name;
+    void (*function)(const char*, Csas*);
 };
 
 struct command commands[] = {
     {"move",___MOVE},
     {"fastselect",___FASTSELECT},
     {"cd",___CD},
-    {"ChangeWorkSpace",___CHANGEWORKSPACE},
+    {"change_workspace",___CHANGEWORKSPACE},
     {"gotop",___GOTOP},
     {"godown",___GODOWN},
     #ifdef __FILE_SIZE_ENABLE__
@@ -64,11 +64,11 @@ struct command commands[] = {
     {NULL,NULL}
 };
 
-void RunCommand(const char* src, Basic* grf)
+void command_run(const char *src, Csas *cs)
 {
     size_t pos = 0, end = 0;
     
-    pos += FindFirstCharacter(src);
+    pos += findfirst(src,isspace);
     while (src[pos+end] && !isspace(src[pos+end])) end++;
 
     for (int i = 0; commands[i].name; i++)
@@ -76,15 +76,15 @@ void RunCommand(const char* src, Basic* grf)
         if (end == strlen(commands[i].name) && strncmp(src+pos,commands[i].name,end) == 0)
         {
             pos += end;
-            pos += FindFirstCharacter(src+pos);
-            (*commands[i].function)(src+pos,grf);
+            pos += findfirst(src+pos,isspace);
+            (*commands[i].function)(src+pos,cs);
             break;
         }
     }
 
 }
 
-void ConsoleResize(WINDOW* win, const struct WinArgs args)
+void console_resize(WINDOW *win, const struct WinArgs args)
 {
     Vector2i Size = {0,0}, Pos = {0,0};
 
@@ -125,19 +125,19 @@ void ConsoleResize(WINDOW* win, const struct WinArgs args)
     wresize(win,Size.y,Size.x);
     mvwin(win,Pos.y,Pos.x);
     refresh();
-    if (args.settings&0x1)
+    if (args.cfg&0x1)
         wborder(win,0,0,0,0,0,0,0,0);
     wrefresh(win);
 }
 
-void ConsoleGetLine(WINDOW* win, Basic* grf, char** history, size_t size, size_t max, struct WinArgs args, char* first, char* add)
+void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t max, struct WinArgs args, char *first, char *add)
 {
     curs_set(1);
     int Event;
-    ConsoleResize(win,args);
+    console_resize(win,args);
 
     short int x = 0, y = 0, off = 0;
-    int border = (args.settings&0x1) == 0x1;
+    int border = (args.cfg&0x1) == 0x1;
     size_t first_t = strlen(first), z = size-1;
     if (add)
     {
@@ -147,7 +147,7 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** history, size_t size, size_t
     }
 
     char name_complete[NAME_MAX];
-    int* name_complete_arr = NULL;
+    int *name_complete_arr = NULL;
     size_t name_complete_t = 0;
     size_t name_complete_actual = 0;
     bool tab_was_pressed = 0;
@@ -260,7 +260,7 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** history, size_t size, size_t
             case ('l'&0x1f):
                 werase(win);
                 y = 0;
-                ConsoleResize(win,args);
+                console_resize(win,args);
                 break;
             case ('a'&0x1f):
                 x = 0;
@@ -275,10 +275,10 @@ void ConsoleGetLine(WINDOW* win, Basic* grf, char** history, size_t size, size_t
                 history[size-1][0] = 0;
                 goto END;
             case KEY_RESIZE:
-                UpdateSizeBasic(grf);
-                DrawBasic(grf,-1);
+                update_size(cs);
+                csas_draw(cs,-1);
                 werase(win);
-                ConsoleResize(win,args);
+                console_resize(win,args);
                 break;
             case KEY_BACKSPACE:
             case ('h'&0x1f):

@@ -28,7 +28,7 @@ extern Extensions extensions[];
 
 extern FileSignatures signatures[];
 
-extern Settings* settings;
+extern Settings *cfg;
 
 void die(int status, const char *p, ...)
 {
@@ -39,11 +39,11 @@ void die(int status, const char *p, ...)
     exit(status);
 }
 
-int spawn(char* file, char* arg1, char* arg2, const uchar flag)
+int spawn(char *file, char *arg1, char *arg2, const uchar flag)
 {
     if (!file || !*file) return -1;
 
-    char* argv[4] = {NULL};
+    char *argv[4] = {NULL};
 
     if (!arg1 && arg2)
     {
@@ -96,7 +96,7 @@ int spawn(char* file, char* arg1, char* arg2, const uchar flag)
     return 0;
 }
 
-char* MakeHumanReadAble(ull value)
+char *stoa(ull value)
 {
     static char ret[8];
     if (value == 0)
@@ -188,16 +188,16 @@ char* MakeHumanReadAble(ull value)
     }
 
     if (too != 0)
-        ret[i++] = settings->Values[too-1];
+        ret[i++] = cfg->Values[too-1];
 
     ret[i] = '\0';
 
     return ret;
 }
 
-void GetDirSize(const int fd, ull* count, ull* size, const bool recursive)
+void get_dirsize(const int fd, ull *count, ull *size, const bool recursive)
 {
-    DIR* d = fdopendir(fd);
+    DIR *d = fdopendir(fd);
     struct dirent *dir;
 
     int tfd;
@@ -212,7 +212,7 @@ void GetDirSize(const int fd, ull* count, ull* size, const bool recursive)
             if (recursive && dir->d_type == 4 &&
                 faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
             {
-                GetDirSize(tfd,count,size,recursive);
+                get_dirsize(tfd,count,size,recursive);
                 close(tfd);
             }
             else
@@ -234,9 +234,9 @@ void GetDirSize(const int fd, ull* count, ull* size, const bool recursive)
 }
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
-uchar check_extension(const char* name)
+uchar check_extension(const char *name)
 {
-    register char* ret = memrchr(name,'.',strlen(name)-1);
+    register char *ret = memrchr(name,'.',strlen(name)-1);
 
     if (ret == NULL) return 0;
     ret++;
@@ -249,9 +249,9 @@ uchar check_extension(const char* name)
 }
 #endif
 
-char* lsperms(const int mode)
+char *lsperms(const int mode)
 {
-    const char* const rwx[] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
+    const char *const rwx[] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
 	static char bits[11] = {0};
 
     switch (mode & S_IFMT)
@@ -289,10 +289,10 @@ char* lsperms(const int mode)
 	return bits;
 }
 
-void RunFile(char* path)
+void file_run(char *path)
 {
-    if (strcmp(settings->FileOpener,"NULL") != 0)
-        spawn(settings->FileOpener,path,NULL,F_NORMAL|F_WAIT);
+    if (strcmp(cfg->FileOpener,"NULL") != 0)
+        spawn(cfg->FileOpener,path,NULL,F_NORMAL|F_WAIT);
     else
     {
         struct stat sfile;
@@ -303,7 +303,7 @@ void RunFile(char* path)
 
         if (sfile.st_size == 0)
         {
-            spawn(settings->editor,path,NULL,F_NORMAL|F_WAIT);
+            spawn(cfg->editor,path,NULL,F_NORMAL|F_WAIT);
             return;
         }
 
@@ -328,7 +328,7 @@ void RunFile(char* path)
 
         binary = bina > 32;
 
-        char* nest = (char*)malloc(32);
+        char *nest = (char*)malloc(32);
 
         for (register int i = 0; signatures[i].sig != NULL; i++)
         {
@@ -350,13 +350,13 @@ void RunFile(char* path)
         free(nest);
 
         if (binary == false)
-            spawn(settings->editor,path,NULL,F_NORMAL|F_WAIT);
+            spawn(cfg->editor,path,NULL,F_NORMAL|F_WAIT);
 
         close(fd);
     }
 }
 
-void DeleteFile(const int fd, const char* name)
+void file_rm(const int fd, const char *name)
 {
     struct stat sfile;
     fstatat(fd,name,&sfile,0);
@@ -366,13 +366,13 @@ void DeleteFile(const int fd, const char* name)
         int temp;
         if ((temp = openat(fd,name,O_DIRECTORY)) != -1)
         {
-            DIR* d = fdopendir(temp);
+            DIR *d = fdopendir(temp);
             struct dirent *dir;
             if (d)
             {
                 while ((dir = readdir(d)))
                     if (!(dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0'))))
-                        DeleteFile(temp,dir->d_name);
+                        file_rm(temp,dir->d_name);
                 closedir(d);
             }
             close(temp);
@@ -385,13 +385,13 @@ void DeleteFile(const int fd, const char* name)
     }
 }
 
-void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, const mode_t arg)
+void file_cp(const int fd1, const int fd2, const char *name, char *buffer, const mode_t arg)
 {
     struct stat sfile;
     int fd3, fd4;
     fstatat(fd2,name,&sfile,0);
 
-    char* temp = (char*)malloc(NAME_MAX);
+    char *temp = (char*)malloc(NAME_MAX);
     strcpy(temp,name);
     ull num = 0;
 
@@ -418,14 +418,14 @@ void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, cons
             }
         }
         else if (arg&M_REPLACE)
-            DeleteFile(fd1,temp);
+            file_rm(fd1,temp);
     }
 
     if ((sfile.st_mode& S_IFMT) == S_IFDIR)
     {
         if ((fd3 = openat(fd2,name,O_DIRECTORY)) != -1)
         {
-            DIR* d = fdopendir(fd3);
+            DIR *d = fdopendir(fd3);
             struct dirent *dir;
 
             if (d)
@@ -435,7 +435,7 @@ void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, cons
                 {
                     while ((dir = readdir(d)))
                         if (!(dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0'))))
-                            CopyFile(fd4,fd3,dir->d_name,buffer,arg);
+                            file_cp(fd4,fd3,dir->d_name,buffer,arg);
                     close(fd4);
                 }
                 closedir(d);
@@ -451,7 +451,7 @@ void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, cons
             if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sfile.st_mode)) != -1)
             {
                 int bytesread;
-                while ((bytesread = read(fd3,buffer,settings->CopyBufferSize)) > 0)
+                while ((bytesread = read(fd3,buffer,cfg->CopyBufferSize)) > 0)
                     write(fd4,buffer,bytesread);
 
                 close(fd4);
@@ -464,13 +464,13 @@ void CopyFile(const int fd1, const int fd2, const char* name, char* buffer, cons
     free(temp);
 }
 
-void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, const mode_t arg)
+void file_mv(const int fd1, const int fd2, const char *name, char *buffer, const mode_t arg)
 {
     struct stat sfile;
     int fd3, fd4;
     fstatat(fd2,name,&sfile,0);
 
-    char* temp = (char*)malloc(NAME_MAX);
+    char *temp = (char*)malloc(NAME_MAX);
     strcpy(temp,name);
     ull num = 0;
 
@@ -497,14 +497,14 @@ void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, cons
             }
         }
         else if (arg&M_REPLACE)
-            DeleteFile(fd1,temp);
+            file_rm(fd1,temp);
     }
 
     if ((sfile.st_mode& S_IFMT) == S_IFDIR)
     {
         if ((fd3 = openat(fd2,name,O_DIRECTORY)) != -1)
         {
-            DIR* d = fdopendir(fd3);
+            DIR *d = fdopendir(fd3);
             struct dirent *dir;
 
             if (d)
@@ -514,7 +514,7 @@ void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, cons
                 {
                     while ((dir = readdir(d)))
                         if (!(dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0'))))
-                            MoveFile(fd4,fd3,dir->d_name,buffer,arg);
+                            file_mv(fd4,fd3,dir->d_name,buffer,arg);
                     close(fd4);
                 }
                 closedir(d);
@@ -531,7 +531,7 @@ void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, cons
             if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sfile.st_mode)) != -1)
             {
                 int bytesread;
-                while ((bytesread = read(fd3,buffer,settings->CopyBufferSize)) > 0)
+                while ((bytesread = read(fd3,buffer,cfg->CopyBufferSize)) > 0)
                     write(fd4,buffer,bytesread);
 
                 close(fd4);
@@ -545,13 +545,13 @@ void MoveFile(const int fd1, const int fd2, const char* name, char* buffer, cons
     free(temp);
 }
 
-size_t TimeToStr(const time_t *time, char* result)
+size_t ttoa(const time_t *time, char *result)
 {
     struct tm *tis = localtime(time);
     return sprintf(result,"%d-%02d-%.2d %02d:%02d ",tis->tm_year+1900,tis->tm_mon+1,tis->tm_mday,tis->tm_hour,tis->tm_min);
 }
 
-void MakePathShorter(char* path, const int max_size)
+void path_shrink(char *path, const int max_size)
 {
     int size = strlen(path), bottom;
     if (size > 2)
@@ -575,7 +575,7 @@ void MakePathShorter(char* path, const int max_size)
 
 }
 
-char* MakePath(const char* dir, const char* name)
+char *mkpath(const char *dir, const char *name)
 {
     static char path[PATH_MAX];
     strcpy(path,dir);
@@ -586,16 +586,16 @@ char* MakePath(const char* dir, const char* name)
     return path;
 }
 
-size_t FindFirstCharacter(const char* src)
+size_t findfirst(const char *src, int (*func)(int))
 {
     size_t pos = 0;
-    while (isspace(src[pos])) pos++;
+    while (func(src[pos])) pos++;
     return pos;
 }
 
 extern struct AliasesT aliases[];
 
-size_t StrToValue(void* dest, const char* src)
+size_t atov(void *dest, const char *src)
 {
     size_t PosBegin = 0, PosEnd = 0;
     char temp[8192];
@@ -605,7 +605,7 @@ size_t StrToValue(void* dest, const char* src)
         {
             PosBegin++;
             PosEnd = 0;
-            PosBegin += FindFirstCharacter(src+PosBegin);
+            PosBegin += findfirst(src+PosBegin,isspace);
             while (src[PosBegin+PosEnd] && !isspace(src[PosBegin+PosEnd]) && src[PosBegin+PosEnd] != ',' && src[PosBegin+PosEnd] != '}')
                 PosEnd++;
 
@@ -613,16 +613,16 @@ size_t StrToValue(void* dest, const char* src)
             temp[PosEnd] = '\0';
 
             PosBegin += PosEnd;
-            PosBegin += FindFirstCharacter(src+PosBegin);
+            PosBegin += findfirst(src+PosBegin,isspace);
 
-            StrToValue(&(*(li**)dest)[i],temp);
+            atov(&(*(li**)dest)[i],temp);
         }
         PosBegin++;
     }
     else if (src[PosBegin] == '\'')
     {
         PosBegin++;
-        PosEnd = FindEndOf(src+PosBegin,'\'');
+        PosEnd = find_endof(src+PosBegin,'\'');
         strncpy(*(char**)dest,src+PosBegin,PosEnd);
         (*(char**)dest)[PosEnd] = '\0';
         PosBegin += PosEnd+2;
@@ -630,23 +630,23 @@ size_t StrToValue(void* dest, const char* src)
     else if (src[PosBegin] == '"')
     {
         PosBegin++;
-        PosEnd = FindEndOf(src+PosBegin,'"');
+        PosEnd = find_endof(src+PosBegin,'"');
         for (size_t i = PosBegin, x = 0; i <= PosEnd; i++, x++)
         {
             if (src[i] == '\\' && src[i+1])
             {
                 i++;
-                (*(char**)dest)[x] = CharConv(src[i]);
+                (*(char**)dest)[x] = charconv(src[i]);
                 continue;
             }
 
             if (src[i] == '$' && src[i+1] == '{')
             {
                 i += 2;
-                size_t end = FindEndOf(src+i,'}');
+                size_t end = find_endof(src+i,'}');
                 strncpy(temp,src+i,end);
                 temp[end] = 0;
-                char* temp2 = getenv(temp);
+                char *temp2 = getenv(temp);
                 if (temp2)
                 {
                     size_t end1 = strlen(temp2);
@@ -686,7 +686,7 @@ size_t StrToValue(void* dest, const char* src)
             {
                 *(double*)dest = atof(temp);
                 PosBegin += PosEnd;
-                PosBegin += FindFirstCharacter(src+PosBegin);
+                PosBegin += findfirst(src+PosBegin,isspace);
                 return PosBegin;
             }
             else
@@ -704,9 +704,9 @@ size_t StrToValue(void* dest, const char* src)
     return PosBegin;
 }
 
-wchar_t CharConv(const char c)
+wchar_t charconv(const char c)
 {
-    wchar_t ret = c;
+    register char ret = c;
     switch (c)
     {
         case '0': ret = '\x0'; break;
@@ -722,7 +722,7 @@ wchar_t CharConv(const char c)
     return btowc(ret);
 }
 
-wchar_t *StrToKeys(char *src, wchar_t *dest)
+wchar_t *atok(char *src, wchar_t *dest)
 {
     for (size_t i = 0, h = 0; src[i]; i++)
     {
@@ -788,7 +788,7 @@ wchar_t *StrToKeys(char *src, wchar_t *dest)
             for (j = i; j < strlen(src)-1; j++)
                 src[j] = src[j+1];
             src[j+1] = '\0';
-            dest[h++] = CharConv(src[i]);
+            dest[h++] = charconv(src[i]);
         }
         else
             dest[h++] = btowc(src[i]);
@@ -796,12 +796,12 @@ wchar_t *StrToKeys(char *src, wchar_t *dest)
     return dest;
 }
 
-size_t StrToPath(char* dest, const char* src)
+size_t atop(char *dest, const char *src)
 {
     size_t pos = 0, x;
     if (src[pos] == '"' || src[pos] == '\'')
     {
-        pos = StrToValue(&dest,src);
+        pos = atov(&dest,src);
     }
     else
     {
@@ -821,7 +821,7 @@ size_t StrToPath(char* dest, const char* src)
     return pos;
 }
 
-size_t FindEndOf(const char* src, const char res)
+size_t find_endof(const char *src, const char res)
 {
     size_t end = 0;
     while (src[end++])
@@ -832,7 +832,7 @@ size_t FindEndOf(const char* src, const char res)
     return end;
 }
 
-char* MakePathRunAble(char* temp)
+char *atob(char *temp)
 {
     for (size_t i = 0; i < strlen(temp); i++)
     {
