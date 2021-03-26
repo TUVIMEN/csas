@@ -22,6 +22,7 @@
 #include "sort.h"
 #include "console.h"
 #include "useful.h"
+#include "load.h"
 
 extern Settings *cfg;
 
@@ -429,6 +430,10 @@ void csas_draw(Csas *cs, const int which)
 
             if (i == 1)
             {
+                #ifdef __UPDATE_FILES__
+                updatefile(&G_ES(cs->current_ws,i),G_D(cs->current_ws,i)->path);
+                #endif
+
                 if (cfg->DisplayingC != 0)
                 {
                     flagstoa(&cont_s[0],cfg->DisplayingC,MainTemp,&G_D(cs->current_ws,i)->el[j]);

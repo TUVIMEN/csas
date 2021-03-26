@@ -112,10 +112,11 @@ static void *getfromfile(void *arg)
         if (pipe(pipes) == -1)
             goto END;
 
-        if (fork() == 0)
+        if (vfork() == 0)
         {
-            close(pipes[0]);
             dup2(pipes[1],1);
+            close(pipes[0]);
+            close(pipes[1]);
             execlp(cfg->BinaryPreview,cfg->BinaryPreview,G_ES(cs->current_ws,1).name,NULL);
             _exit(1);
         }

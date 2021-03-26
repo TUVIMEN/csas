@@ -11,7 +11,7 @@ OBJECTS = $(patsubst %.c, %.o, $(wildcard src/*.c))
 
 all: $(OBJECTS)
 	$(CC) $(LINK) $(CFLAGS) $^ -o $(TARGET)
-	#strip --discard-all $(TARGET)
+	strip --discard-all $(TARGET)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

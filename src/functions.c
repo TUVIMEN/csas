@@ -263,31 +263,17 @@ void move_to(Csas *cs, const int ws, const int which, const char *name)
             move_d(-1,cs,ws,which);
 }
 
-static void bulk(Csas *cs, const int ws, const int selected, char* *args, const uchar flag)
+static void bulk(Csas *cs, const int ws, const int selected, char **args, const uchar flag)
 {
-    int fd[2];
-    char buf[2][PATH_MAX];
-    {
-        strcpy(buf[0],TEMPTEMP);
-        strcpy(buf[1],TEMPTEMP);
-        
-        int try[2];
+    char tmpfile[PATH_MAX];
+    strcpy(tmpfile,TEMPTEMP);
+    int fd = mkstemp(tmpfile);
+    FILE *file = fdopen(fd,"w+");
+    if (!file)
+        return;
 
-        for (int i = 0; i < 2; i++)
-        {
-            try[i] = 0;
-            while(try[i] < 5 && (fd[i] = mkstemp(buf[i])) == -1) try[i]++;
-            if (try[i] > 4)
-            {
-                if (i == 1)
-                    unlink(buf[0]);
-                return;
-            }
-        }
-    }
-
-    size_t path_t = strlen(args[0]);
-    bool CommentWrite;
+    size_t pathl = strlen(args[0]);
+    bool comment_write;
     char *temp;
 
     for (size_t i = 0; i < cs->size; i++)
@@ -299,7 +285,7 @@ static void bulk(Csas *cs, const int ws, const int selected, char* *args, const 
         cs->base[i]->size > 0))
             continue;
 
-        if (path_t)
+        if (pathl)
         {
             if (flag & 0x2)
             {
@@ -310,42 +296,40 @@ static void bulk(Csas *cs, const int ws, const int selected, char* *args, const 
                 continue;
         }
 
-        CommentWrite = 0;
+        comment_write = 0;
         for (size_t j = 0; j < cs->base[i]->size; j++)
         {
             if (selected == -1 ? 1 : (cs->base[i]->el[j].list[ws]&selected))
             {
-                if (!CommentWrite)
+                if (!comment_write)
                 {
-                    write(fd[0],"//\t",3);
-                    write(fd[0],cs->base[i]->path,strlen(cs->base[i]->path));
-                    write(fd[0],"\n",1);
-                    CommentWrite = 1;
+                    fprintf(file,"//\t%s\n",cs->base[i]->path);
+                    comment_write = 1;
                 }
                 temp = (flag & 0x1) ? mkpath(cs->base[i]->path,cs->base[i]->el[j].name) : cs->base[i]->el[j].name;
-                write(fd[0],temp,strlen(temp));
-                write(fd[0],"\n",1);
+                fprintf(file,"%s\n",temp);
             }
         }
     }
 
-    spawn(args[2],buf[0],NULL,F_NORMAL|F_WAIT);
+    fflush(file);
+    spawn(args[2],tmpfile,NULL,F_NORMAL|F_WAIT);
 
     size_t pos = 0, x;
-    lseek(fd[0],0,SEEK_SET);
+    rewind(file);
 
-    struct stat sFile;
-    fstat(fd[0],&sFile);
-    char *file = (char*)malloc(sFile.st_size+1);
-    read(fd[0],file,sFile.st_size);
-
+    struct stat sfile;
+    fstat(fd,&sfile);
+    char *filecopy = (char*)malloc(sfile.st_size+1);
+    fread(filecopy,1,sfile.st_size,file);
+    
+    freopen(tmpfile,"w+",file);
     char buffer[PATH_MAX];
+    bool writed = 0;
 
-    write(fd[1],"#!",2);
-    write(fd[1],args[1],strlen(args[1]));
-    write(fd[1],"\n\n",2);
+    fprintf(file,"#!%s\n\n",args[1]);
 
-    if (file[pos])
+    if (filecopy[pos])
     {
         for (size_t i = 0; i < cs->size; i++)
         {
@@ -356,7 +340,7 @@ static void bulk(Csas *cs, const int ws, const int selected, char* *args, const 
             cs->base[i]->size > 0))
                 continue;
 
-            if (path_t)
+            if (pathl)
             {
                 if (flag & 0x2)
                 {
@@ -371,61 +355,56 @@ static void bulk(Csas *cs, const int ws, const int selected, char* *args, const 
             {
                 if (selected == -1 ? 1 : (cs->base[i]->el[j].list[ws]&selected))
                 {
-                    while (file[pos] == '\n')
+                    while (filecopy[pos] == '\n')
                     {
                         pos++;
                         j--;
                     }
-                    if (!file[pos])
+                    if (!filecopy[pos])
                         break;
 
-                    if (file[pos] == '/' && file[pos+1] && file[pos+1] == '/')
+                    if (filecopy[pos] == '/' && filecopy[pos+1] && filecopy[pos+1] == '/')
                     {
-                        while (file[pos] && file[pos] != '\n') pos++;
+                        while (filecopy[pos] && filecopy[pos] != '\n') pos++;
                         j--;
                     }
                     else
                     {
                         x = 0;
-                        while (file[pos] && file[pos] != '\n') buffer[x++] = file[pos++];
+                        while (filecopy[pos] && filecopy[pos] != '\n') buffer[x++] = filecopy[pos++];
                         buffer[x] = '\0';
                         temp = (flag & 0x1) ? mkpath(cs->base[i]->path,cs->base[i]->el[j].name) : cs->base[i]->el[j].name;
                         if (x > 0 && strcmp(temp,buffer) != 0)
                         {
-                            if (write(fd[1],args[3],strlen(args[3])) > 0) write(fd[1]," ",1);
-
-                            if (!(flag & 0x1)) temp = mkpath(cs->base[i]->path,temp);
+                            fprintf(file,"%s ",args[3]);
+                            if (!(flag & 0x1))
+                                temp = mkpath(cs->base[i]->path,temp);
                             atob(temp);
-                            if (write(fd[1],temp,strlen(temp)) > 0) write(fd[1]," ",1);
-
-                            if (write(fd[1],args[4],strlen(args[4])) > 0) write(fd[1]," ",1);
-
+                            fprintf(file,"%s %s ",temp,args[4]);
                             temp = mkpath(cs->base[i]->path,buffer);
                             atob(temp);
-                            if (write(fd[1],temp,strlen(temp)) > 0) write(fd[1]," ",1);
-
-                            write(fd[1],args[5],strlen(args[5]));
-
-                            write(fd[1],"\n",1);
+                            fprintf(file,"%s %s\n",temp,args[5]);
+                            writed = 1;
                         }
                     }
-
                     pos++;
                 }
             }
         }
     }
 
-    free(file);
+    fflush(file);
+    free(filecopy);
 
-    spawn(args[2],buf[1],NULL,F_NORMAL|F_WAIT);
-    spawn(args[1],buf[1],NULL,F_NORMAL|F_WAIT|F_CONFIRM);
+    if (writed == 0)
+        goto END;
 
-    for (int i = 0; i < 2; i++)
-    {
-        unlink(buf[i]);
-        close(fd[i]);
-    }
+    spawn(args[2],tmpfile,NULL,F_NORMAL|F_WAIT);
+    spawn(args[1],tmpfile,NULL,F_NORMAL|F_WAIT|F_CONFIRM);
+
+    END:
+    fclose(file);
+    unlink(tmpfile);
 }
 
 void ___SET(const char *src, Csas *cs)
@@ -1419,7 +1398,7 @@ void ___SELECT(const char *src, Csas *cs)
         switch (mode)
         {
             case -1: G_ES(workspace1,1).list[workspace2] ^= 1<<toselected; break;
-            case 0: G_ES(workspace1,1).list[workspace2] ^= (1<<toselected)*((G_ES(workspace1,1).list[workspace2]&(1<<toselected)) != toselected); break;
+            case 0: G_ES(workspace1,1).list[workspace2] &= ~(1<<toselected); break;
             case 1: G_ES(workspace1,1).list[workspace2] |= 1<<toselected; break;
         }
     }
@@ -1458,7 +1437,7 @@ void ___SELECT(const char *src, Csas *cs)
                 switch (mode)
                 {
                     case -1: cs->base[i]->el[j].list[workspace2] ^= 1<<toselected; break;
-                    case 0: cs->base[i]->el[j].list[workspace2] ^= (1<<toselected)*((cs->base[i]->el[j].list[workspace2]&(1<<toselected)) != toselected); break;
+                    case 0: cs->base[i]->el[j].list[workspace2] &= ~(1<<toselected); break;
                     case 1: cs->base[i]->el[j].list[workspace2] |= 1<<toselected; break;
                 }
             }
@@ -1506,10 +1485,10 @@ void ___BULK(const char *src, Csas *cs)
     size_t pos = 0;
     int ws = cs->current_ws, selected = -1;
     uchar flag = 0;
-    char* *temp = (char**)malloc(6*sizeof(char*));
+    char *temp[6];
     for (int i = 0; i < 6; i++)
         temp[i] = (char*)calloc(sizeof(char),PATH_MAX);
-    char *path = (char*)calloc(sizeof(char),PATH_MAX);
+    char path[PATH_MAX] = {0};
 
     while (src[pos])
     {
@@ -1587,11 +1566,9 @@ void ___BULK(const char *src, Csas *cs)
 
     if (path[0])
         realpath(path,temp[0]);
-    free(path);
     bulk(cs,ws,selected,temp,flag);
     for (int i = 0; i < 6; i++)
         free(temp[i]);
-    free(temp);
     if (cs->current_ws != ws)
         chdir(G_D(ws,1)->path);
 }

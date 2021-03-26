@@ -42,6 +42,75 @@ struct loaddir_s
     #endif
 };
 
+#ifdef __UPDATE_FILES__
+void updatefile(struct Element *el, const char *path)
+{
+    int fd = open(path,O_DIRECTORY);
+    if (fd == -1)
+        return;
+    struct stat st;
+    if (fstatat(fd,el->name,&st,0) == -1)
+    {
+        close(fd);
+        return;
+    }
+
+    close(fd);
+
+    #ifdef __INODE_ENABLE__
+    el->inode = st.st_ino;
+    #endif
+
+    #ifdef __MTIME_ENABLE__
+    el->mtim = st.st_mtim.tv_sec;
+    #endif
+    #ifdef __ATIME_ENABLE__
+    el->atim = st.st_atim.tv_sec;
+    #endif
+    #ifdef __CTIME_ENABLE__
+    el->ctim = st.st_ctim.tv_sec;
+    #endif
+    #ifdef __MODE_ENABLE__
+    el->mode = st.st_mode;
+    #endif
+
+    #ifdef __FILE_SIZE_ENABLE__
+    if ((el->type&T_GT) != T_DIR)
+    {
+        el->size = st.st_size*((el->type&T_SYMLINK) == 0)
+        +st.st_size*((el->type&T_SYMLINK) != 0);
+    }
+    #endif
+
+    #ifdef __COLOR_FILES_BY_EXTENSION__
+    el->ftype = 1;
+    #endif
+
+    #ifdef __FILE_OWNERS_ENABLE__
+    el->pw = st.st_uid;
+    #endif
+    #ifdef __FILE_GROUPS_ENABLE__
+    el->gr = st.st_gid;
+    #endif
+
+    #ifdef __DEV_ENABLE__
+    el->dev = st.st_dev;
+    #endif
+    #ifdef __NLINK_ENABLE__
+    el->nlink = st.st_nlink;
+    #endif
+    #ifdef __RDEV_ENABLE__
+    el->rdev = st.st_rdev;
+    #endif
+    #ifdef __BLK_SIZE_ENABLE__
+    el->blksize = st.st_blksize;
+    #endif
+    #ifdef __BLOCKS_ENABLE__
+    el->blocks = st.st_blocks;
+    #endif
+}
+#endif
+
 extern Settings *cfg;
 
 static uchar mode_to_type(const mode_t mode)
