@@ -20,7 +20,7 @@
 #define INITS_H
 
 void addkey(char *c, char *v);
-int initcurs();
+int initcurses();
 Csas *csas_init();
 void csas_run(Csas *cs, const int argc, char **argv);
 void update_size(Csas *cs);

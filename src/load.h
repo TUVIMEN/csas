@@ -19,7 +19,9 @@
 #ifndef LOAD_H
 #define LOAD_H
 
+#ifdef __UPDATE_FILES__
 void updatefile(struct Element *el, const char *path);
+#endif
 int getdir(const char *path, Csas *cs, const int ws, const int which, const char mode
 #ifdef __FOLLOW_PARENT_DIR__
 , char *searched_name

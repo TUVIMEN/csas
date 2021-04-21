@@ -55,7 +55,7 @@ struct AliasesT aliases[] = {
     {"NAME_MAX",NAME_MAX},
     {"PATH_MAX",PATH_MAX},
     {"DIR_INC_RATE",DIR_INC_RATE},
-    {"DIR_BASE_STABLE_RATE",DIR_BASE_STABLE_RATE},
+    {"DIR_BASE_RATE",DIR_BASE_RATE},
     {"T_DIR",T_DIR},
     {"T_REG",T_REG},
     {"T_DEV",T_DEV},

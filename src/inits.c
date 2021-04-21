@@ -276,7 +276,7 @@ Settings *settings_init()
     return cfg;
 }
 
-int initcurs()
+int initcurses()
 {
     //newterm(NULL,stderr,stdin);
 	initscr();
@@ -298,6 +298,8 @@ int initcurs()
         for (int i = 0; i < 8; i++)
             init_pair(i,i,-1);
     }
+
+	set_escdelay(25);
 
     return 0;
 }
@@ -354,7 +356,7 @@ Csas *csas_init()
     cs->cpreview = (uchar*)malloc(PREVIEW_MAX);
     #endif
 
-    initcurs();
+    initcurses();
 
     for (int i = 0; i < 6; i++)
         cs->win[i] = newwin(0,0,0,0);
@@ -405,14 +407,12 @@ void csas_run(Csas *cs, const int argc, char* *argv)
     else
         csas_cd(".",0,cs);
 
-    bool ccs = 0;
-
     do {
         clock_gettime(1,&MainTimer);
         ActualTime = MainTimer.tv_sec;
 
         #ifdef __THREADS_FOR_DIR_ENABLE__
-
+        bool ccs = 0;
         if (cs->ws[cs->current_ws].win[2] != -1 && G_D(cs->current_ws,2)->enable)
             ccs = 1;
 
@@ -426,8 +426,6 @@ void csas_run(Csas *cs, const int argc, char* *argv)
             timeout(cfg->SDelayBetweenFrames);
         else
             timeout(cfg->DelayBetweenFrames);
-        
-        ccs = 0;
         #endif
 
         csas_draw(cs,-1);

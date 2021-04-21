@@ -18,7 +18,7 @@
 
 #define __THREADS_ENABLE__
 #ifdef __THREADS_ENABLE__
-    #define __THREADS_FOR_DIR_ENABLE__
+    //#define __THREADS_FOR_DIR_ENABLE__
     //#define __THREADS_FOR_FILE_ENABLE__
 #endif
 

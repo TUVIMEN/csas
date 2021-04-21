@@ -57,15 +57,10 @@ int spawn(char *file, char *arg1, char *arg2, const uchar flag)
 
     if (flag&F_NORMAL) endwin();
 
-    pid_t pid = fork();
+    pid_t pid = xfork(flag);
 
     if (pid == 0)
     {
-        signal(SIGHUP, SIG_DFL);
-        signal(SIGINT, SIG_DFL);
-        signal(SIGQUIT, SIG_DFL);
-        signal(SIGTSTP, SIG_DFL);
-
         if (flag&F_SILENT)
         {
             int fd = open("/dev/null",O_WRONLY);
@@ -287,6 +282,50 @@ char *lsperms(const int mode)
     memcpy(bits+7,rwx[mode&7],4);
 
 	return bits;
+}
+
+pid_t xfork(uchar flag)
+{
+    int status;
+    pid_t p = fork();
+    struct sigaction act = {.sa_handler=SIG_DFL};
+
+    if (p > 0)
+    {
+        sigaction(SIGHUP,&(struct sigaction){.sa_handler=SIG_IGN},NULL);
+		sigaction(SIGTSTP,&act,NULL);
+    }
+    else if (p == 0)
+    {
+        if (flag&F_WAIT)
+        {
+            sigaction(SIGHUP,&act,NULL);
+            sigaction(SIGINT,&act,NULL);
+            sigaction(SIGQUIT,&act,NULL);
+            sigaction(SIGTSTP,&act,NULL);
+		}
+        else
+        {
+            p = fork();
+			if (p > 0)
+				_exit(EXIT_SUCCESS);
+			else if (p == 0)
+            {
+				sigaction(SIGHUP,&act,NULL);
+				sigaction(SIGINT,&act,NULL);
+				sigaction(SIGQUIT,&act,NULL);
+				sigaction(SIGTSTP,&act,NULL);
+				setsid();
+				return p;
+			}
+			_exit(EXIT_FAILURE);
+        }
+    }
+
+    if (!(flag&F_WAIT))
+	    waitpid(p,&status,0);
+
+    return p;
 }
 
 void file_run(char *path)
@@ -838,7 +877,7 @@ char *atob(char *temp)
     {
         if(temp[i] == '\\' || temp[i] == '\"' || temp[i] == '\'' || temp[i] == ' ' || temp[i] == '(' || temp[i] == ')' || temp[i] == '[' || temp[i] == ']' || temp[i] == '{' || temp[i] == '}')
         {
-            for (size_t j = strlen(temp); j > i; j--)
+            for (size_t j = strlen(temp)+1; j > i; j--)
                 temp[j] = temp[j-1];
             temp[i] = '\\';
             i++;

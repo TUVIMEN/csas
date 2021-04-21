@@ -90,7 +90,7 @@ typedef unsigned long long int ull;
 #endif
 
 #define DIR_INC_RATE 128
-#define DIR_BASE_STABLE_RATE 64
+#define DIR_BASE_RATE 64
 
 #define TEMPTEMP "/tmp/CSAS-XXXXXX"
 

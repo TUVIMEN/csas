@@ -374,9 +374,12 @@ int getdir(const char *path, Csas *cs, const int ws, const int which, const char
     // 1 - if doesn't exist or changed load
     // 2 - always load
 
+    if (path == NULL || path[0] == '\0')
+        return -1;
+
     char temp[PATH_MAX];
-    if (realpath(path,temp) == NULL)
-        err(-1,NULL);
+
+    realpath(path,temp);
 
     struct stat sfile1;
     if (stat(path,&sfile1) != 0)
@@ -400,8 +403,8 @@ int getdir(const char *path, Csas *cs, const int ws, const int which, const char
     {
         if (cs->size == cs->asize)
         {
-            cs->base = (struct Dir**)realloc(cs->base,(cs->asize+=DIR_BASE_STABLE_RATE)*sizeof(struct Dir*));
-            for (size_t i = cs->asize-DIR_BASE_STABLE_RATE; i < cs->asize; i++)
+            cs->base = (struct Dir**)realloc(cs->base,(cs->asize+=DIR_BASE_RATE)*sizeof(struct Dir*));
+            for (size_t i = cs->asize-DIR_BASE_RATE; i < cs->asize; i++)
             {
                 cs->base[i] = (struct Dir*)malloc(sizeof(struct Dir));
                 cs->base[i]->el = NULL;

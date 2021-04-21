@@ -112,7 +112,7 @@ static void *getfromfile(void *arg)
         if (pipe(pipes) == -1)
             goto END;
 
-        if (vfork() == 0)
+        if (xfork(0) == 0)
         {
             dup2(pipes[1],1);
             close(pipes[0]);

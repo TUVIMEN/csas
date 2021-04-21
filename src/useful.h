@@ -25,6 +25,8 @@ int spawn(char *file, char *arg1, char *arg2, const uchar mode);
 
 char *stoa(ull value); //size to string
 
+pid_t xfork(uchar flag);
+
 void get_dirsize(const int fd, ull *count, ull *size, const bool recursive);
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
