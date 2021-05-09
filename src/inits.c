@@ -167,6 +167,7 @@ void KeyInit()
     addkey("Dd","f_mod d -s . .");
     addkey("DD","f_mod d -s .");
     addkey("Dt","f_mod d -s s");
+    addkey("r","console -a 'open_with '");
     addkey("R","load -tm 2");
     addkey(":","console");
     addkey("cd","console -a 'cd '");
@@ -228,6 +229,7 @@ Settings *settings_init()
     cfg->NumberLinesOff                 = false;
     cfg->NumberLinesFromOne             = false;
     cfg->DirLoadingMode                 = 0;
+    cfg->PreviewMaxThreads              = 8;
     cfg->DisplayingC                    = 0;
     cfg->PreviewSettings                = PREV_DIR|PREV_FILE|PREV_ASCII;
     #ifdef __SORT_ELEMENTS_ENABLE__
@@ -295,7 +297,7 @@ int initcurses()
         start_color();
         use_default_colors();
 
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < 16; i++)
             init_pair(i,i,-1);
     }
 
@@ -394,18 +396,26 @@ Csas *csas_init()
     return cs;
 }
 
-void csas_run(Csas *cs, const int argc, char* *argv)
+void csas_run(Csas *cs, const int argc, char **argv)
 {
     time_t ActualTime, PastTime = 0;
     struct timespec MainTimer;
 
     int si;
+    char *path = NULL;
 
     chdir(getenv("PWD"));
+
     if (argc > 1)
-        csas_cd(argv[1],0,cs);
+        path = argv[1];
     else
-        csas_cd(".",0,cs);
+        path = ".";
+    
+    if (csas_cd(path,cs->current_ws,cs) == -1)
+    {
+        endwin();
+        err(-1,"%s",path);
+    }
 
     do {
         clock_gettime(1,&MainTimer);

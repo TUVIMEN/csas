@@ -407,7 +407,7 @@ static void bulk(Csas *cs, const int ws, const int selected, char **args, const 
     unlink(tmpfile);
 }
 
-void ___SET(const char *src, Csas *cs)
+void ___SET(char *src, Csas *cs)
 {
     size_t pos = 0;
 
@@ -427,6 +427,7 @@ void ___SET(const char *src, Csas *cs)
         {"NumberLinesOff",&cfg->NumberLinesOff},{"NumberLinesFromOne",&cfg->NumberLinesFromOne},
         {"DisplayingC",&cfg->DisplayingC},{"JumpScroll",&cfg->JumpScroll},{"Values",&cfg->Values},
         {"DirLoadingMode",&cfg->DirLoadingMode},{"PreviewSettings",&cfg->PreviewSettings},
+        {"PreviewMaxThreads",&cfg->PreviewMaxThreads},
         #ifdef __SORT_ELEMENTS_ENABLE__
         {"SortMethod",&cfg->SortMethod},{"BetterFiles",&cfg->BetterFiles},
         #endif
@@ -467,7 +468,7 @@ void ___SET(const char *src, Csas *cs)
 }
 
 #ifdef __LOAD_CONFIG_ENABLE__
-void ___INCLUDE(const char *src, Csas *cs)
+void ___INCLUDE(char *src, Csas *cs)
 {
     char temp[8192];
 
@@ -476,7 +477,7 @@ void ___INCLUDE(const char *src, Csas *cs)
 }
 #endif
 
-void ___MAP(const char *src, Csas *cs)
+void ___MAP(char *src, Csas *cs)
 {
     size_t pos = 0, end = 0;
     char temp1[64];
@@ -493,7 +494,7 @@ void ___MAP(const char *src, Csas *cs)
     addkey(temp1,temp2);
 }
 
-void ___MOVE(const char *src, Csas *cs)
+void ___MOVE(char *src, Csas *cs)
 {
     size_t pos = 0;
     char rot = -1;
@@ -584,7 +585,7 @@ void ___MOVE(const char *src, Csas *cs)
     }
 }
 
-void ___QUIT(const char *src, Csas *cs)
+void ___QUIT(char *src, Csas *cs)
 {
     bool force = false;
     if (src[0] && src[0] == '-' && src[1] && src[1] == 'f')
@@ -592,7 +593,7 @@ void ___QUIT(const char *src, Csas *cs)
     csas_exit(cs,force);
 }
 
-void ___CD(const char *src, Csas *cs)
+void ___CD(char *src, Csas *cs)
 {
     size_t pos = 0;
     int ws = cs->current_ws;
@@ -620,7 +621,7 @@ void ___CD(const char *src, Csas *cs)
     csas_cd(path,ws,cs);
 }
 
-void ___GOTOP(const char *src, Csas *cs)
+void ___GOTOP(char *src, Csas *cs)
 {
     size_t pos = 0, target = atol(cs->typed_keys);
     int ws = cs->current_ws;
@@ -675,7 +676,7 @@ void ___GOTOP(const char *src, Csas *cs)
     }
 }
 
-void ___GODOWN(const char *src, Csas *cs)
+void ___GODOWN(char *src, Csas *cs)
 {
     size_t pos = 0, target = atol(cs->typed_keys);
     int ws = cs->current_ws;
@@ -729,7 +730,7 @@ void ___GODOWN(const char *src, Csas *cs)
     }
 }
 
-void ___CHANGEWORKSPACE(const char *src, Csas *cs)
+void ___CHANGEWORKSPACE(char *src, Csas *cs)
 {
     change_workspace(cs,atoi(src));
 }
@@ -760,7 +761,7 @@ static void GETSIZE(struct Element *el, const int fd, const uchar flag)
     }
 }
 
-void ___GETSIZE(const char *src, Csas *cs)
+void ___GETSIZE(char *src, Csas *cs)
 {
     size_t pos = 0;
     uchar flag = 0;
@@ -887,14 +888,14 @@ void ___GETSIZE(const char *src, Csas *cs)
 
 #endif
 
-void ___SETGROUP(const char *src, Csas *cs)
+void ___SETGROUP(char *src, Csas *cs)
 {
     cs->ws[cs->current_ws].sel_group = atoi(src);
     if (cs->ws[cs->current_ws].visual && G_D(cs->current_ws,1)->size > 0)
         G_ES(cs->current_ws,1).list[cs->current_ws] |= 1<<cs->ws[cs->current_ws].sel_group;
 }
 
-void ___FASTSELECT(const char *src, Csas *cs)
+void ___FASTSELECT(char *src, Csas *cs)
 {
     if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
@@ -909,14 +910,26 @@ void ___FASTSELECT(const char *src, Csas *cs)
     }
 }
 
-void ___TOGGLEVISUAL(const char *src, Csas *cs)
+void ___OPEN_WITH(char *src, Csas *cs)
+{
+    if (G_D(cs->current_ws,1)->size == 0)
+        return;
+    char temp[4096];
+    size_t t1 = findfirst(src,isspace),
+        t2 = findfirst(src+t1,isalnum);
+    memcpy(temp,src+t1,t2);
+    temp[t2] = 0;
+    spawn(temp,G_ES(cs->current_ws,1).name,NULL,F_NORMAL|F_WAIT);
+}
+
+void ___TOGGLEVISUAL(char *src, Csas *cs)
 {
     cs->ws[cs->current_ws].visual = !cs->ws[cs->current_ws].visual;
     if (cs->ws[cs->current_ws].visual && G_D(cs->current_ws,1)->size > 0)
         G_ES(cs->current_ws,1).list[cs->current_ws] |= 1<<cs->ws[cs->current_ws].sel_group;
 }
 
-void ___F_MOD(const char *src, Csas *cs)
+void ___F_MOD(char *src, Csas *cs)
 {
     uchar Action = 0;
     mode_t arg = 0;
@@ -1224,7 +1237,7 @@ static void GETDIR(char *path, Csas *cs, uchar mode
     closedir(d);
 }
 
-void ___LOAD(const char *src, Csas *cs)
+void ___LOAD(char *src, Csas *cs)
 {
     size_t pos = 0;
     int mode = cfg->DirLoadingMode;
@@ -1285,7 +1298,7 @@ void ___LOAD(const char *src, Csas *cs)
     }
 }
 
-void ___SELECT(const char *src, Csas *cs)
+void ___SELECT(char *src, Csas *cs)
 {
     size_t pos = 0;
     int mode = 1;
@@ -1449,7 +1462,7 @@ void ___SELECT(const char *src, Csas *cs)
         chdir(G_D(cs->current_ws,1)->path);
 }
 
-void ___EXEC(const char *src, Csas *cs)
+void ___EXEC(char *src, Csas *cs)
 {
     size_t pos = 0;
     int background = 0;
@@ -1480,7 +1493,7 @@ void ___EXEC(const char *src, Csas *cs)
     spawn(temp,NULL,NULL,background ? F_SILENT : F_NORMAL|F_WAIT);
 }
 
-void ___BULK(const char *src, Csas *cs)
+void ___BULK(char *src, Csas *cs)
 {
     size_t pos = 0;
     int ws = cs->current_ws, selected = -1;
@@ -1573,7 +1586,7 @@ void ___BULK(const char *src, Csas *cs)
         chdir(G_D(ws,1)->path);
 }
 
-void ___CONSOLE(const char *src, Csas *cs)
+void ___CONSOLE(char *src, Csas *cs)
 {
     size_t pos = 0;
     char temp[1024];

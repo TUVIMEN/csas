@@ -30,6 +30,9 @@ extern FileSignatures signatures[];
 
 extern Settings *cfg;
 
+static struct sigaction oldsighup;
+static struct sigaction oldsigtstp;
+
 void die(int status, const char *p, ...)
 {
     va_list args;
@@ -75,6 +78,9 @@ int spawn(char *file, char *arg1, char *arg2, const uchar flag)
     {
         if (flag&F_WAIT)
             while (waitpid(pid,NULL,0) == -1);
+
+    	sigaction(SIGHUP, &oldsighup, NULL);
+    	sigaction(SIGTSTP, &oldsigtstp, NULL);
 
         if (flag&F_NORMAL)
         {
@@ -292,8 +298,8 @@ pid_t xfork(uchar flag)
 
     if (p > 0)
     {
-        sigaction(SIGHUP,&(struct sigaction){.sa_handler=SIG_IGN},NULL);
-		sigaction(SIGTSTP,&act,NULL);
+        sigaction(SIGHUP,&(struct sigaction){.sa_handler=SIG_IGN},&oldsighup);
+		sigaction(SIGTSTP,&act,&oldsigtstp);
     }
     else if (p == 0)
     {
@@ -359,13 +365,14 @@ void file_run(char *path)
 
         buf_t = read(fd,buf,buf_t-1);
 
-        int bina = 0;
+        size_t bina = 0;
         bool binary = false;
 
         for (register size_t i = 0; i < buf_t; i++)
-            bina += 1*!(isascii(buf[i]));
+            if (!((buf[i] >= 0x07 && buf[i] <= 0xd) || (buf[i] >= 0x20 && buf[i] <= 0x7e)))
+                bina++;
 
-        binary = bina > 32;
+        binary = bina>>1;
 
         char *nest = (char*)malloc(32);
 

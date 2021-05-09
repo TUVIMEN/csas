@@ -31,6 +31,7 @@ void ___MAP(const char *src, Csas *cs);
 void ___MOVE(const char *src, Csas *cs);
 void ___QUIT(const char *src, Csas *cs);
 void ___CD(const char *src, Csas *cs);
+void ___OPEN_WITH(const char *src, Csas *cs);
 void ___GOTOP(const char *src, Csas *cs);
 void ___GODOWN(const char *src, Csas *cs);
 void ___CHANGEWORKSPACE(const char *src, Csas *cs);

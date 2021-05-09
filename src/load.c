@@ -485,7 +485,7 @@ int getdir(const char *path, Csas *cs, const int ws, const int which, const char
     return 0;
 }
 
-void csas_cd(const char *path, const int ws, Csas *cs)
+int csas_cd(const char *path, const int ws, Csas *cs)
 {
     char npath[PATH_MAX]
     #ifdef __FOLLOW_PARENT_DIR__
@@ -508,7 +508,7 @@ void csas_cd(const char *path, const int ws, Csas *cs)
     if (realpath(path,npath) == NULL || chdir(path) == -1)
     {
         set_message(cs,COLOR_PAIR(1),"%s: %s",path,strerror(errno));
-        return;
+        return -1;
     }
 
     strcpy(cs->ws[ws].path,npath);
@@ -592,4 +592,5 @@ void csas_cd(const char *path, const int ws, Csas *cs)
             get_preview(cs);
     }
     
+    return 0;
 }

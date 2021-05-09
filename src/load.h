@@ -30,6 +30,6 @@ int getdir(const char *path, Csas *cs, const int ws, const int which, const char
 , const bool threaded
 #endif
 );
-void csas_cd(const char *path, const int ws, Csas *cs);
+int csas_cd(const char *path, const int ws, Csas *cs);
 
 #endif

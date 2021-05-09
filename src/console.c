@@ -44,6 +44,7 @@ struct command commands[] = {
     #ifdef __FILE_SIZE_ENABLE__
     {"getsize",___GETSIZE},
     #endif
+    {"open_with",___OPEN_WITH},
     {"setgroup",___SETGROUP},
     {"select",___SELECT},
     {"togglevisual",___TOGGLEVISUAL},

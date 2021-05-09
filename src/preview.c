@@ -46,8 +46,16 @@ void run_preview(WINDOW *w, uchar *c, ssize_t size, uli flags)
     }
 }
 
+#ifdef __THREADS_FOR_FILE_ENABLE__
+static int threads_size = 0;
+#endif
+
 static void *getfromfile(void *arg)
 {
+    #ifdef __THREADS_FOR_FILE_ENABLE__
+    threads_size++;
+    #endif
+    char *buffer = NULL;
     Csas *cs = (Csas*)arg;
     int fd;
     #ifndef __SAVE_PREVIEW__
@@ -62,15 +70,30 @@ static void *getfromfile(void *arg)
         goto END;
     if (sfile.st_size == 0)
         goto END;
+
     #ifdef __SAVE_PREVIEW__
-    if (sfile.st_mtim.tv_sec == G_ES(cs->current_ws,1).mtim && G_ES(cs->current_ws,1).cpreview)
+    if ((sfile.st_mtim.tv_sec == G_ES(cs->current_ws,1).mtim && G_ES(cs->current_ws,1).cpreview)
+    #ifdef __THREADS_FOR_FILE_ENABLE__
+    || G_ES(cs->current_ws,1).spreview&F_TREAD_ENABLE
+    #endif
+    )
         goto END;
-    G_ES(cs->current_ws,1).previewl = 0;
+
+    #ifdef __THREADS_FOR_FILE_ENABLE__
+    G_ES(cs->current_ws,1).spreview |= F_TREAD_ENABLE;
     #endif
 
+    G_ES(cs->current_ws,1).previewl = 0;
+    if (G_ES(cs->current_ws,1).cpreview != NULL)
+    {
+        free(G_ES(cs->current_ws,1).cpreview);
+        G_ES(cs->current_ws,1).cpreview = NULL;
+    }
+    #endif
+
+    buffer = malloc((PREVIEW_MAX > 2048) ? PREVIEW_MAX : 2048);
     ssize_t buffl;
-    char buffer[1024];
-    if ((buffl = read(fd,buffer,1024)) < 1)
+    if ((buffl = read(fd,buffer,2048)) < 1)
         goto END;
 
     uchar bina = 0;
@@ -83,36 +106,35 @@ static void *getfromfile(void *arg)
         break;
     }
 
-    #ifdef __SAVE_PREVIEW__
-    uchar buff[PREVIEW_MAX];
-    #endif
-
     if (!bina)
     {
         if (!(cfg->PreviewSettings&PREV_ASCII))
-            goto END;
+            goto END_t;
         lseek(fd,0,SEEK_SET);
         #ifndef __SAVE_PREVIEW__
         cs->previewl = read(fd,cs->cpreview,PREVIEW_MAX);
         cs->spreview = F_TEXT;
         #else
-        buffl = read(fd,buff,PREVIEW_MAX);
-        G_ES(cs->current_ws,1).cpreview = realloc(G_ES(cs->current_ws,1).cpreview,buffl);
-        memcpy(G_ES(cs->current_ws,1).cpreview,buff,buffl);
-        G_ES(cs->current_ws,1).previewl = buffl;
+        buffl = read(fd,buffer,PREVIEW_MAX);
+        if (buffl != 0)
+        {
+            G_ES(cs->current_ws,1).cpreview = malloc(buffl);
+            memcpy(G_ES(cs->current_ws,1).cpreview,buffer,buffl);
+            G_ES(cs->current_ws,1).previewl = buffl;
+        }
         G_ES(cs->current_ws,1).spreview = F_TEXT;
         #endif
     }
     else
     {
         if (!(cfg->PreviewSettings&PREV_BINARY))
-            goto END;
+            goto END_t;
 
         int pipes[2];
         if (pipe(pipes) == -1)
-            goto END;
+            goto END_t;
 
-        if (xfork(0) == 0)
+        if (vfork() == 0)
         {
             dup2(pipes[1],1);
             close(pipes[0]);
@@ -122,24 +144,35 @@ static void *getfromfile(void *arg)
         }
         else
         {
-            
             close(pipes[1]);
             while (wait(NULL) != -1);
             #ifndef __SAVE_PREVIEW__
             cs->previewl = read(pipes[0],cs->cpreview,PREVIEW_MAX);
             cs->spreview = F_TEXT|F_WRAP;
             #else
-            buffl = read(pipes[0],buff,PREVIEW_MAX);
-            G_ES(cs->current_ws,1).cpreview = realloc(G_ES(cs->current_ws,1).cpreview,buffl);
-            memcpy(G_ES(cs->current_ws,1).cpreview,buff,buffl);
-            G_ES(cs->current_ws,1).previewl = buffl;
+            buffl = read(pipes[0],buffer,PREVIEW_MAX);
+            if (buffl != 0)
+            {
+                G_ES(cs->current_ws,1).cpreview = malloc(buffl);
+                memcpy(G_ES(cs->current_ws,1).cpreview,buffer,buffl);
+                G_ES(cs->current_ws,1).previewl = buffl;
+            }
             G_ES(cs->current_ws,1).spreview = F_TEXT|F_WRAP;
             #endif
             close(pipes[0]);
         }
     }
 
+    END_t:
+    #ifdef __THREADS_FOR_FILE_ENABLE__
+    G_ES(cs->current_ws,1).spreview &= ~F_TREAD_ENABLE;
+    #endif
+
     END: ;
+    free(buffer);
+    #ifdef __THREADS_FOR_FILE_ENABLE__
+    threads_size--;
+    #endif
     close(fd);
     #ifdef __THREADS_FOR_FILE_ENABLE__
     if (cfg->ThreadsForFile)
@@ -153,6 +186,10 @@ static void *getfromfile(void *arg)
 
 void get_preview(Csas *cs)
 {
+    #ifdef __THREADS_FOR_FILE_ENABLE__
+    if (threads_size >= cfg->PreviewMaxThreads)
+        return;
+    #endif
     if (cs->ws[cs->current_ws].win[1] == -1 ||
     #ifdef __THREADS_FOR_DIR_ENABLE__
     G_D(cs->current_ws,1)->enable ||

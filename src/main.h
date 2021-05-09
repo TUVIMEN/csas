@@ -118,15 +118,14 @@ typedef unsigned long long int ull;
 
     #define SORT_NONE 0
     #define SORT_TYPE 1
-
-    #define SORT_SIZE 33
-    #define SORT_NAME 34
-    #define SORT_LNAME 35
-    #define SORT_MTIME 36
-    #define SORT_ATIME 37
-    #define SORT_CTIME 38
-    #define SORT_GID 39
-    #define SORT_UID 40
+    #define SORT_SIZE 2
+    #define SORT_NAME 3
+    #define SORT_LNAME 4
+    #define SORT_MTIME 5
+    #define SORT_ATIME 6
+    #define SORT_CTIME 7
+    #define SORT_GID 8
+    #define SORT_UID 9
 
     #define SORT_IF 1073741823
     #define SORT_BETTER_FILES 1073741824
@@ -146,6 +145,9 @@ typedef unsigned long long int ull;
 
 #define F_TEXT 0x2
 #define F_WRAP 0x4
+#ifdef __THREADS_FOR_FILE_ENABLE__
+#define F_TREAD_ENABLE 0x80
+#endif
 
 #define DP_SIZE         0x1
 #define DP_LSPERMS      0x2
@@ -245,7 +247,7 @@ struct Element
     #ifdef __SAVE_PREVIEW__
     uchar *cpreview;
     ssize_t previewl;
-    uli spreview;
+    uchar spreview;
     #endif
 
     #ifdef __FILE_GROUPS_ENABLE__
@@ -349,6 +351,7 @@ typedef struct
     li JumpScroll;
     double JumpScrollValue;
     li UserRHost;
+    li PreviewMaxThreads;
     li StatusBarOnTop;
     li Win1Enable;
     li Win1Display;

@@ -347,6 +347,8 @@ void csas_draw(Csas *cs, const int which)
         #endif
         ))
             continue;
+        
+        werase(cs->win[i]);
 
         if (i == 2 && !cfg->Win3Display)
         {
@@ -416,12 +418,13 @@ void csas_draw(Csas *cs, const int which)
             #endif
             color = colorel(&G_D(cs->current_ws,i)->el[j],(j == G_S(cs->current_ws,i)));
 
-            if (cfg->FillBlankSpace)
-                wattron(cs->win[i],color);
-            for (int g = cfg->Borders+1; g < cs->win[i]->_maxx-cfg->Borders-1+((i == 2)*2)*!cfg->Borders+(((i == 1)*2)*!cfg->Win3Enable)*!cfg->Borders; g++)
-                mvwaddch(cs->win[i],cfg->Borders+j-G_D(cs->current_ws,i)->ltop[cs->current_ws],g+cfg->Borders,' ');
-            if (!cfg->FillBlankSpace)
-                wattron(cs->win[i],color);
+
+            wattron(cs->win[i],color);
+            if (cfg->FillBlankSpace && j == G_S(cs->current_ws,i))
+            {
+                for (int g = cfg->Borders+1; g < cs->win[i]->_maxx-cfg->Borders-1+((i == 2)*2)*!cfg->Borders+(((i == 1)*2)*!cfg->Win3Enable)*!cfg->Borders; g++)
+                    mvwaddch(cs->win[i],cfg->Borders+j-G_D(cs->current_ws,i)->ltop[cs->current_ws],g+cfg->Borders,' ');
+            }
 
             cont_s[0] = 0;
             MainTemp[0] = '\0';
@@ -469,14 +472,6 @@ void csas_draw(Csas *cs, const int which)
                 NameTemp[cs->win[i]->_maxx-cont_s[0]-3-((cfg->Borders+1)+1)-cfg->Borders] = '~';
                 NameTemp[cs->win[i]->_maxx-cont_s[0]-2-((cfg->Borders+1)+1)-cfg->Borders] = '\0';
             }
-
-            /*if ((ll)cs->win[i]->_maxx < (ll)(4+cont_s[0]+cfg->Borders+1))
-                NameTemp[0] = '\0';
-            else if ((size_t)cont_s[1] > cs->win[i]->_maxx-cont_s[0]-2-((cfg->Borders+1)+1)-cfg->Borders)
-            {
-                NameTemp[cs->win[i]->_maxx-cont_s[0]-3-((cfg->Borders+1)+1)-cfg->Borders] = '~';
-                NameTemp[cs->win[i]->_maxx-cont_s[0]-2-((cfg->Borders+1)+1)-cfg->Borders] = '\0';
-            }*/
 
             mvwaddstr(cs->win[i],cfg->Borders+j-G_D(cs->current_ws,i)->ltop[cs->current_ws],(cfg->Borders*2)+2+(line_off1-line_off2),NameTemp);
 
