@@ -24,7 +24,43 @@
 
 #ifdef __LOAD_CONFIG_ENABLE__
 extern struct AliasesT aliases[];
-extern Settings *cfg;
+
+void get_special(char *dest, const char *src, size_t *n, size_t *x, Csas *cs)
+{
+    if (src[(*n)+1] == '{')
+    {
+        *n += 2;
+        size_t end = strchr(src+*n,'}')-(src+*n);
+        char temp[NAME_MAX], *temp2;
+        strncpy(temp,src+*n,end);
+        temp[end] = 0;
+        temp2 = getenv(temp);
+        if (temp2)
+        {
+            size_t end1 = strlen(temp2);
+            memcpy(dest+*x,temp2,end1);
+            *x += end1-1;
+        }
+        *n += end+1;
+        (*x)++;
+    }
+    else if (src[*n+1] == '(')
+    {
+        *n += 2;
+        char temp[4096];
+        size_t end = strchr(src+*n,')')-(src+*n);
+        memcpy(temp,src+*n,end);
+        temp[end] = '\0';
+        (*n) += end+1;
+        char *t = command_run(temp,cs);
+        if (t != NULL)
+        {
+            size_t c = strlen(t);
+            memcpy(dest+*x,t,c);
+            *x += c;
+        }
+    }
+}
 
 void get_clearline(char *dest, const char *src, size_t *n)
 {
@@ -32,47 +68,129 @@ void get_clearline(char *dest, const char *src, size_t *n)
 
     while (src[*n])
     {
+        if (src[*n] == '\\')
+        {
+            (*n)++;
+            if (src[*n] == '\n')
+            {
+                dest[x++] = ' ';
+                if (src[++(*n)] == 0) {dest[x] = 0; break;}
+            }
+            else if (src[*n] == ' ')
+            {
+                dest[x++] = src[*n-1];
+                dest[x++] = src[(*n)++];
+            }
+            else
+            {
+                dest[x++] = charconv(src[*n]);
+                if (src[*n] == 0) break;
+                (*n)++;
+            }
+            continue;
+        }
+
         if (src[*n] == '\n' || src[*n] == ';')
         {
-            if (x == 0)
-                goto END;
-            else if (src[*n-1] != '\\')
-                goto END;
-            else
-                goto RES;
+            dest[x] = '\0';
+            break;
+        }
 
-            END: ;
-                dest[x] = '\0';
-                break;
-            RES: ;
-                dest[x-1] = ' ';
-                (*n)++;
+        if (src[*n] == '\'')
+        {
+            dest[x++] = src[(*n)++];
+            while (src[*n])
+            {
+                if (src[*n] == '\'')
+                {
+                    dest[x++] = src[(*n)++];
+                    break;
+                }
+                dest[x++] = src[(*n)++];
+            }
+            continue;
+        }
+
+        if (src[*n] == '"')
+        {
+            dest[x++] = src[(*n)++];
+            while (src[*n])
+            {
+                if (src[*n] == '\\')
+                {
+                    dest[x++] = charconv(src[++(*n)]);
+                    if (src[*n] == 0) break;
+                    (*n)++;
+                    continue;
+                }
+                
+                if (src[*n] == '"')
+                {
+                    dest[x++] = src[(*n)++];
+                    break;
+                }
+                dest[x++] = src[(*n)++];
+            }
+            continue;
         }
 
         if (src[*n] == '/')
         {
             if (src[*n+1] == '/')
             {
-                while (src[(*n)++])
+                (*n) += 2;
+                while (src[*n])
+                {
+                    if (src[*n] == '\\')
+                    {
+                        if (src[++(*n)] == 0) break;
+                        if (src[++(*n)] == 0) break;
+                        continue;
+                    }
                     if (src[*n] == '\n') break;
+                    (*n)++;
+                }
+                (*n)++;
             }
             else if (src[*n+1] == '*')
             {
-                while (src[(*n)++])
-                    if (src[*n] == '*' && src[*n+1] == '/') break;
                 *n += 2;
+                if (src[(*n)] != 0)
+                {
+                    while (src[(*n)++])
+                    {
+                        if (src[*n] == '*' && src[*n+1] == '/') break;
+                    }
+                    *n += 3;
+                }
             }
+            dest[x++] = src[(*n)++];
+            continue;
         }
 
-        if ((src[*n] == '\'' || src[*n] == '"') && src[*n-1] != '\\')
+        if (src[*n] == '$' && (src[*n+1] == '(' || src[*n+1]))
         {
-            char temp = src[*n];
             dest[x++] = src[(*n)++];
-            temp = find_endof(src+*n,temp == '"' ? '"' : '\'');
-            strncpy(dest+x,src+*n,temp);
-            dest[x+temp] = '\0';
-            (*n) += temp;
-            x += temp;
+            dest[x++] = src[*n];
+            char comm = src[(*n)++] == '(' ? ')' : '}';
+
+            while (src[*n])
+            {
+                if (src[*n] == '\\')
+                {
+                    dest[x++] = charconv(src[++(*n)]);
+                    if (src[*n] == 0) break;
+                        (*n)++;
+                    continue;
+                }
+                if (src[*n] == comm)
+                {
+                    dest[x++] = src[(*n)++];   
+                    break;
+                }
+                dest[x++] = src[(*n)++];
+            }
+            continue;
         }
 
         dest[x++] = src[(*n)++];
@@ -107,13 +225,17 @@ void config_load(const char *path, Csas *cs)
     close(fd);
 
     char line[16384];
+    char *r;
 
-    size_t pos = 0;
-
-    while (file[pos])
+    for (size_t pos = 0, i = 0; file[pos]; i++)
     {
         get_clearline(line,file,&pos);
-        command_run(line,cs);
+        r = command_run(line,cs);
+        if (r != NULL)
+        {
+            endwin();
+            die("%s: %s\n\t%lu: %s",path,r,i,line);
+        }
         pos++;
     }
 

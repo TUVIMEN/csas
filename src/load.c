@@ -42,6 +42,15 @@ struct loaddir_s
     #endif
 };
 
+extern li s_DirSizeMethod;
+extern li s_SortMethod;
+extern li s_Win3Enable;
+extern li s_ThreadsForDir;
+extern li s_DirLoadingMode;
+extern li s_Borders;
+extern li s_Win1Enable;
+extern li s_Win1Display;
+
 #ifdef __UPDATE_FILES__
 void updatefile(struct Element *el, const char *path)
 {
@@ -111,7 +120,6 @@ void updatefile(struct Element *el, const char *path)
 }
 #endif
 
-extern Settings *cfg;
 
 static uchar mode_to_type(const mode_t mode)
 {
@@ -248,14 +256,14 @@ static void *dir_load(void *arg)
         #endif
 
         #ifdef __FILE_SIZE_ENABLE__
-        if ((cfg->DirSizeMethod&D_F) != D_F && (nd->el[nd->size].type&T_GT) == T_DIR)
+        if ((s_DirSizeMethod&D_F) != D_F && (nd->el[nd->size].type&T_GT) == T_DIR)
         {
             if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
             {
                 count = 0;
                 size = 0;
-                get_dirsize(tfd,&count,&size,(cfg->DirSizeMethod&D_R)==D_R);
-                nd->el[nd->size].size = (cfg->DirSizeMethod&D_C)==D_C ? count : size;
+                get_dirsize(tfd,&count,&size,s_DirSizeMethod);
+                nd->el[nd->size].size = (s_DirSizeMethod&D_C) ? count : size;
                 close(tfd);
             }
             else
@@ -336,7 +344,7 @@ static void *dir_load(void *arg)
     if (nd->size > 0)
     {
         #ifdef __SORT_ELEMENTS_ENABLE__
-        sort_el(nd->el,nd->size,cfg->SortMethod);
+        sort_el(nd->el,nd->size,s_SortMethod);
         #endif
 
         #ifdef __FOLLOW_PARENT_DIR__
@@ -351,7 +359,7 @@ static void *dir_load(void *arg)
 
     #ifdef __THREADS_FOR_DIR_ENABLE__
     nd->enable = false;
-    if (which == 1 && ws == cs->current_ws && cfg->Win3Enable)
+    if (which == 1 && ws == cs->current_ws && s_Win3Enable)
         get_preview(cs);
     pthread_detach(nd->thread);
     pthread_exit(NULL);
@@ -453,7 +461,7 @@ int getdir(const char *path, Csas *cs, const int ws, const int which, const char
         return -1;
 
     #ifdef __SORT_ELEMENTS_ENABLE__
-    cs->base[found]->sort_m = cfg->SortMethod;
+    cs->base[found]->sort_m = s_SortMethod;
     #endif
 
     struct loaddir_s *arg = malloc(sizeof(struct loaddir_s));
@@ -496,7 +504,7 @@ int csas_cd(const char *path, const int ws, Csas *cs)
     ;
 
     #ifdef __FOLLOW_PARENT_DIR__
-    if (!cfg->Win1Enable && b)
+    if (!s_Win1Enable && b)
     {
         getcwd(tpath,PATH_MAX);
         t = memrchr(tpath,'/',strlen(tpath));
@@ -523,24 +531,24 @@ int csas_cd(const char *path, const int ws, Csas *cs)
     #ifdef __THREADS_FOR_DIR_ENABLE__
     int loaded = 
     #endif
-    getdir(".",cs,ws,1,cfg->DirLoadingMode
+    getdir(".",cs,ws,1,s_DirLoadingMode
     #ifdef __FOLLOW_PARENT_DIR__
     ,t
     #endif
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    ,cfg->ThreadsForDir
+    ,s_ThreadsForDir
     #endif
     );
 
-    if (cfg->Win1Enable)
+    if (s_Win1Enable)
     {
         werase(cs->win[0]);
-        if (cfg->Borders)
+        if (s_Borders)
             setborders(cs,0);
         wrefresh(cs->win[0]);
 
         if (G_D(ws,1)->path[0] == '/' && G_D(ws,1)->path[1] == '\0')
-            cfg->Win1Display = false;
+            s_Win1Display = false;
         else
         {
             #ifdef __FOLLOW_PARENT_DIR__
@@ -549,12 +557,12 @@ int csas_cd(const char *path, const int ws, Csas *cs)
                 t++;
             #endif
 
-            getdir("..",cs,ws,0,cfg->DirLoadingMode
+            getdir("..",cs,ws,0,s_DirLoadingMode
             #ifdef __FOLLOW_PARENT_DIR__
             ,t
             #endif
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            ,cfg->ThreadsForDir
+            ,s_ThreadsForDir
             #endif
             );
 
@@ -567,7 +575,7 @@ int csas_cd(const char *path, const int ws, Csas *cs)
                 move_to(cs,ws,0,t);
             #endif
 
-            cfg->Win1Display = true;
+            s_Win1Display = true;
         }
     }
 
@@ -575,12 +583,12 @@ int csas_cd(const char *path, const int ws, Csas *cs)
     #ifdef __THREADS_FOR_DIR_ENABLE__
     loaded == -1 &&
     #endif
-        ws == cs->current_ws && cfg->Win3Enable)
+        ws == cs->current_ws && s_Win3Enable)
     {
         if (G_D(ws,1)->size == 0)
         {
             werase(cs->win[2]);
-            if (cfg->Borders)
+            if (s_Borders)
                 setborders(cs,2);
             wrefresh(cs->win[2]);
         }

@@ -26,12 +26,11 @@
 #include "draw.h"
 
 extern struct AliasesT aliases[];
-extern Settings *cfg;
 
 struct command
 {
     char *name;
-    void (*function)(const char*, Csas*);
+    char *(*function)(const char*, Csas*);
 };
 
 struct command commands[] = {
@@ -65,7 +64,7 @@ struct command commands[] = {
     {NULL,NULL}
 };
 
-void command_run(const char *src, Csas *cs)
+char *command_run(const char *src, Csas *cs)
 {
     size_t pos = 0, end = 0;
     
@@ -78,73 +77,73 @@ void command_run(const char *src, Csas *cs)
         {
             pos += end;
             pos += findfirst(src+pos,isspace);
-            (*commands[i].function)(src+pos,cs);
+            return (*commands[i].function)(src+pos,cs);
             break;
         }
     }
-
+    return NULL;
 }
 
-void console_resize(WINDOW *win, const struct WinArgs args)
+void console_resize(WINDOW *win, const struct WinArgs *args)
 {
-    Vector2i Size = {0,0}, Pos = {0,0};
+    int sizex=0,sizey=0,posx=0,posy=0;
 
-    if (args.s_size.x != -1)
-        Size.x = args.s_size.x;
-    if (args.s_size.y != -1)
-        Size.y = args.s_size.y;
-    if (args.p_size.x > 0)
-        Size.x = args.place->_maxx*args.p_size.x+1;
-    if (args.p_size.y > 0)
-        Size.y = args.place->_maxy*args.p_size.y+1;
-    if (args.min_size.x != -1 && Size.x < args.min_size.x)
-        Size.x = args.min_size.x;
-    if (args.min_size.y != -1 && Size.y < args.min_size.y)
-        Size.y = args.min_size.y;
-    if (args.max_size.x != -1 && Size.x > args.max_size.x)
-        Size.x = args.max_size.x;
-    if (args.max_size.y != -1 && Size.y > args.max_size.y)
-        Size.y = args.max_size.y;
+    if (args->s_sizex != -1)
+        sizex = args->s_sizex;
+    if (args->s_sizey != -1)
+        sizey = args->s_sizey;
+    if (args->p_sizex > 0)
+        sizex = args->place->_maxx*args->p_sizex+1;
+    if (args->p_sizey > 0)
+        sizey = args->place->_maxy*args->p_sizey+1;
+    if (args->min_sizex != -1 && sizex < args->min_sizex)
+        sizex = args->min_sizex;
+    if (args->min_sizey != -1 && sizey < args->min_sizey)
+        sizey = args->min_sizey;
+    if (args->max_sizex != -1 && sizex > args->max_sizex)
+        sizex = args->max_sizex;
+    if (args->max_sizey != -1 && sizey > args->max_sizey)
+        sizey = args->max_sizey;
 
-    if (args.s_pos.x != -1)
-        Pos.x = args.s_pos.x;
-    if (args.s_pos.y != -1)
-        Pos.y = args.s_pos.y;
-    if (args.p_pos.x > 0)
-        Pos.x = (args.place->_begx+args.place->_maxx)*args.p_pos.x;
-    if (args.p_pos.y > 0)
-        Pos.y = (args.place->_begy+args.place->_maxy)*args.p_pos.y;
-    if (args.min_pos.x != -1 && Pos.x < args.min_pos.x)
-        Pos.x = args.min_pos.x;
-    if (args.min_pos.y != -1 && Pos.y < args.min_pos.y)
-        Pos.y = args.min_pos.y;
-    if (args.max_pos.x != -1 && Pos.x > args.max_pos.x)
-        Pos.x = args.max_pos.x;
-    if (args.max_pos.y != -1 && Pos.y > args.max_pos.y)
-        Pos.y = args.max_pos.y;
+    if (args->s_posx != -1)
+        posx = args->s_posx;
+    if (args->s_posy != -1)
+        posy = args->s_posy;
+    if (args->p_posx > 0)
+        posx = (args->place->_begx+args->place->_maxx)*args->p_posx;
+    if (args->p_posy > 0)
+        posy = (args->place->_begy+args->place->_maxy)*args->p_posy;
+    if (args->min_posx != -1 && posx < args->min_posx)
+        posx = args->min_posx;
+    if (args->min_posy != -1 && posy < args->min_posy)
+        posy = args->min_posy;
+    if (args->max_posx != -1 && posx > args->max_posx)
+        posx = args->max_posx;
+    if (args->max_posy != -1 && posy > args->max_posy)
+        posy = args->max_posy;
 
-    wresize(win,Size.y,Size.x);
-    mvwin(win,Pos.y,Pos.x);
+    wresize(win,sizey,sizex);
+    mvwin(win,posy,posx);
     refresh();
-    if (args.cfg&0x1)
+    if (args->cfg&0x1)
         wborder(win,0,0,0,0,0,0,0,0);
     wrefresh(win);
 }
 
-void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t max, struct WinArgs args, char *first, char *add)
+void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t max, struct WinArgs *args, char *first, char *add)
 {
     curs_set(1);
     int Event;
     console_resize(win,args);
 
-    short int x = 0, y = 0, off = 0;
-    int border = (args.cfg&0x1) == 0x1;
+    short int off = 0;
+    int border = (args->cfg&0x1) == 0x1;
     size_t first_t = strlen(first), z = size-1;
     if (add)
     {
         strcpy(history[size-1],add);
-        x = strlen(add);
-        while (x-off >= win->_maxx) off++;
+        args->x = strlen(add);
+        while (args->x-off >= win->_maxx) off++;
     }
 
     char name_complete[NAME_MAX];
@@ -154,13 +153,15 @@ void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t 
     bool tab_was_pressed = 0;
     size_t name_n;
 
+    console_resize(win,args);
+
     for (;;)
     {
         for (int i = border; i < win->_maxx-border; i++)
-            mvwaddch(win,border+y,i,' ');
-        mvwaddstr(win,border+y,border,first);
-        mvwaddnstr(win,border+y,border+first_t,history[size-1]+off,win->_maxx-border*2-first_t);
-        wmove(win,border+y,border+x+first_t-off);
+            mvwaddch(win,border+args->y,i,' ');
+        mvwaddstr(win,border+args->y,border,first);
+        mvwaddnstr(win,border+args->y,border+first_t,history[size-1]+off,win->_maxx-border*2-first_t);
+        wmove(win,border+args->y,border+args->x+first_t-off);
         wrefresh(win);
 
         switch (Event = getch())
@@ -212,15 +213,15 @@ void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t 
                     {
                         strcpy(history[size-1],commands[name_complete_arr[name_complete_actual++]].name);
                         name_complete_actual = name_complete_actual*(name_complete_actual != name_complete_t);
-                        x = strlen(history[size-1]);
+                        args->x = strlen(history[size-1]);
                         if (name_complete_t == 1)
                         {
-                            history[size-1][x++] = ' ';
-                            history[size-1][x] = 0;
+                            history[size-1][args->x++] = ' ';
+                            history[size-1][args->x] = 0;
                             tab_was_pressed = 0;
                         }
 
-                        while (x-off >= win->_maxx) off++;
+                        while (args->x-off >= win->_maxx) off++;
                     }
                 }
             }
@@ -236,8 +237,8 @@ void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t 
                 {
                     z--;
                     strcpy(history[size-1],history[z]);
-                    x = strlen(history[size-1]);
-                    while (x-off >= win->_maxx) off++;
+                    args->x = strlen(history[size-1]);
+                    while (args->x-off >= win->_maxx) off++;
                 }
                 break;
             case KEY_DOWN:
@@ -249,33 +250,34 @@ void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t 
                     if (z == size-1)
                     {
                         memset(history[size-1],0,max);
-                        x = 0;
+                        args->x = 0;
                         off = 0;
                         break;
                     }
                     strcpy(history[size-1],history[z]);
-                    x = strlen(history[size-1]);
-                    while (x-off >= win->_maxx) off++;
+                    args->x = strlen(history[size-1]);
+                    while (args->x-off >= win->_maxx) off++;
                 }
                 break;
             case ('l'&0x1f):
                 werase(win);
-                y = 0;
+                args->y = 0;
                 console_resize(win,args);
                 break;
             case ('a'&0x1f):
-                x = 0;
+                args->x = 0;
                 off = 0;
                 break;
             case ('e'&0x1f):
-                x = strlen(history[size-1]);
-                while (x-off >= win->_maxx) off++;
+                args->x = strlen(history[size-1]);
+                while (args->x-off >= win->_maxx) off++;
                 break;
             case 27:
             case ('r'&0x1f):
                 history[size-1][0] = 0;
                 goto END;
             case KEY_RESIZE:
+                args->y = 0;
                 update_size(cs);
                 csas_draw(cs,-1);
                 werase(win);
@@ -284,11 +286,11 @@ void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t 
             case KEY_BACKSPACE:
             case ('h'&0x1f):
                 tab_was_pressed = 0;
-                if (x > 0)
+                if (args->x > 0)
                 {
-                    for (size_t i = x-1; i <= strlen(history[size-1]); i++)
+                    for (size_t i = args->x-1, j = strlen(history[size-1]); i <= j; i++)
                         history[size-1][i] = history[size-1][i+1];
-                    x--;
+                    args->x--;
                     if (off != 0) off--;
                 }
                 else
@@ -296,55 +298,55 @@ void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t 
                 break;
             case ('w'&0x1f):
                 tab_was_pressed = 0;
-                if (x > 0)
+                if (args->x > 0)
                 {
                     do {
-                        for (size_t i = x-1; i <= strlen(history[size-1]); i++)
+                        for (size_t i = args->x-1, j = strlen(history[size-1]); i <= j; i++)
                             history[size-1][i] = history[size-1][i+1];
-                        x--;
+                        args->x--;
                         if (off != 0) off--;
-                    } while (x != 0 && history[size-1][x-1] != ' ');
+                    } while (args->x != 0 && history[size-1][args->x-1] != ' ');
                 }
                 else
                     goto END;
                 break;
             case KEY_LEFT:
             case ('b'&0x1f):
-                if (x > 0)
+                if (args->x > 0)
                 {
-                    if (off != 0 && border+x+first_t-off == (size_t)win->_maxx/2)
+                    if (off != 0 && border+args->x+first_t-off == (size_t)win->_maxx/2)
                         off--;
-                    x--;
+                    args->x--;
                 }
                 break;
             case KEY_RIGHT:
             case ('f'&0x1f):
-                if (history[size-1][x])
+                if (history[size-1][args->x])
                 {
-                    if (border+x+first_t-off >= (size_t)win->_maxx)
+                    if (border+args->x+first_t-off >= (size_t)win->_maxx)
                         off++;
-                    x++;
+                    args->x++;
                 }
                 break;
             case ('d'&0x1f):
-                while (history[size-1][x] && !isalnum(history[size-1][x])) x++;
-                while (isalnum(history[size-1][x])) x++;
-                while (history[size-1][x] && !isalnum(history[size-1][x])) x++;
+                while (history[size-1][args->x] && !isalnum(history[size-1][args->x])) args->x++;
+                while (isalnum(history[size-1][args->x])) args->x++;
+                while (history[size-1][args->x] && !isalnum(history[size-1][args->x])) args->x++;
                 break;
             case ('s'&0x1f):
-                while (history[size-1][x-1] && !isalnum(history[size-1][x-1])) x--;
-                while (isalnum(history[size-1][x-1])) x--;
-                while (history[size-1][x-1] && !isalnum(history[size-1][x-1])) x--;
+                while (history[size-1][args->x-1] && !isalnum(history[size-1][args->x-1])) args->x--;
+                while (isalnum(history[size-1][args->x-1])) args->x--;
+                while (history[size-1][args->x-1] && !isalnum(history[size-1][args->x-1])) args->x--;
                 break;
             default:
                 tab_was_pressed = 0;
                 int i = strlen(history[size-1]);
                 history[size-1][i+1] = 0;
-                for (; i >= x; i--)
+                for (; i >= args->x; i--)
                     history[size-1][i] = history[size-1][i-1];
-                history[size-1][x] = (char)Event;
-                x++;
-                if (border+x+first_t-off >= (size_t)win->_maxx) off++;
+                history[size-1][args->x] = (char)Event;
+                args->x++;
+                if (border+args->x+first_t-off >= (size_t)win->_maxx) off++;
                 break;
         }
     }
@@ -352,8 +354,8 @@ void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t 
     END: ;
 
     free(name_complete_arr);
-
+    args->x = 0;
     curs_set(0);
-    werase(win);
-    wrefresh(win);
+    //werase(win);
+    //wrefresh(win);
 }

@@ -21,6 +21,7 @@
 #include "preview.h"
 #include "draw.h"
 #include "inits.h"
+#include "loading.h"
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
 extern Extensions extensions[];
@@ -28,18 +29,22 @@ extern Extensions extensions[];
 
 extern FileSignatures signatures[];
 
-extern Settings *cfg;
-
 static struct sigaction oldsighup;
 static struct sigaction oldsigtstp;
 
-void die(int status, const char *p, ...)
+extern li s_CopyBufferSize;
+extern char *s_FileOpener;
+extern char *s_Values;
+extern char *s_editor;
+
+void die(const char *p, ...)
 {
     va_list args;
     va_start(args,p);
     vfprintf(stderr,p,args);
     va_end(args);
-    exit(status);
+    fputc('\n',stderr);
+    exit(-1);
 }
 
 int spawn(char *file, char *arg1, char *arg2, const uchar flag)
@@ -189,49 +194,49 @@ char *stoa(ull value)
     }
 
     if (too != 0)
-        ret[i++] = cfg->Values[too-1];
+        ret[i++] = s_Values[too-1];
 
     ret[i] = '\0';
 
     return ret;
 }
 
-void get_dirsize(const int fd, ull *count, ull *size, const bool recursive)
+int get_dirsize(const int fd, ull *count, ull *size, const uchar flag)
 {
     DIR *d = fdopendir(fd);
+    if (d == NULL)
+        return -1;
     struct dirent *dir;
 
     int tfd;
-    struct stat ST;
+    struct stat st;
 
-    if (d)
+    while ((dir = readdir(d)))
     {
-        while ((dir = readdir(d)))
+        if (dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
+            continue;
+        if (flag&D_R && dir->d_type == 4 &&
+            faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
         {
-            if (dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
-                continue;
-            if (recursive && dir->d_type == 4 &&
-                faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
-            {
-                get_dirsize(tfd,count,size,recursive);
-                close(tfd);
-            }
-            else
-            {
+            get_dirsize(tfd,count,size,flag);
+            close(tfd);
+        }
+        else
+        {
+            if (flag&D_C)
                 (*count)++;
-                fstatat(fd,dir->d_name,&ST,AT_SYMLINK_NOFOLLOW);
-                switch (ST.st_mode & S_IFMT)
-                {
-                    case S_IFREG:
-                    case S_IFDIR:
-                        *size += ST.st_size;
-                    break;
-                }
+            if (flag&D_S)
+            {
+                fstatat(fd,dir->d_name,&st,AT_SYMLINK_NOFOLLOW);
+                if ((st.st_mode&S_IFMT) == S_IFREG)
+                    *size += st.st_size;
             }
         }
-
-        closedir(d);
     }
+
+    closedir(d);
+
+    return 0;
 }
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
@@ -336,8 +341,8 @@ pid_t xfork(uchar flag)
 
 void file_run(char *path)
 {
-    if (strcmp(cfg->FileOpener,"NULL") != 0)
-        spawn(cfg->FileOpener,path,NULL,F_NORMAL|F_WAIT);
+    if (strcmp(s_FileOpener,"NULL") != 0)
+        spawn(s_FileOpener,path,NULL,F_NORMAL|F_WAIT);
     else
     {
         struct stat sfile;
@@ -348,7 +353,7 @@ void file_run(char *path)
 
         if (sfile.st_size == 0)
         {
-            spawn(cfg->editor,path,NULL,F_NORMAL|F_WAIT);
+            spawn(s_editor,path,NULL,F_NORMAL|F_WAIT);
             return;
         }
 
@@ -396,7 +401,7 @@ void file_run(char *path)
         free(nest);
 
         if (binary == false)
-            spawn(cfg->editor,path,NULL,F_NORMAL|F_WAIT);
+            spawn(s_editor,path,NULL,F_NORMAL|F_WAIT);
 
         close(fd);
     }
@@ -497,7 +502,7 @@ void file_cp(const int fd1, const int fd2, const char *name, char *buffer, const
             if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sfile.st_mode)) != -1)
             {
                 int bytesread;
-                while ((bytesread = read(fd3,buffer,cfg->CopyBufferSize)) > 0)
+                while ((bytesread = read(fd3,buffer,s_CopyBufferSize)) > 0)
                     write(fd4,buffer,bytesread);
 
                 close(fd4);
@@ -577,7 +582,7 @@ void file_mv(const int fd1, const int fd2, const char *name, char *buffer, const
             if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sfile.st_mode)) != -1)
             {
                 int bytesread;
-                while ((bytesread = read(fd3,buffer,cfg->CopyBufferSize)) > 0)
+                while ((bytesread = read(fd3,buffer,s_CopyBufferSize)) > 0)
                     write(fd4,buffer,bytesread);
 
                 close(fd4);
@@ -641,12 +646,18 @@ size_t findfirst(const char *src, int (*func)(int))
 
 extern struct AliasesT aliases[];
 
-size_t atov(void *dest, const char *src)
+char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag)
 {
+    static char *messages[] = {
+        "wasn't expecting an array","wasn't expecting a string",
+        "wasn't expecting a integer","wasn't expecting a float"
+    };
     size_t PosBegin = 0, PosEnd = 0;
     char temp[8192];
     if (src[PosBegin] == '{')
     {
+        if (!(flag&SET_T_A))
+            return messages[0];
         for (int i = 0; src[PosBegin] != '}'; i++)
         {
             PosBegin++;
@@ -661,51 +672,39 @@ size_t atov(void *dest, const char *src)
             PosBegin += PosEnd;
             PosBegin += findfirst(src+PosBegin,isspace);
 
-            atov(&(*(li**)dest)[i],temp);
+            char *r = atov(&(*(li**)dest)[i],temp,NULL,cs,flag&(~SET_T_A));
+            if (r != NULL)
+                return r;
         }
         PosBegin++;
     }
     else if (src[PosBegin] == '\'')
     {
+        if (!(flag&SET_T_P))
+            return messages[1];
         PosBegin++;
-        PosEnd = find_endof(src+PosBegin,'\'');
+        PosEnd = strchr(src+PosBegin,'\'')-(src+PosBegin);
         strncpy(*(char**)dest,src+PosBegin,PosEnd);
         (*(char**)dest)[PosEnd] = '\0';
         PosBegin += PosEnd+2;
     }
     else if (src[PosBegin] == '"')
     {
+        if (!(flag&SET_T_P))
+            return messages[1];
         PosBegin++;
-        PosEnd = find_endof(src+PosBegin,'"');
-        for (size_t i = PosBegin, x = 0; i <= PosEnd; i++, x++)
+        PosEnd = strchr(src+PosBegin,'"')-(src+PosBegin)+1;
+        size_t i = PosBegin, x = 0;
+        while (i < PosEnd)
         {
-            if (src[i] == '\\' && src[i+1])
+            if (src[i] == '$')
             {
-                i++;
-                (*(char**)dest)[x] = charconv(src[i]);
+                get_special(*(char**)dest,src,&i,&x,cs);
                 continue;
             }
-
-            if (src[i] == '$' && src[i+1] == '{')
-            {
-                i += 2;
-                size_t end = find_endof(src+i,'}');
-                strncpy(temp,src+i,end);
-                temp[end] = 0;
-                char *temp2 = getenv(temp);
-                if (temp2)
-                {
-                    size_t end1 = strlen(temp2);
-                    memcpy(*((char**)dest)+x,temp2,end1);
-                    x += end1-1;
-                }
-
-                i += end;
-                continue;
-            }
-
-            (*(char**)dest)[x] = src[i];
+            (*(char**)dest)[x++] = src[i++];
         }
+        (*(char**)dest)[x] = '\0';
         PosBegin += PosEnd+2;
     }
     else
@@ -727,13 +726,20 @@ size_t atov(void *dest, const char *src)
             memcpy(temp,src+PosBegin,PosEnd);
             temp[PosEnd] = '\0';
 
-            if (type == 0) { *(li*)dest |= atol(temp); }
+            if (type == 0)
+            {
+                if (!(flag&SET_T_UI) && !(flag&SET_T_I))
+                    return messages[2];
+                *(li*)dest |= atol(temp);
+            }
             else if (type == 1)
             {
+                if (!(flag&SET_T_F))
+                    return messages[3];
                 *(double*)dest = atof(temp);
                 PosBegin += PosEnd;
                 PosBegin += findfirst(src+PosBegin,isspace);
-                return PosBegin;
+                goto END;
             }
             else
                 for (int i = 0; aliases[i].name; i++)
@@ -747,25 +753,26 @@ size_t atov(void *dest, const char *src)
         } while (src[PosBegin++] == '|');
 
     }
-    return PosBegin;
+
+    END: ;
+    if (size != NULL)
+        *size += PosBegin;
+    return NULL;
 }
 
 wchar_t charconv(const char c)
 {
-    register char ret = c;
-    switch (c)
-    {
-        case '0': ret = '\x0'; break;
-        case 'a': ret = '\x7'; break;
-        case 'b': ret = '\x8'; break;
-        case 't': ret = '\x9'; break;
-        case 'n': ret = '\xA'; break;
-        case 'v': ret = '\xB'; break;
-        case 'f': ret = '\xC'; break;
-        case 'r': ret = '\xD'; break;
-    }
+    register char ret = c&127;
+    static char chararray[128] = {
+        0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
+        26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,0,
+        49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,
+        72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,
+        95,96,7,8,99,100,101,12,103,104,105,106,107,108,109,10,111,112,113,13,
+        115,9,117,11,119,120,121,122,123,124,125,126,127
+    };
 
-    return btowc(ret);
+    return btowc(chararray[(int)ret]);
 }
 
 wchar_t *atok(char *src, wchar_t *dest)
@@ -842,12 +849,13 @@ wchar_t *atok(char *src, wchar_t *dest)
     return dest;
 }
 
-size_t atop(char *dest, const char *src)
+size_t atop(char *dest, const char *src, Csas *cs)
 {
     size_t pos = 0, x;
+    src += findfirst(src,isspace);
     if (src[pos] == '"' || src[pos] == '\'')
     {
-        pos = atov(&dest,src);
+        atov(&dest,src,&pos,cs,SET_T_P);
     }
     else
     {
@@ -855,27 +863,24 @@ size_t atop(char *dest, const char *src)
         while (src[pos] && !isspace(src[pos]))
         {
             if (src[pos] == '\\')
-                dest[x] = src[++pos];
-            else
-                dest[x] = src[pos];
-            x++;
-            pos++;
+            {
+                dest[x++] = src[++pos];
+                pos++;
+                continue;
+            }
+
+            if (src[pos] == '$')
+            {
+                get_special(dest,src,&pos,&x,cs);
+                continue;
+            }
+
+            dest[x++] = src[pos++];
         }
         dest[x] = '\0';
     }
 
     return pos;
-}
-
-size_t find_endof(const char *src, const char res)
-{
-    size_t end = 0;
-    while (src[end++])
-    {
-        if (src[end] == res && src[end-1] != '\\')
-            break;
-    }
-    return end;
 }
 
 char *atob(char *temp)

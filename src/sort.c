@@ -22,12 +22,12 @@
 
 #include "sort.h"
 
-extern Settings *cfg;
+extern li *s_BetterFiles;
 
 static bool ismatching(const uchar src)
 {
-    for (register int i = 0; cfg->BetterFiles[i] != 0; i++)
-        if (src == cfg->BetterFiles[i])
+    for (register int i = 0; s_BetterFiles[i] != 0; i++)
+        if (src == s_BetterFiles[i])
             return 1;
     return 0;
 }

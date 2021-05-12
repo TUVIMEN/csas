@@ -19,7 +19,7 @@
 #ifndef USEFUL_H
 #define USEFUL_H
 
-void die(int status, const char *p, ...);
+void die(const char *p, ...);
 
 int spawn(char *file, char *arg1, char *arg2, const uchar mode);
 
@@ -27,7 +27,7 @@ char *stoa(ull value); //size to string
 
 pid_t xfork(uchar flag);
 
-void get_dirsize(const int fd, ull *count, ull *size, const bool recursive);
+int get_dirsize(const int fd, ull *count, ull *size, const uchar flag);
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
 uchar check_extension(const char *name);
@@ -47,10 +47,9 @@ void file_mv(const int fd1, const int fd2, const char *name, char *buffer, const
 char *atob(char *temp); //path to shell arg
 char *mkpath(const char *dir, const char *name); //combines dir and file name to path
 size_t findfirst(const char *src, int (*func)(int));
-size_t atov(void *dest, const char *src); //converts string to value
+char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag); //converts string to value
 wchar_t charconv(const char c); //changes char after '\'
-size_t atop(char *dest, const char *src); //changes string to path
+size_t atop(char *dest, const char *src, Csas *cs); //changes string to path
 wchar_t *atok(char *src,  wchar_t  *dest); //changes string to keys
-size_t find_endof(const char *src, const char res);
 
 #endif

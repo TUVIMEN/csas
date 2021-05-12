@@ -20,65 +20,22 @@
 #define CONFIG_H
 
 struct AliasesT aliases[] = {
-    {"false",0},
-    {"true",1},
-    {"COL_0",COLOR_PAIR(0x0)},
-    {"COL_1",COLOR_PAIR(0x1)},
-    {"COL_2",COLOR_PAIR(0x2)},
-    {"COL_3",COLOR_PAIR(0x3)},
-    {"COL_4",COLOR_PAIR(0x4)},
-    {"COL_5",COLOR_PAIR(0x5)},
-    {"COL_6",COLOR_PAIR(0x6)},
-    {"COL_7",COLOR_PAIR(0x7)},
-    {"COL_8",COLOR_PAIR(0x8)},
-    {"COL_9",COLOR_PAIR(0x9)},
-    {"COL_A",COLOR_PAIR(0xa)},
-    {"COL_B",COLOR_PAIR(0xb)},
-    {"COL_C",COLOR_PAIR(0xc)},
-    {"COL_D",COLOR_PAIR(0xd)},
-    {"COL_E",COLOR_PAIR(0xe)},
-    {"COL_F",COLOR_PAIR(0xf)},
-    {"A_BOLD",A_BOLD},
-    {"A_REVERSE",A_REVERSE},
-    {"A_UNDERLINE",A_UNDERLINE},
-    {"A_VERTICAL",A_VERTICAL},
-    {"A_HORIZONTAL",A_HORIZONTAL},
-    {"A_INVIS",A_INVIS},
-    {"A_ITALIC",A_ITALIC},
-    {"A_LEFT",A_LEFT},
-    {"A_NORMAL",A_NORMAL},
-    {"A_PROTECT",A_PROTECT},
-    {"A_UNDERLINE",A_UNDERLINE},
-    {"A_CHARTEXT",A_CHARTEXT},
-    {"A_RIGHT",A_RIGHT},
-    {"A_TOP",A_TOP},
-    {"A_LOW",A_LOW},
-    {"A_STANDOUT",A_STANDOUT},
-    {"A_DIM",A_DIM},
-    {"A_BLINK",A_BLINK},
-    {"PREV_DIR",PREV_DIR},
-    {"PREV_FILE",PREV_FILE},
-    {"PREV_BINARY",PREV_BINARY},
-    {"PREV_ASCII",PREV_ASCII},
-    {"NAME_MAX",NAME_MAX},
-    {"PATH_MAX",PATH_MAX},
-    {"DIR_INC_RATE",DIR_INC_RATE},
-    {"DIR_BASE_RATE",DIR_BASE_RATE},
-    {"T_DIR",T_DIR},
-    {"T_REG",T_REG},
-    {"T_DEV",T_DEV},
-    {"T_BDEV",T_BDEV},
-    {"T_SOCK",T_SOCK},
-    {"T_FIFO",T_FIFO},
-    {"T_OTHER",T_OTHER},
-    {"T_SYMLINK",T_SYMLINK},
-    {"T_FILE_MISSING",T_FILE_MISSING},
+    {"false",0},{"true",1},{"COL_0",COLOR_PAIR(0x0)},{"COL_1",COLOR_PAIR(0x1)},
+    {"COL_2",COLOR_PAIR(0x2)},{"COL_3",COLOR_PAIR(0x3)},{"COL_4",COLOR_PAIR(0x4)},
+    {"COL_5",COLOR_PAIR(0x5)},{"COL_6",COLOR_PAIR(0x6)},{"COL_7",COLOR_PAIR(0x7)},
+    {"COL_8",COLOR_PAIR(0x8)},{"COL_9",COLOR_PAIR(0x9)},{"COL_A",COLOR_PAIR(0xa)},
+    {"COL_B",COLOR_PAIR(0xb)},{"COL_C",COLOR_PAIR(0xc)},{"COL_D",COLOR_PAIR(0xd)},
+    {"COL_E",COLOR_PAIR(0xe)},{"COL_F",COLOR_PAIR(0xf)},{"A_BOLD",A_BOLD},{"A_REVERSE",A_REVERSE},
+    {"A_UNDERLINE",A_UNDERLINE},{"A_VERTICAL",A_VERTICAL},{"A_HORIZONTAL",A_HORIZONTAL},
+    {"A_INVIS",A_INVIS},{"A_ITALIC",A_ITALIC},{"A_LEFT",A_LEFT},{"A_NORMAL",A_NORMAL},
+    {"A_PROTECT",A_PROTECT},{"A_UNDERLINE",A_UNDERLINE},{"A_CHARTEXT",A_CHARTEXT},{"A_RIGHT",A_RIGHT},
+    {"A_TOP",A_TOP},{"A_LOW",A_LOW},{"A_STANDOUT",A_STANDOUT},{"A_DIM",A_DIM},{"A_BLINK",A_BLINK},
+    {"PREV_DIR",PREV_DIR},{"PREV_FILE",PREV_FILE},{"PREV_BINARY",PREV_BINARY},{"PREV_ASCII",PREV_ASCII},
+    {"NAME_MAX",NAME_MAX},{"PATH_MAX",PATH_MAX},{"DIR_INC_RATE",DIR_INC_RATE},
+    {"DIR_BASE_RATE",DIR_BASE_RATE},{"T_DIR",T_DIR},{"T_REG",T_REG},{"T_DEV",T_DEV},{"T_BDEV",T_BDEV},
+    {"T_SOCK",T_SOCK},{"T_FIFO",T_FIFO},{"T_OTHER",T_OTHER},{"T_SYMLINK",T_SYMLINK},{"T_FILE_MISSING",T_FILE_MISSING},
     #ifdef __SORT_ELEMENTS_ENABLE__
-    {"SORT_NONE",SORT_NONE},
-    {"SORT_TYPE",SORT_TYPE},
-    {"SORT_SIZE",SORT_SIZE},
-    {"SORT_NAME",SORT_NAME},
-    {"SORT_LNAME",SORT_LNAME},
+    {"SORT_NONE",SORT_NONE},{"SORT_TYPE",SORT_TYPE},{"SORT_SIZE",SORT_SIZE},{"SORT_NAME",SORT_NAME},{"SORT_LNAME",SORT_LNAME},
     #ifdef __MTIME_ENABLE__
     {"SORT_MTIME",SORT_MTIME},
     #endif
@@ -88,27 +45,12 @@ struct AliasesT aliases[] = {
     #ifdef __CTIME_ENABLE__
     {"SORT_CTIME",SORT_CTIME},
     #endif
-    {"SORT_GID",SORT_GID},
-    {"SORT_UID",SORT_UID},
-    {"SORT_REVERSE",SORT_REVERSE},
+    {"SORT_GID",SORT_GID},{"SORT_UID",SORT_UID},{"SORT_REVERSE",SORT_REVERSE},
     {"SORT_BETTER_FILES",SORT_BETTER_FILES},
     #endif
-    {"D_F",D_F},
-    {"D_R",D_R},
-    {"D_C",D_C},
-    {"D_H",D_H},
-    {"M_REPLACE",M_REPLACE},
-    {"M_MERGE",M_MERGE},
-    {"M_DCPY",M_DCPY},
-    {"M_CHNAME",M_CHNAME},
-    {"GROUP_0",GROUP(0)},
-    {"GROUP_1",GROUP(1)},
-    {"GROUP_2",GROUP(2)},
-    {"GROUP_3",GROUP(3)},
-    {"GROUP_4",GROUP(4)},
-    {"GROUP_5",GROUP(5)},
-    {"GROUP_6",GROUP(6)},
-    {"GROUP_7",GROUP(7)},
+    {"D_S",D_S},{"D_F",D_F},{"D_R",D_R},{"D_C",D_C},{"D_H",D_H},{"M_REPLACE",M_REPLACE},{"M_MERGE",M_MERGE},
+    {"M_DCPY",M_DCPY},{"M_CHNAME",M_CHNAME},{"GROUP_0",GROUP(0)},{"GROUP_1",GROUP(1)},{"GROUP_2",GROUP(2)},
+    {"GROUP_3",GROUP(3)},{"GROUP_4",GROUP(4)},{"GROUP_5",GROUP(5)},{"GROUP_6",GROUP(6)},{"GROUP_7",GROUP(7)},
     #ifdef __FILE_SIZE_ENABLE__
     {"DP_SIZE",DP_SIZE},
     #endif
@@ -133,64 +75,134 @@ struct AliasesT aliases[] = {
     #endif
     {"DP_TYPE",DP_TYPE},
     #ifdef __MTIME_ENABLE__
-    {"DP_MTIME",DP_MTIME},
-    {"DP_SMTIME",DP_SMTIME},
+    {"DP_MTIME",DP_MTIME},{"DP_SMTIME",DP_SMTIME},
     #endif
     #ifdef __ATIME_ENABLE__
-    {"DP_ATIME",DP_ATIME},
-    {"DP_SATIME",DP_SATIME},
+    {"DP_ATIME",DP_ATIME},{"DP_SATIME",DP_SATIME},
     #endif
     #ifdef __CTIME_ENABLE__
-    {"DP_CTIME",DP_CTIME},
-    {"DP_SCTIME",DP_SCTIME},
+    {"DP_CTIME",DP_CTIME},{"DP_SCTIME",DP_SCTIME},
     #endif
     #ifdef __COLOR_FILES_BY_EXTENSION__
     {"DP_FTYPE",DP_FTYPE},
     #endif
     #ifdef __FILE_GROUPS_ENABLE__
-    {"DP_GRNAME",DP_GRNAME},
-    {"DP_GRGID",DP_GRGID},
-    {"DP_GRPASSWD",DP_GRPASSWD},
+    {"DP_GRNAME",DP_GRNAME},{"DP_GRGID",DP_GRGID},{"DP_GRPASSWD",DP_GRPASSWD},
     #endif
     #ifdef __FILE_OWNERS_ENABLE__
-    {"DP_PWNAME",DP_PWNAME},
-    {"DP_PWDIR",DP_PWDIR},
-    {"DP_PWGECOS",DP_PWGECOS},
-    {"DP_PWGID",DP_PWGID},
-    {"DP_PWPASSWD",DP_PWPASSWD},
-    {"DP_PWSHELL",DP_PWSHELL},
-    {"DP_PWUID",DP_PWUID},
+    {"DP_PWNAME",DP_PWNAME},{"DP_PWDIR",DP_PWDIR},{"DP_PWGECOS",DP_PWGECOS},{"DP_PWGID",DP_PWGID},{"DP_PWPASSWD",DP_PWPASSWD},{"DP_PWSHELL",DP_PWSHELL},{"DP_PWUID",DP_PWUID},
     #endif
-    {"DP_HSIZE",DP_HSIZE},
-    {"B_UHNAME",B_UHNAME},
-    {"B_DIR",B_DIR},
-    {"B_NAME",B_NAME},
-    {"B_WORKSPACES",B_WORKSPACES},
-    {"B_POSITION",B_POSITION},
+    {"DP_HSIZE",DP_HSIZE},{"B_UHNAME",B_UHNAME},{"B_DIR",B_DIR},{"B_NAME",B_NAME},
+{"B_WORKSPACES",B_WORKSPACES},{"B_POSITION",B_POSITION},
     #ifdef __FILESYSTEM_INFO_ENABLE__
-    {"B_FTYPE",B_FTYPE},
-    {"B_SFTYPE",B_SFTYPE},
-    {"B_FBSIZE",B_FBSIZE},
-    {"B_FBLOCKS",B_FBLOCKS},
-    {"B_FHBLOCKS",B_FHBLOCKS},
-    {"B_FBFREE",B_FBFREE},
-    {"B_FHBFREE",B_FHBFREE},
-    {"B_FBAVAIL",B_FBAVAIL},
-    {"B_FHBAVAIL",B_FHBAVAIL},
-    {"B_FFILES",B_FFILES},
-    {"B_FFFREE",B_FFFREE},
-    {"B_FFSID",B_FFSID},
-    {"B_FNAMELEN",B_FNAMELEN},
-    {"B_FFRSIZE",B_FFRSIZE},
-    {"B_FFLAGS",B_FFLAGS},
+    {"B_FTYPE",B_FTYPE},{"B_SFTYPE",B_SFTYPE},{"B_FBSIZE",B_FBSIZE},{"B_FBLOCKS",B_FBLOCKS},
+    {"B_FHBLOCKS",B_FHBLOCKS},{"B_FBFREE",B_FBFREE},{"B_FHBFREE",B_FHBFREE},{"B_FBAVAIL",B_FBAVAIL},
+    {"B_FHBAVAIL",B_FHBAVAIL},{"B_FFILES",B_FFILES},{"B_FFFREE",B_FFFREE},{"B_FFSID",B_FFSID},
+    {"B_FNAMELEN",B_FNAMELEN},{"B_FFRSIZE",B_FFRSIZE},{"B_FFLAGS",B_FFLAGS},
     #endif
-    {"B_MODES",B_MODES},
-    {"B_FGROUP",B_FGROUP},
-    {"B_CSF",B_CSF},
-    {NULL,0}
+    {"B_MODES",B_MODES},{"B_FGROUP",B_FGROUP},{"B_CSF",B_CSF},{NULL,0}
 };
 
-Settings *cfg;
+#ifdef __THREADS_FOR_DIR_ENABLE__
+li s_ThreadsForDir = 0;
+#endif
+#ifdef __THREADS_FOR_FILE_ENABLE__
+li s_ThreadsForFile = 0;
+#endif
+#ifdef __LOAD_CONFIG_ENABLE__
+li s_config_load = 1;
+#endif
+char *s_shell=NULL,*s_Values=NULL,*s_editor=NULL,*s_FileOpener=NULL,*s_UserHostPattern=NULL,*s_BinaryPreview=NULL;
+double s_MoveOffSet=0.1,s_JumpScrollValue=0.5,*s_WinSizeMod=NULL;
+li s_Bar1Settings=B_DIR|B_WORKSPACES|B_POSITION|B_FGROUP|B_MODES|B_CSF,s_PreviewSettings=0,
+    s_Bar2Settings=DP_LSPERMS|DP_SMTIME|DP_HSIZE,s_CopyBufferSize=131072,s_WrapScroll=true,s_DisplayingC=0,
+    s_JumpScroll=false,s_UserRHost=false,s_PreviewMaxThreads=8,s_StatusBarOnTop=false,s_Win1Enable=false,
+    s_Win1Display=false,s_Win3Enable=false,s_Win3Display=false,s_Bar1Enable=true,s_Bar2Enable=true,
+    s_Borders=false,s_FillBlankSpace=false,*s_WindowBorder,s_EnableColor=true,s_DelayBetweenFrames=1024,
+    s_SDelayBetweenFrames=1,s_DirLoadingMode=0,s_NumberLines=false,s_NumberLinesOff=false,s_NumberLinesFromOne=false;
+#ifdef __SORT_ELEMENTS_ENABLE__
+li s_SortMethod=SORT_NAME|SORT_BETTER_FILES,*s_BetterFiles=NULL;
+#endif
+li s_DirSizeMethod=D_F,s_C_Error=COLOR_PAIR(1)|A_BOLD|A_REVERSE;
+#ifdef __COLOR_FILES_BY_EXTENSION__
+li s_C_FType_A=COLOR_PAIR(1),s_C_FType_I=COLOR_PAIR(3),s_C_FType_V=COLOR_PAIR(5);
+#endif
+li s_C_Selected=A_REVERSE|A_BOLD,s_C_Exec_set=A_BOLD,s_C_Exec_col=COLOR_PAIR(2),s_C_Dir=COLOR_PAIR(4)|A_BOLD,
+    s_C_Reg=A_NORMAL,s_C_Fifo=COLOR_PAIR(3)|A_ITALIC,s_C_Sock=COLOR_PAIR(3)|A_ITALIC,s_C_Dev=COLOR_PAIR(3),
+    s_C_BDev=COLOR_PAIR(6),s_C_Other=COLOR_PAIR(0),s_C_FileMissing=COLOR_PAIR(5),
+    s_C_SymLink=COLOR_PAIR(6),s_C_User_S_D=COLOR_PAIR(2)|A_BOLD,s_C_Bar_WorkSpace_Selected=COLOR_PAIR(2)|A_REVERSE|A_BOLD,
+    s_C_Bar_Dir=COLOR_PAIR(3)|A_BOLD,s_C_Bar_Name=A_NORMAL|A_BOLD,s_C_Bar_WorkSpace=A_NORMAL|A_BOLD,*s_C_Group=NULL,
+    s_C_Bar_F=COLOR_PAIR(0),s_C_Bar_E=COLOR_PAIR(0),s_C_Borders=0;
+
+struct option cfg_names[] = {
+        {"ThreadsForDir",SET_T_B,&s_ThreadsForDir},
+        {"ThreadsForFile",SET_T_B,&s_ThreadsForFile},
+        {"config_load",SET_T_B,&s_config_load},
+        {"shell",SET_T_P,&s_shell},
+        {"Values",SET_T_P,&s_Values},
+        {"editor",SET_T_P,&s_editor},
+        {"FileOpener",SET_T_P,&s_FileOpener},
+        {"UserHostPattern",SET_T_P,&s_UserHostPattern},
+        {"Bar1Settings",SET_T_UI,&s_Bar1Settings},
+        {"Bar2Settings",SET_T_UI,&s_Bar2Settings},
+        {"CopyBufferSize",SET_T_UI,&s_CopyBufferSize},
+        {"MoveOffSet",SET_T_F,&s_MoveOffSet},
+        {"WrapScroll",SET_T_B,&s_WrapScroll},
+        {"JumpScroll",SET_T_B,&s_JumpScroll},
+        {"JumpScrollValue",SET_T_F,&s_JumpScrollValue},
+        {"UserRHost",SET_T_B,&s_UserRHost},
+        {"PreviewMaxThreads",SET_T_UI,&s_PreviewMaxThreads},
+        {"StatusBarOnTop",SET_T_B,&s_StatusBarOnTop},
+        {"Win1Enable",SET_T_B,&s_Win1Enable},
+        {"Win1Display",SET_T_B,&s_Win1Display},
+        {"Win3Enable",SET_T_B,&s_Win3Enable},
+        {"Win3Display",SET_T_B,&s_Win3Display},
+        {"Bar1Enable",SET_T_B,&s_Bar1Enable},
+        {"Bar2Enable",SET_T_B,&s_Bar2Enable},
+        {"WinSizeMod",SET_T_F|SET_T_A,&s_WinSizeMod},
+        {"Borders",SET_T_F|SET_T_A,&s_Borders},
+        {"BinaryPreview",SET_T_P,&s_BinaryPreview},
+        {"FillBlankSpace",SET_T_B,&s_FillBlankSpace},
+        {"WindowBorder",SET_T_UI|SET_T_A,&s_WindowBorder},
+        {"EnableColor",SET_T_B,&s_EnableColor},
+        {"DelayBetweenFrames",SET_T_UI,&s_DelayBetweenFrames},
+        {"SDelayBetweenFrames",SET_T_UI,&s_SDelayBetweenFrames},
+        {"DirLoadingMode",SET_T_UI,&s_DirLoadingMode},
+        {"NumberLines",SET_T_B,&s_NumberLines},
+        {"NumberLinesOff",SET_T_B,&s_NumberLinesOff},
+        {"NumberLinesFromOne",SET_T_B,&s_NumberLinesFromOne},
+        {"DisplayingC",SET_T_UI,&s_DisplayingC},
+        {"PreviewSettings",SET_T_UI,&s_PreviewSettings},
+        {"SortMethod",SET_T_UI,&s_SortMethod},
+        {"BetterFiles",SET_T_UI|SET_T_A,&s_BetterFiles},
+        {"DirSizeMethod",SET_T_UI,&s_DirSizeMethod},
+        {"C_Error",SET_T_UI,&s_C_Error},
+        {"C_FType_A",SET_T_UI,&s_C_FType_A},
+        {"C_FType_I",SET_T_UI,&s_C_FType_I},
+        {"C_FType_V",SET_T_UI,&s_C_FType_V},
+        {"C_Selected",SET_T_UI,&s_C_Selected},
+        {"C_Exec_set",SET_T_UI,&s_C_Exec_set},
+        {"C_Exec_col",SET_T_UI,&s_C_Exec_col},
+        {"C_Dir",SET_T_UI,&s_C_Dir},
+        {"C_Reg",SET_T_UI,&s_C_Reg},
+        {"C_Fifo",SET_T_UI,&s_C_Fifo},
+        {"C_Sock",SET_T_UI,&s_C_Sock},
+        {"C_Dev",SET_T_UI,&s_C_Dev},
+        {"C_BDev",SET_T_UI,&s_C_BDev},
+        {"C_Other",SET_T_UI,&s_C_Other},
+        {"C_FileMissing",SET_T_UI,&s_C_FileMissing},
+        {"C_SymLink",SET_T_UI,&s_C_SymLink},
+        {"C_User_S_D",SET_T_UI,&s_C_User_S_D},
+        {"C_Bar_WorkSpace_Selected",SET_T_UI,&s_C_Bar_WorkSpace_Selected},
+        {"C_Bar_Dir",SET_T_UI,&s_C_Bar_Dir},
+        {"C_Bar_Name",SET_T_UI,&s_C_Bar_Name},
+        {"C_Bar_WorkSpace",SET_T_UI,&s_C_Bar_WorkSpace},
+        {"C_Group",SET_T_UI|SET_T_A,&s_C_Group},
+        {"C_Bar_F",SET_T_UI,&s_C_Bar_F},
+        {"C_Bar_E",SET_T_UI,&s_C_Bar_E},
+        {"C_Borders",SET_T_UI,&s_C_Borders}, 
+        {NULL,0,NULL}
+};
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
 Extensions extensions[] = {

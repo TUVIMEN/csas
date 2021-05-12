@@ -23,4 +23,6 @@
 void config_load(const char *dest, Csas *src);
 #endif
 
+void get_special(char *dest, const char *src, size_t *n, size_t *x, Csas *cs);
+
 #endif

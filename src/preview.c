@@ -22,24 +22,31 @@
 #include "draw.h"
 #include "useful.h"
 
-extern Settings *cfg;
+extern li s_Win3Display;
+extern li s_Borders;
+extern li s_PreviewSettings;
+extern char *s_BinaryPreview;
+extern li s_PreviewMaxThreads;
+extern li s_DirLoadingMode;
+extern li s_ThreadsForFile;
+extern li s_ThreadsForDir;
 
 void run_preview(WINDOW *w, uchar *c, ssize_t size, uli flags)
 {
-    register int posx = 1+cfg->Borders*2, posy = cfg->Borders;
+    register int posx = 1+s_Borders*2, posy = s_Borders;
 
-    for (register ssize_t i = 0; i < size && posy <= w->_maxy-cfg->Borders; i++)
+    for (register ssize_t i = 0; i < size && posy <= w->_maxy-s_Borders; i++)
     {
-        if (flags&F_WRAP && w->_maxx-(cfg->Borders*2)-1 < posx)
+        if (flags&F_WRAP && w->_maxx-(s_Borders*2)-1 < posx)
         {
             posy++;
-            posx = 1+cfg->Borders*2;
+            posx = 1+s_Borders*2;
             mvwaddch(w,posy,posx++,c[i]);
         }
         else if (c[i] == '\n')
         {
             posy++;
-            posx = 1+(cfg->Borders<<1);
+            posx = 1+(s_Borders<<1);
         }
         else
             mvwaddch(w,posy,posx++,c[i]);
@@ -108,7 +115,7 @@ static void *getfromfile(void *arg)
 
     if (!bina)
     {
-        if (!(cfg->PreviewSettings&PREV_ASCII))
+        if (!(s_PreviewSettings&PREV_ASCII))
             goto END_t;
         lseek(fd,0,SEEK_SET);
         #ifndef __SAVE_PREVIEW__
@@ -127,7 +134,7 @@ static void *getfromfile(void *arg)
     }
     else
     {
-        if (!(cfg->PreviewSettings&PREV_BINARY))
+        if (!(s_PreviewSettings&PREV_BINARY))
             goto END_t;
 
         int pipes[2];
@@ -139,7 +146,7 @@ static void *getfromfile(void *arg)
             dup2(pipes[1],1);
             close(pipes[0]);
             close(pipes[1]);
-            execlp(cfg->BinaryPreview,cfg->BinaryPreview,G_ES(cs->current_ws,1).name,NULL);
+            execlp(s_BinaryPreview,s_BinaryPreview,G_ES(cs->current_ws,1).name,NULL);
             _exit(1);
         }
         else
@@ -175,7 +182,7 @@ static void *getfromfile(void *arg)
     #endif
     close(fd);
     #ifdef __THREADS_FOR_FILE_ENABLE__
-    if (cfg->ThreadsForFile)
+    if (s_ThreadsForFile)
     {
         pthread_detach(pthread_self());
         pthread_exit(NULL);
@@ -187,7 +194,7 @@ static void *getfromfile(void *arg)
 void get_preview(Csas *cs)
 {
     #ifdef __THREADS_FOR_FILE_ENABLE__
-    if (threads_size >= cfg->PreviewMaxThreads)
+    if (threads_size >= s_PreviewMaxThreads)
         return;
     #endif
     if (cs->ws[cs->current_ws].win[1] == -1 ||
@@ -198,29 +205,29 @@ void get_preview(Csas *cs)
         return;
 
     werase(cs->win[2]);
-    if (cfg->Borders)
+    if (s_Borders)
         setborders(cs,2);
 
-    if (cfg->PreviewSettings&PREV_DIR && (G_ES(cs->current_ws,1).type&T_GT) == T_DIR)
+    if (s_PreviewSettings&PREV_DIR && (G_ES(cs->current_ws,1).type&T_GT) == T_DIR)
     {
-        cfg->Win3Display = true;
-        getdir(G_ES(cs->current_ws,1).name,cs,cs->current_ws,2,cfg->DirLoadingMode
+        s_Win3Display = true;
+        getdir(G_ES(cs->current_ws,1).name,cs,cs->current_ws,2,s_DirLoadingMode
         #ifdef __FOLLOW_PARENT_DIR__
         ,NULL
         #endif
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        ,cfg->ThreadsForDir
+        ,s_ThreadsForDir
         #endif
         );
         return;
     }
 
-    cfg->Win3Display = false;
+    s_Win3Display = false;
 
-    if (cfg->PreviewSettings&PREV_FILE && (G_ES(cs->current_ws,1).type&T_GT) == T_REG)
+    if (s_PreviewSettings&PREV_FILE && (G_ES(cs->current_ws,1).type&T_GT) == T_REG)
     {
         #ifdef __THREADS_FOR_FILE_ENABLE__
-        if (cfg->ThreadsForFile)
+        if (s_ThreadsForFile)
         {
             pthread_t th;
             pthread_create(&th,NULL,getfromfile,(void*)cs);

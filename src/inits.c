@@ -179,103 +179,40 @@ void KeyInit()
     addkey("N","search -b 1");
 }
 
-Settings *settings_init()
+static void settings_init()
 {
-    Settings *cfg = (Settings*)malloc(sizeof(Settings));
-
-    #ifdef __THREADS_FOR_DIR_ENABLE__
-    cfg->ThreadsForDir = 0;
-    #endif
-    #ifdef __THREADS_FOR_FILE_ENABLE__
-    cfg->ThreadsForFile = 0;
-    #endif
-    cfg->FileOpener                    = strcpy(malloc(PATH_MAX),"NULL");
-    cfg->shell                         = strcpy(malloc(PATH_MAX),"sh");
-    cfg->editor                        = strcpy(malloc(PATH_MAX),"vim");
-    cfg->BinaryPreview                 = strcpy(malloc(PATH_MAX),"file");
-    cfg->Values                        = strcpy(malloc(16),"KMGTPEZY");
-    cfg->Bar1Settings                  = B_DIR | B_WORKSPACES | B_POSITION | B_FGROUP | B_MODES | B_CSF;
-    cfg->Bar2Settings                  = DP_LSPERMS | DP_SMTIME | DP_HSIZE;
-    cfg->UserHostPattern               = strcpy(malloc(NAME_MAX),"%s@%s");
-    cfg->UserRHost                     = false;
-    cfg->CopyBufferSize                = 131072;
-    cfg->MoveOffSet                    = 0.1;
-    cfg->WrapScroll                    = true;
-    cfg->JumpScroll                    = false;
-    cfg->JumpScrollValue               = 0.5;
-    cfg->StatusBarOnTop                = false;
-    cfg->Win1Enable                    = false;
-    cfg->Win3Enable                    = false;
-    cfg->Bar1Enable                    = true;
-    cfg->Bar2Enable                    = true;
-    cfg->WinSizeMod                    = (double*)malloc(2*sizeof(double));
-    cfg->WinSizeMod[0]                 = 0.132f;
-    cfg->WinSizeMod[1]                 = 0.368f;
-    cfg->Borders                       = false;
-    cfg->FillBlankSpace                = false;
-    cfg->WindowBorder                  = (li*)malloc(8*sizeof(li));
-    cfg->WindowBorder[0]               = 0;
-    cfg->WindowBorder[1]               = 0;
-    cfg->WindowBorder[2]               = 0;
-    cfg->WindowBorder[3]               = 0;
-    cfg->WindowBorder[4]               = 0;
-    cfg->WindowBorder[5]                = 0;
-    cfg->WindowBorder[6]                = 0;
-    cfg->WindowBorder[7]                = 0;
-    cfg->EnableColor                    = true;
-    cfg->DelayBetweenFrames             = 1024;
-    cfg->SDelayBetweenFrames            = 1;
-    cfg->NumberLines                    = false;
-    cfg->NumberLinesOff                 = false;
-    cfg->NumberLinesFromOne             = false;
-    cfg->DirLoadingMode                 = 0;
-    cfg->PreviewMaxThreads              = 8;
-    cfg->DisplayingC                    = 0;
-    cfg->PreviewSettings                = PREV_DIR|PREV_FILE|PREV_ASCII;
+    s_FileOpener                    = strcpy(malloc(PATH_MAX),"NULL");
+    s_shell                         = strcpy(malloc(PATH_MAX),"sh");
+    s_editor                        = strcpy(malloc(PATH_MAX),"vim");
+    s_BinaryPreview                 = strcpy(malloc(PATH_MAX),"file");
+    s_Values                        = strcpy(malloc(16),"KMGTPEZY");
+    s_UserHostPattern               = strcpy(malloc(NAME_MAX),"%s@%s");
+    s_WinSizeMod                    = (double*)malloc(sizeof(double)<<1);
+    s_WinSizeMod[0]                 = 0.132f;
+    s_WinSizeMod[1]                 = 0.368f;
+    s_WindowBorder                  = (li*)malloc(8*sizeof(li));
+    s_WindowBorder[0]               = 0;
+    s_WindowBorder[1]               = 0;
+    s_WindowBorder[2]               = 0;
+    s_WindowBorder[3]               = 0;
+    s_WindowBorder[4]               = 0;
+    s_WindowBorder[5]                = 0;
+    s_WindowBorder[6]                = 0;
+    s_WindowBorder[7]                = 0;
     #ifdef __SORT_ELEMENTS_ENABLE__
-    cfg->SortMethod                     = SORT_NAME|SORT_BETTER_FILES;
-    cfg->BetterFiles                    = (li*)calloc(16,sizeof(li));
-    cfg->BetterFiles[0]                 = T_DIR;
-    cfg->BetterFiles[1]                 = T_DIR|T_SYMLINK;
+    s_BetterFiles                    = (li*)calloc(16,sizeof(li));
+    s_BetterFiles[0]                 = T_DIR;
+    s_BetterFiles[1]                 = T_DIR|T_SYMLINK;
     #endif
-    cfg->DirSizeMethod                  = D_F;
-    cfg->C_Error                        = COLOR_PAIR(1) | A_BOLD | A_REVERSE;
-    #ifdef __COLOR_FILES_BY_EXTENSION__
-    cfg->C_FType_A                      = COLOR_PAIR(1);
-    cfg->C_FType_I                      = COLOR_PAIR(3);
-    cfg->C_FType_V                      = COLOR_PAIR(5);
-    #endif
-    cfg->C_Selected		                = A_REVERSE | A_BOLD;
-    cfg->C_Exec_set		                = A_BOLD;
-    cfg->C_Exec_col	                    = COLOR_PAIR(2);
-    cfg->C_Dir		                    = COLOR_PAIR(4) | A_BOLD;
-    cfg->C_Reg		                    = A_NORMAL;
-    cfg->C_Fifo		                    = COLOR_PAIR(3) | A_ITALIC;
-    cfg->C_Sock		                    = COLOR_PAIR(3) | A_ITALIC;
-    cfg->C_Dev		                    = COLOR_PAIR(3);
-    cfg->C_BDev		                    = COLOR_PAIR(6);
-    cfg->C_Other		                = COLOR_PAIR(0);
-    cfg->C_FileMissing                  = COLOR_PAIR(5);
-    cfg->C_SymLink                      = COLOR_PAIR(6);
-    cfg->C_User_S_D		                = COLOR_PAIR(2) | A_BOLD;
-    cfg->C_Bar_Dir		                = COLOR_PAIR(4) | A_BOLD;
-    cfg->C_Bar_Name		                = A_NORMAL | A_BOLD;
-    cfg->C_Bar_WorkSpace		        = A_NORMAL | A_BOLD;
-    cfg->C_Bar_WorkSpace_Selected	    = COLOR_PAIR(2) | A_REVERSE | A_BOLD;
-    cfg->C_Group                        = malloc(sizeof(ll)*8);
-    cfg->C_Group[0]		                = COLOR_PAIR(3);
-    cfg->C_Group[1]		                = COLOR_PAIR(2);
-    cfg->C_Group[2]		                = COLOR_PAIR(1);
-    cfg->C_Group[3]		                = COLOR_PAIR(4);
-    cfg->C_Group[4]		                = COLOR_PAIR(5);
-    cfg->C_Group[5]		                = COLOR_PAIR(6);
-    cfg->C_Group[6]		                = COLOR_PAIR(7);
-    cfg->C_Group[7]		                = COLOR_PAIR(8);
-    cfg->C_Bar_E                        = COLOR_PAIR(0);
-    cfg->C_Bar_F                        = COLOR_PAIR(0);
-    cfg->C_Borders                      = 0;
-
-    return cfg;
+    s_C_Group                        = malloc(sizeof(ll)*8);
+    s_C_Group[0]		                = COLOR_PAIR(3);
+    s_C_Group[1]		                = COLOR_PAIR(2);
+    s_C_Group[2]		                = COLOR_PAIR(1);
+    s_C_Group[3]		                = COLOR_PAIR(4);
+    s_C_Group[4]		                = COLOR_PAIR(5);
+    s_C_Group[5]		                = COLOR_PAIR(6);
+    s_C_Group[6]		                = COLOR_PAIR(7);
+    s_C_Group[7]		                = COLOR_PAIR(8);
 }
 
 int initcurses()
@@ -292,7 +229,7 @@ int initcurses()
     notimeout(stdscr,true);
 	set_escdelay(25);
 
-    if (has_colors() && cfg->EnableColor)
+    if (has_colors() && s_EnableColor)
     {
         start_color();
         use_default_colors();
@@ -332,11 +269,10 @@ Csas *csas_init()
     cs->SearchList.list = NULL;
 
     KeyInit();
-    cfg = settings_init();
+    settings_init();
 
     #ifdef __LOAD_CONFIG_ENABLE__
-    cfg->config_load = 1;
-    if (cfg->config_load)
+    if (s_config_load)
     {
         config_load("/etc/csasrc",cs);
         char *HomeTemp = getenv("HOME");
@@ -351,8 +287,8 @@ Csas *csas_init()
     }
     #endif
 
-    cfg->Win1Display = cfg->Win1Enable;
-    cfg->Win3Display = cfg->Win3Enable;
+    s_Win1Display = s_Win1Enable;
+    s_Win3Display = s_Win3Enable;
 
     #ifndef __SAVE_PREVIEW__
     cs->cpreview = (uchar*)malloc(PREVIEW_MAX);
@@ -433,9 +369,9 @@ void csas_run(Csas *cs, const int argc, char **argv)
             ccs = 1;
         
         if (ccs)
-            timeout(cfg->SDelayBetweenFrames);
+            timeout(s_SDelayBetweenFrames);
         else
-            timeout(cfg->DelayBetweenFrames);
+            timeout(s_DelayBetweenFrames);
         #endif
 
         csas_draw(cs,-1);
@@ -446,21 +382,21 @@ void csas_run(Csas *cs, const int argc, char **argv)
         if (ActualTime != PastTime)
         {
             PastTime = ActualTime;
-            getdir(".",cs,cs->current_ws,1,cfg->DirLoadingMode
+            getdir(".",cs,cs->current_ws,1,s_DirLoadingMode
                 #ifdef __FOLLOW_PARENT_DIR__
                 ,NULL
                 #endif
                 #ifdef __THREADS_FOR_DIR_ENABLE__
-                ,cfg->ThreadsForDir
+                ,s_ThreadsForDir
                 #endif
                 );
-            if (cfg->Win1Display)
-                getdir("..",cs,cs->current_ws,0,cfg->DirLoadingMode
+            if (s_Win1Display)
+                getdir("..",cs,cs->current_ws,0,s_DirLoadingMode
                 #ifdef __FOLLOW_PARENT_DIR__
                 ,NULL
                 #endif
                 #ifdef __THREADS_FOR_DIR_ENABLE__
-                ,cfg->ThreadsForDir
+                ,s_ThreadsForDir
                 #endif
                 );
         }
@@ -478,47 +414,47 @@ void update_size(Csas *cs)
     clear();
     getmaxyx(stdscr,cs->wy,cs->wx);
 
-    if (cfg->Bar1Enable)
+    if (s_Bar1Enable)
     {
         wresize(cs->win[3],1,cs->wx);
         mvwin(cs->win[3],0,1);
         werase(cs->win[3]);
     }
-    if (cfg->Bar2Enable)
+    if (s_Bar2Enable)
     {
         wresize(cs->win[4],1,cs->wx);
-        mvwin(cs->win[4],(cs->wy-1)*!cfg->StatusBarOnTop+cfg->StatusBarOnTop-(!cfg->Bar1Enable*cfg->StatusBarOnTop),0);
+        mvwin(cs->win[4],(cs->wy-1)*!s_StatusBarOnTop+s_StatusBarOnTop-(!s_Bar1Enable*s_StatusBarOnTop),0);
         werase(cs->win[4]);
     }
 
-    if (cfg->Win1Enable)
+    if (s_Win1Enable)
     {
-        wresize(cs->win[0],cs->wy-2+!cfg->Bar1Enable+!cfg->Bar2Enable,cs->wx*cfg->WinSizeMod[0]);
-        mvwin(cs->win[0],1+cfg->StatusBarOnTop-!cfg->Bar1Enable-(!cfg->Bar2Enable*cfg->StatusBarOnTop),0);
+        wresize(cs->win[0],cs->wy-2+!s_Bar1Enable+!s_Bar2Enable,cs->wx*s_WinSizeMod[0]);
+        mvwin(cs->win[0],1+s_StatusBarOnTop-!s_Bar1Enable-(!s_Bar2Enable*s_StatusBarOnTop),0);
         cs->win_middle = cs->win[0]->_maxx;
         werase(cs->win[0]);
     }
-    wresize(cs->win[1],cs->wy-2+!cfg->Bar1Enable+!cfg->Bar2Enable,(cs->wx*(cfg->WinSizeMod[1]*cfg->Win3Enable))+(!cfg->Win3Enable*(cs->wx-cs->win_middle)));
-    mvwin(cs->win[1],1+cfg->StatusBarOnTop-!cfg->Bar1Enable-(!cfg->Bar2Enable*cfg->StatusBarOnTop),cs->win_middle);
+    wresize(cs->win[1],cs->wy-2+!s_Bar1Enable+!s_Bar2Enable,(cs->wx*(s_WinSizeMod[1]*s_Win3Enable))+(!s_Win3Enable*(cs->wx-cs->win_middle)));
+    mvwin(cs->win[1],1+s_StatusBarOnTop-!s_Bar1Enable-(!s_Bar2Enable*s_StatusBarOnTop),cs->win_middle);
     werase(cs->win[1]);
-    if (cfg->Win3Enable)
+    if (s_Win3Enable)
     {
-        wresize(cs->win[2],cs->wy-2+!cfg->Bar1Enable+!cfg->Bar2Enable,cs->wx-cs->win[1]->_maxx-cs->win_middle);
-        mvwin(cs->win[2],1+cfg->StatusBarOnTop-!cfg->Bar1Enable-(!cfg->Bar2Enable*cfg->StatusBarOnTop),cs->win[1]->_maxx+cs->win_middle);
+        wresize(cs->win[2],cs->wy-2+!s_Bar1Enable+!s_Bar2Enable,cs->wx-cs->win[1]->_maxx-cs->win_middle);
+        mvwin(cs->win[2],1+s_StatusBarOnTop-!s_Bar1Enable-(!s_Bar2Enable*s_StatusBarOnTop),cs->win[1]->_maxx+cs->win_middle);
         werase(cs->win[2]);
     }
 
     refresh();
-    if (cfg->Borders)
+    if (s_Borders)
         setborders(cs,-1);
 
     for (int i = 0; i < 3; i++)
     {
         if (cs->ws[cs->current_ws].win[i] == -1)
             continue;
-        if (i == 0 && (!cfg->Win1Enable || !cfg->Win1Display))
+        if (i == 0 && (!s_Win1Enable || !s_Win1Display))
             continue;
-        if (i == 2 && (!cfg->Win3Enable
+        if (i == 2 && (!s_Win3Enable
         #ifdef __THREADS_FOR_DIR_ENABLE__
         || G_D(cs->current_ws,1)->enable
         #endif
@@ -537,7 +473,7 @@ void update_size(Csas *cs)
         if (G_D(cs->current_ws,i)->ltop[cs->current_ws]+cs->win[i]->_maxy < G_S(cs->current_ws,i))
             G_D(cs->current_ws,i)->ltop[cs->current_ws] = G_S(cs->current_ws,i)-cs->win[i]->_maxy;
 
-        for (size_t j = G_D(cs->current_ws,i)->ltop[cs->current_ws]; j-G_D(cs->current_ws,i)->ltop[cs->current_ws] < (size_t)cs->win[i]->_maxy-(cfg->Borders*2)+1; j++)
+        for (size_t j = G_D(cs->current_ws,i)->ltop[cs->current_ws]; j-G_D(cs->current_ws,i)->ltop[cs->current_ws] < (size_t)cs->win[i]->_maxy-(s_Borders*2)+1; j++)
         {
             if (j == G_D(cs->current_ws,i)->size)
             {

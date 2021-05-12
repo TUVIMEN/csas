@@ -136,7 +136,8 @@ typedef unsigned long long int ull;
 #define D_F 0x1 //like file
 #define D_R 0x2 //recursive
 #define D_C 0x4 //count
-#define D_H 0x8 //human readable
+#define D_S 0x8 //size
+#define D_H 0x10 //human readable
 
 #define PREV_DIR 0x1
 #define PREV_FILE 0x2
@@ -202,6 +203,14 @@ typedef unsigned long long int ull;
 #define B_MODES         0x200000
 #define B_CSF           0x400000
 
+#define SET_T_B 1 //bool
+#define SET_T_I 2 //int
+#define SET_T_UI 3 //unsigned int
+#define SET_T_F 4 //float
+#define SET_T 7
+#define SET_T_P 8 //pointer
+#define SET_T_A 16 //array
+
 #define GROUP(x)  1<<x
 #define M_REPLACE 0x1 //replace file
 #define M_MERGE   0x2 //merge directory
@@ -211,11 +220,8 @@ typedef unsigned long long int ull;
 struct Element
 {
     char *name;
-
-    uchar list[WORKSPACE_N];
-
     ushort nlen;
-
+    uchar list[WORKSPACE_N];
     uchar type;
     
     #ifdef __COLOR_FILES_BY_EXTENSION__
@@ -327,69 +333,13 @@ typedef struct
     uchar sel_group;
 } WorkSpace;
 
-typedef struct
+#pragma pack(1)
+struct option
 {
-    #ifdef __THREADS_FOR_DIR_ENABLE__
-    li ThreadsForDir;
-    #endif
-    #ifdef __THREADS_FOR_FILE_ENABLE__
-    li ThreadsForFile;
-    #endif
-    #ifdef __LOAD_CONFIG_ENABLE__
-    li config_load;
-    #endif
-    char *shell;
-    char *Values;
-    char *editor;
-    char *FileOpener;
-    char *UserHostPattern;
-    li Bar1Settings;
-    li Bar2Settings;
-    li CopyBufferSize;
-    double MoveOffSet;
-    li WrapScroll;
-    li JumpScroll;
-    double JumpScrollValue;
-    li UserRHost;
-    li PreviewMaxThreads;
-    li StatusBarOnTop;
-    li Win1Enable;
-    li Win1Display;
-    li Win3Enable;
-    li Win3Display;
-    li Bar1Enable;
-    li Bar2Enable;
-    double *WinSizeMod;
-    li Borders;
-    char *BinaryPreview;
-    li FillBlankSpace;
-    li *WindowBorder;
-    li EnableColor;
-    li DelayBetweenFrames;
-    li SDelayBetweenFrames;
-    li DirLoadingMode;
-    li NumberLines;
-    li NumberLinesOff;
-    li NumberLinesFromOne;
-    li DisplayingC;
-    ll PreviewSettings;
-    #ifdef __SORT_ELEMENTS_ENABLE__
-    li SortMethod;
-    li *BetterFiles;
-    #endif
-    li DirSizeMethod;
-    li C_Error;
-    #ifdef __COLOR_FILES_BY_EXTENSION__
-    li C_FType_A;
-    li C_FType_I;
-    li C_FType_V;
-    #endif
-    li C_Selected,C_Exec_set,C_Exec_col,C_Dir,
-        C_Reg,C_Fifo,C_Sock,C_Dev,C_BDev,C_Other,C_FileMissing,
-        C_SymLink,C_User_S_D,C_Bar_WorkSpace_Selected,
-        C_Bar_Dir,C_Bar_Name,C_Bar_WorkSpace, *C_Group,
-        C_Bar_F,C_Bar_E,C_Borders;
-} Settings;
+    char *n;
+    uchar t;
+    void *v;
+};
 
 typedef struct
 {
@@ -449,25 +399,25 @@ struct AliasesT {
     ll v;
 };
 
-typedef struct {
-    int x;
-    int y;
-} Vector2i;
-
-typedef struct {
-    float x;
-    float y;
-} Vector2f;
-
 struct WinArgs {
     WINDOW *place;
-    Vector2i s_size;
-    Vector2f p_size;
-    Vector2i min_size;
-    Vector2i max_size;
-    Vector2i s_pos;
-    Vector2f p_pos;
-    Vector2i min_pos;
-    Vector2i max_pos;
+    short int x;
+    short int y;
+    int s_sizex;
+    int s_sizey;
+    float p_sizex;
+    float p_sizey;
+    int min_sizex;
+    int min_sizey;
+    int max_sizex;
+    int max_sizey;
+    int s_posx;
+    int s_posy;
+    float p_posx;
+    float p_posy;
+    int min_posx;
+    int min_posy;
+    int max_posx;
+    int max_posy;
     int cfg;
 };

@@ -1,5 +1,3 @@
-include 'colorschemes/gd1'
-
 map b 'bulk -S sh -E nvim -b mv -s 0 -R .'
 
 map <left> 'move -l'

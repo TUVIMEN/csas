@@ -27,7 +27,19 @@
 
 extern Key *keys;
 extern size_t keys_t;
-extern Settings *cfg;
+extern struct option cfg_names[];
+
+extern li s_WrapScroll;
+extern li s_Bar2Enable;
+extern li s_JumpScroll;
+extern double s_MoveOffSet;
+extern li s_Borders;
+extern double s_JumpScrollValue;
+extern char *s_shell;
+extern li s_Win1Enable;
+extern li s_Win3Enable;
+extern li s_CopyBufferSize;
+extern li s_DirLoadingMode;
 
 void change_workspace(Csas *cs, const int num)
 {
@@ -75,8 +87,8 @@ int update_event(Csas *cs)
             passed[passedl-1] = i;
             #ifdef __SHOW_KEY_BINDINGS__
             for (int j = 0; j < cs->wx; j++)
-                mvaddch(cs->wy-cfg->Bar2Enable-passedl,j,' ');
-            mvprintw(cs->wy-cfg->Bar2Enable-passedl,0," %c\t%s",wctob(keys[i].keys[1]),keys[i].value);
+                mvaddch(cs->wy-s_Bar2Enable-passedl,j,' ');
+            mvprintw(cs->wy-s_Bar2Enable-passedl,0," %c\t%s",wctob(keys[i].keys[1]),keys[i].value);
             #endif
         }
     }
@@ -99,8 +111,8 @@ int update_event(Csas *cs)
                 for (size_t j = 0; j < passedl; j++)
                 {
                     for (int g = 0; g < cs->wx; g++)
-                        mvaddch(cs->wy-1-cfg->Bar2Enable-j,g,' ');
-                    mvprintw(cs->wy-1-cfg->Bar2Enable-j,0," %c\t%s",wctob(keys[passed[j]].keys[i]),keys[passed[j]].value);
+                        mvaddch(cs->wy-1-s_Bar2Enable-j,g,' ');
+                    mvprintw(cs->wy-1-s_Bar2Enable-j,0," %c\t%s",wctob(keys[passed[j]].keys[i]),keys[passed[j]].value);
                 }
                 #endif
             }
@@ -128,8 +140,8 @@ int update_event(Csas *cs)
                 tmp_passed[tmp_passedl-1] = passed[j];
                 #ifdef __SHOW_KEY_BINDINGS__
                 for (int g = 0; g < cs->wx; g++)
-                    mvaddch(cs->wy-cfg->Bar2Enable-tmp_passedl,g,' ');
-                mvprintw(cs->wy-cfg->Bar2Enable-tmp_passedl,0," %c\t%s",wctob(keys[passed[j]].keys[i+1]),keys[passed[j]].value);
+                    mvaddch(cs->wy-s_Bar2Enable-tmp_passedl,g,' ');
+                mvprintw(cs->wy-s_Bar2Enable-tmp_passedl,0," %c\t%s",wctob(keys[passed[j]].keys[i+1]),keys[passed[j]].value);
                 #endif
             }
         }
@@ -155,8 +167,8 @@ static void godown(Csas *cs, const int ws, const int which)
         for (size_t i = G_S(ws,which); i < G_D(ws,which)->size; i++)
             G_D(ws,which)->el[i].list[ws] |= 1<<cs->ws[ws].sel_group;
     }
-    if (G_D(ws,which)->size > (size_t)cs->win[which]->_maxy-!cfg->Borders+cfg->Borders)
-        G_D(ws,which)->ltop[ws] = G_D(ws,which)->size-cs->win[which]->_maxy-!cfg->Borders+cfg->Borders;
+    if (G_D(ws,which)->size > (size_t)cs->win[which]->_maxy-!s_Borders+s_Borders)
+        G_D(ws,which)->ltop[ws] = G_D(ws,which)->size-cs->win[which]->_maxy-!s_Borders+s_Borders;
     else
         G_D(ws,which)->ltop[ws] = 0;
     G_S(ws,which) = G_D(ws,which)->size-1;
@@ -177,27 +189,27 @@ static void move_d(const char how, Csas *cs, const int ws, const int which)
 {
     if (G_S(ws,which) == G_D(ws,which)->size-1 && how == 1)
     {
-        if (cfg->WrapScroll) gotop(cs,ws,which);
+        if (s_WrapScroll) gotop(cs,ws,which);
         return;
     }
     else if (G_S(ws,which) == 0 && how == -1)
     {
-        if (cfg->WrapScroll) godown(cs,ws,which);
+        if (s_WrapScroll) godown(cs,ws,which);
         return;
     }
 
     G_S(ws,which) += how;
 
-    if ((how == 1)*((cs->win[which]->_maxy+G_D(ws,which)->ltop[ws]-(cfg->Borders*2)) < G_D(ws,which)->size-1)+(how == -1)*((cs->win[which]->_maxy+G_D(ws,which)->ltop[ws]-(cfg->Borders*2)) > 0) &&
-        (how == 1)*(cs->win[which]->_maxy+G_D(ws,which)->ltop[ws]-(cfg->Borders*2) < G_S(ws,which)+(int)(cs->win[which]->_maxy*cfg->MoveOffSet))+(how == -1)*(G_D(ws,which)->ltop[ws] > G_S(ws,which)-(int)(cs->win[which]->_maxy*cfg->MoveOffSet)))
+    if ((how == 1)*((cs->win[which]->_maxy+G_D(ws,which)->ltop[ws]-(s_Borders*2)) < G_D(ws,which)->size-1)+(how == -1)*((cs->win[which]->_maxy+G_D(ws,which)->ltop[ws]-(s_Borders*2)) > 0) &&
+        (how == 1)*(cs->win[which]->_maxy+G_D(ws,which)->ltop[ws]-(s_Borders*2) < G_S(ws,which)+(int)(cs->win[which]->_maxy*s_MoveOffSet))+(how == -1)*(G_D(ws,which)->ltop[ws] > G_S(ws,which)-(int)(cs->win[which]->_maxy*s_MoveOffSet)))
     {
-        if (cfg->JumpScroll)
+        if (s_JumpScroll)
         {
-            if ((how == 1)*((cs->win[which]->_maxy+G_D(ws,which)->ltop[ws]-(cfg->Borders*2)+(int)(cs->win[which]->_maxy*cfg->JumpScrollValue)) > G_D(ws,which)->size-1)
-                +(how == -1)*(G_D(ws,which)->ltop[ws] > G_S(ws,which)-(int)(cs->win[which]->_maxy*cfg->MoveOffSet)))
-                G_D(ws,which)->ltop[ws] = (how == 1)*(G_D(ws,which)->size-cs->win[which]->_maxy-!cfg->Borders+cfg->Borders);
+            if ((how == 1)*((cs->win[which]->_maxy+G_D(ws,which)->ltop[ws]-(s_Borders*2)+(int)(cs->win[which]->_maxy*s_JumpScrollValue)) > G_D(ws,which)->size-1)
+                +(how == -1)*(G_D(ws,which)->ltop[ws] > G_S(ws,which)-(int)(cs->win[which]->_maxy*s_MoveOffSet)))
+                G_D(ws,which)->ltop[ws] = (how == 1)*(G_D(ws,which)->size-cs->win[which]->_maxy-!s_Borders+s_Borders);
             else
-                G_D(ws,which)->ltop[ws] += (int)(how*cs->win[which]->_maxy*cfg->JumpScrollValue);
+                G_D(ws,which)->ltop[ws] += (int)(how*cs->win[which]->_maxy*s_JumpScrollValue);
         }
         else
             G_D(ws,which)->ltop[ws] += how;
@@ -407,77 +419,37 @@ static void bulk(Csas *cs, const int ws, const int selected, char **args, const 
     unlink(tmpfile);
 }
 
-void ___SET(char *src, Csas *cs)
+char *___SET(char *src, Csas *cs)
 {
     size_t pos = 0;
-
-    struct SetEntry SetEntries[] = {
-        {"FileOpener",&cfg->FileOpener},{"BinaryPreview",&cfg->BinaryPreview},
-        {"shell",&cfg->shell},{"editor",&cfg->editor},{"Bar1Settings",&cfg->Bar1Settings},
-        {"Bar2Settings",&cfg->Bar2Settings},{"C_Borders",&cfg->C_Borders},
-        {"UserHostPattern",&cfg->UserHostPattern},{"CopyBufferSize",&cfg->CopyBufferSize},
-        {"MoveOffSet",&cfg->MoveOffSet},{"SDelayBetweenFrames",&cfg->SDelayBetweenFrames},
-        {"WrapScroll",&cfg->WrapScroll},{"JumpScrollValue",&cfg->JumpScrollValue},
-        {"StatusBarOnTop",&cfg->StatusBarOnTop},{"WinSizeMod",&cfg->WinSizeMod},
-        {"Win1Enable",&cfg->Win1Enable},{"Win3Enable",&cfg->Win3Enable},{"UserRHost",&cfg->UserRHost},
-        {"Bar1Enable",&cfg->Bar1Enable},{"Bar2Enable",&cfg->Bar2Enable},
-        {"Borders",&cfg->Borders},{"FillBlankSpace",&cfg->FillBlankSpace},
-        {"WindowBorder",&cfg->WindowBorder},{"EnableColor",&cfg->EnableColor},
-        {"DelayBetweenFrames",&cfg->DelayBetweenFrames},{"NumberLines",&cfg->NumberLines},
-        {"NumberLinesOff",&cfg->NumberLinesOff},{"NumberLinesFromOne",&cfg->NumberLinesFromOne},
-        {"DisplayingC",&cfg->DisplayingC},{"JumpScroll",&cfg->JumpScroll},{"Values",&cfg->Values},
-        {"DirLoadingMode",&cfg->DirLoadingMode},{"PreviewSettings",&cfg->PreviewSettings},
-        {"PreviewMaxThreads",&cfg->PreviewMaxThreads},
-        #ifdef __SORT_ELEMENTS_ENABLE__
-        {"SortMethod",&cfg->SortMethod},{"BetterFiles",&cfg->BetterFiles},
-        #endif
-        {"DirSizeMethod",&cfg->DirSizeMethod},{"C_Error",&cfg->C_Error},
-        #ifdef __COLOR_FILES_BY_EXTENSION__
-        {"C_FType_A",&cfg->C_FType_A},{"C_FType_I",&cfg->C_FType_I},{"C_FType_V",&cfg->C_FType_V},
-        #endif
-        {"C_Selected",&cfg->C_Selected},{"C_Exec_set",&cfg->C_Exec_set},{"C_Exec_col",&cfg->C_Exec_col},
-        {"C_Dir",&cfg->C_Dir},{"C_Reg",&cfg->C_Reg},{"C_Fifo",&cfg->C_Fifo},
-        {"C_Sock",&cfg->C_Sock},{"C_Dev",&cfg->C_Dev},{"C_BDev",&cfg->C_BDev},
-        {"C_SymLink",&cfg->C_SymLink},{"C_FileMissing",&cfg->C_FileMissing},
-        {"C_Other",&cfg->C_Other},{"C_User_S_D",&cfg->C_User_S_D},
-        {"C_Bar_Dir",&cfg->C_Bar_Dir},{"C_Bar_Name",&cfg->C_Bar_Name},{"C_Bar_WorkSpace",&cfg->C_Bar_WorkSpace},
-        {"C_Bar_WorkSpace_Selected",&cfg->C_Bar_WorkSpace_Selected},{"C_Group",&cfg->C_Group},
-        {"C_Bar_F",&cfg->C_Bar_F},{"C_Bar_E",&cfg->C_Bar_E},
-        #ifdef __THREADS_FOR_DIR_ENABLE__
-        {"ThreadsForDir",&cfg->ThreadsForDir},
-        #endif
-        #ifdef __THREADS_FOR_FILE_ENABLE__
-        {"ThreadsForFile",&cfg->ThreadsForFile},
-        #endif
-        {NULL,NULL}
-    };
 
     size_t end = 0;
     while (src[pos+end] && !isspace(src[pos+end])) end++;
     int gga = -1;
 
-    for (int i = 0; SetEntries[i].name; i++)
-        if (strlen(SetEntries[i].name) == end && strncmp(src+pos,SetEntries[i].name,end) == 0) { gga = i; break; }
+    for (int i = 0;cfg_names[i].n; i++)
+        if (strlen(cfg_names[i].n) == end && strncmp(src+pos,cfg_names[i].n,end) == 0) { gga = i; break; }
 
-    if (gga == -1) return;
+    if (gga == -1) return NULL;
 
     pos += end;
     pos += findfirst(src+pos,isspace);
 
-    pos += atov(SetEntries[gga].value,src+pos);
+    return atov(cfg_names[gga].v,src+pos,&pos,cs,cfg_names[gga].t);
 }
 
 #ifdef __LOAD_CONFIG_ENABLE__
-void ___INCLUDE(char *src, Csas *cs)
+char *___INCLUDE(char *src, Csas *cs)
 {
     char temp[8192];
 
-    atop(temp,src);
+    atop(temp,src,cs);
     config_load(temp,cs);
+    return NULL;
 }
 #endif
 
-void ___MAP(char *src, Csas *cs)
+char *___MAP(char *src, Csas *cs)
 {
     size_t pos = 0, end = 0;
     char temp1[64];
@@ -487,14 +459,13 @@ void ___MAP(char *src, Csas *cs)
     temp1[end] = '\0';
     pos += end;
 
-    pos += findfirst(src+pos,isspace);
-
-    pos += atop(temp2,src+pos);
+    pos += atop(temp2,src+pos,cs);
 
     addkey(temp1,temp2);
+    return NULL;
 }
 
-void ___MOVE(char *src, Csas *cs)
+char *___MOVE(char *src, Csas *cs)
 {
     size_t pos = 0;
     char rot = -1;
@@ -542,7 +513,7 @@ void ___MOVE(char *src, Csas *cs)
     }
 
     if (!cs->ws[ws].exists)
-        return;
+        return NULL;
 
     switch (rot)
     {
@@ -557,7 +528,7 @@ void ___MOVE(char *src, Csas *cs)
                 mul2 = atoi(cs->typed_keys);
                 for (register int i = 0; i < (mul2+(mul2 == 0))*mul1; i++)
                     move_d(rot,cs,ws,1);
-                if (cfg->Win3Enable)
+                if (s_Win3Enable)
                     get_preview(cs);
             }
             break;
@@ -583,17 +554,19 @@ void ___MOVE(char *src, Csas *cs)
             }
             break;
     }
+    return NULL;
 }
 
-void ___QUIT(char *src, Csas *cs)
+char *___QUIT(char *src, Csas *cs)
 {
     bool force = false;
     if (src[0] && src[0] == '-' && src[1] && src[1] == 'f')
         force = true;
     csas_exit(cs,force);
+    return NULL;
 }
 
-void ___CD(char *src, Csas *cs)
+char *___CD(char *src, Csas *cs)
 {
     size_t pos = 0;
     int ws = cs->current_ws;
@@ -610,7 +583,7 @@ void ___CD(char *src, Csas *cs)
             while (isdigit(src[pos])) pos++;
         }
         else
-            pos += atop(path,src+pos);
+            pos += atop(path,src+pos,cs);
 
         pos += findfirst(src+pos,isspace);
     }
@@ -619,9 +592,10 @@ void ___CD(char *src, Csas *cs)
     change_workspace(cs,ws);
 
     csas_cd(path,ws,cs);
+    return NULL;
 }
 
-void ___GOTOP(char *src, Csas *cs)
+char *___GOTOP(char *src, Csas *cs)
 {
     size_t pos = 0, target = atol(cs->typed_keys);
     int ws = cs->current_ws;
@@ -671,12 +645,13 @@ void ___GOTOP(char *src, Csas *cs)
             for (size_t i = G_S(ws,1); i > target-1; i--)
                 move_d(-1,cs,ws,1);
         }
-        if (ws == cs->current_ws && cfg->Win3Enable)
+        if (ws == cs->current_ws && s_Win3Enable)
             get_preview(cs);
     }
+    return NULL;
 }
 
-void ___GODOWN(char *src, Csas *cs)
+char *___GODOWN(char *src, Csas *cs)
 {
     size_t pos = 0, target = atol(cs->typed_keys);
     int ws = cs->current_ws;
@@ -725,14 +700,16 @@ void ___GODOWN(char *src, Csas *cs)
             for (size_t i = G_S(ws,1); i > target-1; i--)
                 move_d(-1,cs,ws,1);
         }
-        if (ws == cs->current_ws && cfg->Win3Enable)
+        if (ws == cs->current_ws && s_Win3Enable)
             get_preview(cs);
     }
+    return NULL;
 }
 
-void ___CHANGEWORKSPACE(char *src, Csas *cs)
+char *___CHANGEWORKSPACE(char *src, Csas *cs)
 {
     change_workspace(cs,atoi(src));
+    return NULL;
 }
 
 #ifdef __FILE_SIZE_ENABLE__
@@ -744,27 +721,27 @@ static void GETSIZE(struct Element *el, const int fd, const uchar flag)
         int tfd;
         if ((tfd = openat(fd,el->name,O_DIRECTORY)) != -1)
         {
-            if ((flag&0x8) != 0x8)
-            {
-                ull size = 0, count = 0;
-                get_dirsize(tfd,&count,&size,(flag&0x2)==0x2);
-                el->size = (flag&0x4)==0x4 ? count : size;
-            }
-            else
+            if (flag&D_F)
             {
                 struct stat sFile;
                 stat(el->name,&sFile);
                 el->size = sFile.st_size;
+            }
+            else
+            {
+                ull size = 0, count = 0;
+                get_dirsize(tfd,&count,&size,flag);
+                el->size = (flag&D_C) ? count : size;
             }
             close(tfd);
         }
     }
 }
 
-void ___GETSIZE(char *src, Csas *cs)
+char *___GETSIZE(char *src, Csas *cs)
 {
     size_t pos = 0;
-    uchar flag = 0;
+    uchar flag = D_S;
     int selected = -1, ws = cs->current_ws;
     char *path = (char*)calloc(sizeof(char),PATH_MAX);
 
@@ -799,15 +776,15 @@ void ___GETSIZE(char *src, Csas *cs)
                             while (isdigit(src[pos])) pos++;
                         }
                         break;
-                    case 'R': flag |= 0x1; break;
-                    case 'r': flag |= 0x2; break;
-                    case 'c': flag |= 0x4; break;
-                    case 'f': flag |= 0x8; break;
+                    case 'R': flag |= 0x10; break;
+                    case 'r': flag |= D_R; break;
+                    case 'c': flag |= D_C; flag &= ~D_S; break;
+                    case 'f': flag |= D_F; break;
                 }
             } while (src[pos] && !isspace(src[pos]));
         }
         else
-            pos += atop(path,src+pos);
+            pos += atop(path,src+pos,cs);
 
         if (src[pos+1] == '\0')
             break;
@@ -816,12 +793,12 @@ void ___GETSIZE(char *src, Csas *cs)
     if (!cs->ws[cs->current_ws].exists)
     {
         free(path);
-        return;
+        return NULL;
     }
 
     if (ws != cs->current_ws)
 		if (chdir(G_D(ws,1)->path) != 0)
-			return;
+			return NULL;
 
     if (selected == -2)
         selected = cs->ws[ws].sel_group;
@@ -834,10 +811,10 @@ void ___GETSIZE(char *src, Csas *cs)
             #endif
             G_D(ws,1)->size > 0 && (fd = open(G_D(ws,1)->path,O_DIRECTORY)) != -1)
         GETSIZE(&G_ES(ws,1),fd,flag);
-        if (!(flag&0x1))
+        if (!(flag&0x10))
         {
             free(path);
-            return;
+            return NULL;
         }
         else
             strcpy(path,mkpath(G_D(ws,1)->path,G_ES(ws,1).name));
@@ -863,7 +840,7 @@ void ___GETSIZE(char *src, Csas *cs)
             continue;
         if (path[0])
         {
-            if (flag&0x1)
+            if (flag&0x10)
             {
                 if (!strstr(cs->base[i]->path,path))
                     continue;
@@ -884,18 +861,20 @@ void ___GETSIZE(char *src, Csas *cs)
     free(path);
     if (ws != cs->current_ws)
         chdir(G_D(cs->current_ws,1)->path);
+    return NULL;
 }
 
 #endif
 
-void ___SETGROUP(char *src, Csas *cs)
+char *___SETGROUP(char *src, Csas *cs)
 {
     cs->ws[cs->current_ws].sel_group = atoi(src);
     if (cs->ws[cs->current_ws].visual && G_D(cs->current_ws,1)->size > 0)
         G_ES(cs->current_ws,1).list[cs->current_ws] |= 1<<cs->ws[cs->current_ws].sel_group;
+    return NULL;
 }
 
-void ___FASTSELECT(char *src, Csas *cs)
+char *___FASTSELECT(char *src, Csas *cs)
 {
     if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
@@ -905,31 +884,34 @@ void ___FASTSELECT(char *src, Csas *cs)
     {
         G_ES(cs->current_ws,1).list[cs->current_ws] ^= 1<<cs->ws[cs->current_ws].sel_group;
         move_d(1,cs,cs->current_ws,1);
-        if (cfg->Win3Enable)
+        if (s_Win3Enable)
             get_preview(cs);
     }
+    return NULL;
 }
 
-void ___OPEN_WITH(char *src, Csas *cs)
+char *___OPEN_WITH(char *src, Csas *cs)
 {
     if (G_D(cs->current_ws,1)->size == 0)
-        return;
+        return NULL;
     char temp[4096];
     size_t t1 = findfirst(src,isspace),
         t2 = findfirst(src+t1,isalnum);
     memcpy(temp,src+t1,t2);
     temp[t2] = 0;
     spawn(temp,G_ES(cs->current_ws,1).name,NULL,F_NORMAL|F_WAIT);
+    return NULL;
 }
 
-void ___TOGGLEVISUAL(char *src, Csas *cs)
+char *___TOGGLEVISUAL(char *src, Csas *cs)
 {
     cs->ws[cs->current_ws].visual = !cs->ws[cs->current_ws].visual;
     if (cs->ws[cs->current_ws].visual && G_D(cs->current_ws,1)->size > 0)
         G_ES(cs->current_ws,1).list[cs->current_ws] |= 1<<cs->ws[cs->current_ws].sel_group;
+    return NULL;
 }
 
-void ___F_MOD(char *src, Csas *cs)
+char *___F_MOD(char *src, Csas *cs)
 {
     uchar Action = 0;
     mode_t arg = 0;
@@ -940,7 +922,7 @@ void ___F_MOD(char *src, Csas *cs)
         case 'd': case 'D': Action = 1; break;
         case 'c': case 'C': Action = 2; break;
         case 'm': case 'M': Action = 3; break;
-        default: return;
+        default: return NULL;
     }
 
     pos++;
@@ -950,7 +932,7 @@ void ___F_MOD(char *src, Csas *cs)
     char *path = (char*)calloc(sizeof(char),PATH_MAX);
     char *target = (char*)calloc(sizeof(char),PATH_MAX);
     int fd1, fd2, fd3;
-    char *buffer = Action == 1 ? NULL : (char*)malloc(cfg->CopyBufferSize);
+    char *buffer = Action == 1 ? NULL : (char*)malloc(s_CopyBufferSize);
 
     while (src[pos])
     {
@@ -964,8 +946,7 @@ void ___F_MOD(char *src, Csas *cs)
                 {
                     case 'o':
                         pos++;
-                        pos += findfirst(src+pos,isspace);
-                        pos += atop(target,src+pos);
+                        pos += atop(target,src+pos,cs);
                         break;
                     case 'w':
                     case 's':
@@ -996,7 +977,7 @@ void ___F_MOD(char *src, Csas *cs)
             } while (src[pos] && !isspace(src[pos]));
         }
         else
-            pos += atop(path,src+pos);
+            pos += atop(path,src+pos,cs);
 
         if (src[pos+1] == '\0')
             break;
@@ -1007,7 +988,7 @@ void ___F_MOD(char *src, Csas *cs)
 
     if (ws != cs->current_ws)
         if (chdir(G_D(ws,1)->path) != 0)
-			return;
+			return NULL;
 
     if (selected == -2)
         selected = cs->ws[ws].sel_group;
@@ -1044,7 +1025,7 @@ void ___F_MOD(char *src, Csas *cs)
             {
 				if ((fd3 = openat(fd2,G_ES(ws,1).name,O_RDONLY)) == -1)
 					goto END2;
-                get_dirsize(fd3,&count,&size,true);
+                get_dirsize(fd3,&count,&size,D_R|D_F|D_S);
 				close(fd3);
                 count++;
                 size += ST.st_size;
@@ -1129,7 +1110,7 @@ void ___F_MOD(char *src, Csas *cs)
 				{
 					if ((fd3 = openat(fd2,cs->base[i]->el[j].name,O_RDONLY)) != -1)
 					{
-						get_dirsize(fd3,&count,&size,true);
+						get_dirsize(fd3,&count,&size,D_R|D_C|D_S);
 						close(fd3);
 					}
 				}
@@ -1197,6 +1178,7 @@ void ___F_MOD(char *src, Csas *cs)
     free(target);
     if (ws != cs->current_ws)
         chdir(G_D(cs->current_ws,1)->path);
+    return NULL;
 }
 
 static void GETDIR(char *path, Csas *cs, uchar mode
@@ -1235,17 +1217,18 @@ static void GETDIR(char *path, Csas *cs, uchar mode
        }
     }
     closedir(d);
+    return;
 }
 
-void ___LOAD(char *src, Csas *cs)
+char *___LOAD(char *src, Csas *cs)
 {
     size_t pos = 0;
-    int mode = cfg->DirLoadingMode;
+    int mode = s_DirLoadingMode;
     uchar flag = 0;
 	werase(cs->win[0]);
-	if (cfg->Win1Enable)
+	if (s_Win1Enable)
 		werase(cs->win[1]);
-	if (cfg->Win3Enable)
+	if (s_Win3Enable)
 		werase(cs->win[2]);
 
     while (src[pos])
@@ -1296,9 +1279,10 @@ void ___LOAD(char *src, Csas *cs)
         #endif
         );
     }
+    return NULL;
 }
 
-void ___SELECT(char *src, Csas *cs)
+char *___SELECT(char *src, Csas *cs)
 {
     size_t pos = 0;
     int mode = 1;
@@ -1379,7 +1363,7 @@ void ___SELECT(char *src, Csas *cs)
             } while (src[pos] && !isspace(src[pos]));
         }
         else
-            pos += atop(path,src+pos);
+            pos += atop(path,src+pos,cs);
 
         if (src[pos+1] == '\0')
             break;
@@ -1388,12 +1372,12 @@ void ___SELECT(char *src, Csas *cs)
     if (!cs->ws[cs->current_ws].exists)
     {
         free(path);
-        return;
+        return NULL;
     }
 
     if (workspace1 != cs->current_ws)
         if (chdir(G_D(workspace1,1)->path) != 0)
-			return;
+			return NULL;
 
     if (selected == -2)
         selected = cs->ws[workspace1].sel_group;
@@ -1404,7 +1388,7 @@ void ___SELECT(char *src, Csas *cs)
         if (!recursive)
         {
             free(path);
-            return;
+            return NULL;
         }
 
         strcpy(path,mkpath(G_D(workspace1,1)->path,G_ES(workspace1,1).name));
@@ -1460,9 +1444,10 @@ void ___SELECT(char *src, Csas *cs)
     free(path);
     if (workspace1 != cs->current_ws)
         chdir(G_D(cs->current_ws,1)->path);
+    return NULL;
 }
 
-void ___EXEC(char *src, Csas *cs)
+char *___EXEC(char *src, Csas *cs)
 {
     size_t pos = 0;
     int background = 0;
@@ -1485,15 +1470,16 @@ void ___EXEC(char *src, Csas *cs)
             } while (src[pos] && !isspace(src[pos]));
         }
         else
-            pos += atop(temp,src+pos);
+            pos += atop(temp,src+pos,cs);
 
         pos += findfirst(src+pos,isspace);
     }
 
     spawn(temp,NULL,NULL,background ? F_SILENT : F_NORMAL|F_WAIT);
+    return NULL;
 }
 
-void ___BULK(char *src, Csas *cs)
+char *___BULK(char *src, Csas *cs)
 {
     size_t pos = 0;
     int ws = cs->current_ws, selected = -1;
@@ -1557,8 +1543,7 @@ void ___BULK(char *src, Csas *cs)
                                 default: itemp = 5; break;
                             }
                             pos++;
-                            pos += findfirst(src+pos,isspace);
-                            pos += atop(temp[itemp],src+pos);
+                            pos += atop(temp[itemp],src+pos,cs);
                         }
                         break;
                 }
@@ -1566,16 +1551,16 @@ void ___BULK(char *src, Csas *cs)
             } while (src[pos] && !isspace(src[pos]));
         }
         else
-            pos += atop(path,src+pos);
+            pos += atop(path,src+pos,cs);
         pos++;
     }
 
     if (!cs->ws[ws].exists)
-        return;
+        return NULL;
 
     if (cs->current_ws != ws)
         if (chdir(G_D(ws,1)->path) != 0)
-			return;
+			return NULL;
 
     if (path[0])
         realpath(path,temp[0]);
@@ -1584,13 +1569,18 @@ void ___BULK(char *src, Csas *cs)
         free(temp[i]);
     if (cs->current_ws != ws)
         chdir(G_D(ws,1)->path);
+    return NULL;
 }
 
-void ___CONSOLE(char *src, Csas *cs)
+char *___CONSOLE(char *src, Csas *cs)
 {
     size_t pos = 0;
-    char temp[1024];
-    temp[0] = '\0';
+    char add_text[4096], first_text[NAME_MAX] = ":";
+    add_text[0] = '\0';
+    int flags = 0;
+    int n = 1;
+
+    struct WinArgs args = {stdscr,0,0,-1,1,1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,0};
 
     while (src[pos])
     {
@@ -1600,10 +1590,114 @@ void ___CONSOLE(char *src, Csas *cs)
                 pos++;
                 switch (src[pos])
                 {
+                    case 'r':
+                        flags |= 16;
+                        break;
                     case 'a':
                         pos++;
+                        pos += atop(add_text,src+pos,cs);
+                        break;
+                    case 'f':
+                        pos++;
+                        pos += atop(first_text,src+pos,cs);
+                        break;
+                    case 'b':
+                        flags |= 1;
+                        break;
+                    case 'n':
+                        pos++;
                         pos += findfirst(src+pos,isspace);
-                        pos += atop(temp,src+pos);
+                        n = atoi(src+pos);
+                        break;
+                    case 's':
+                        pos++;
+                        pos += findfirst(src+pos,isspace);
+                        if (src[pos] != 'x')
+                        {
+                            size_t end = findfirst(src+pos,isdigit);
+                            if (src[pos+end] == '%')
+                            {
+                                end++;
+                                args.s_sizex = -1;
+                                args.min_sizex = -1;
+                                args.max_sizex = -1;
+                                args.p_sizex = atof(src+pos)/100;
+                            }
+                            else
+                            {
+                                args.p_sizex = -1;
+                                args.min_sizex = -1;
+                                args.max_sizex = -1;
+                                args.s_sizex = atoi(src+pos);
+                            }
+                            pos += end;
+                        }
+                        if (src[pos] == 'x')
+                        {
+                            pos++;
+                            size_t end = findfirst(src+pos,isdigit);
+                            if (src[pos+end] == '%')
+                            {
+                                end++;
+                                args.s_sizey = -1;
+                                args.min_sizey = -1;
+                                args.max_sizey = -1;
+                                args.p_sizey = atof(src+pos)/100;
+                            }
+                            else
+                            {
+                                args.p_sizey = -1;
+                                args.min_sizey = -1;
+                                args.max_sizey = -1;
+                                args.s_sizey = atoi(src+pos);
+                            }
+                            pos += end;
+                        }
+                        break;
+                    case 'p':
+                        pos++;
+                        pos += findfirst(src+pos,isspace);
+                        if (src[pos] != 'x')
+                        {
+                            size_t end = findfirst(src+pos,isdigit);
+                            if (src[pos+end] == '%')
+                            {
+                                end++;
+                                args.s_posx = -1;
+                                args.min_posx = -1;
+                                args.max_posx = -1;
+                                args.p_posx = atof(src+pos)/100;
+                            }
+                            else
+                            {
+                                args.p_posx = -1;
+                                args.min_posx = -1;
+                                args.max_posx = -1;
+                                args.s_posx = atoi(src+pos);
+                            }
+                            pos += end;
+                        }
+                        if (src[pos] == 'x')
+                        {
+                            pos++;
+                            size_t end = findfirst(src+pos,isdigit);
+                            if (src[pos+end] == '%')
+                            {
+                                end++;
+                                args.s_posy = -1;
+                                args.min_posy = -1;
+                                args.max_posy = -1;
+                                args.p_posy = atof(src+pos)/100;
+                            }
+                            else
+                            {
+                                args.p_posy = -1;
+                                args.min_posy = -1;
+                                args.max_posy = -1;
+                                args.s_posy = atoi(src+pos);
+                            }
+                            pos += end;
+                        }
                         break;
                 }
 
@@ -1612,40 +1706,76 @@ void ___CONSOLE(char *src, Csas *cs)
         pos++;
     }
 
-    if (cs->consolehistory.size == cs->consolehistory.max_size)
-    {
-        memset(cs->consolehistory.history[0],0,cs->consolehistory.alloc_r-1);
-        char *temp = cs->consolehistory.history[0];
-        for (size_t i = 0; i < cs->consolehistory.size-1; i++)
-            cs->consolehistory.history[i] = cs->consolehistory.history[i+1];
-        cs->consolehistory.history[cs->consolehistory.size-1] = temp;
-        cs->consolehistory.size--;
-    }
+    if (n == 0)
+        return NULL;
 
-    if (cs->consolehistory.size == cs->consolehistory.allocated)
-    {
-        cs->consolehistory.history = (char**)realloc(cs->consolehistory.history,(cs->consolehistory.allocated += cs->consolehistory.inc_r)*sizeof(char*));
-        for (size_t i = cs->consolehistory.allocated-cs->consolehistory.inc_r; i < cs->consolehistory.allocated; i++)
-            cs->consolehistory.history[i] = (char*)calloc(sizeof(char),cs->consolehistory.alloc_r);
-    }
-    cs->consolehistory.size++;
+    args.cfg = flags;
 
-    struct WinArgs args = {stdscr,
-    {-1,1},{1,-1},{-1,-1},{-1,-1},
-    {-1,-1},{-1,1},{-1,-1},{-1,-1},
-    0};
-    console_getline(cs->win[5],cs,cs->consolehistory.history,cs->consolehistory.size,cs->consolehistory.alloc_r-1,args,":",temp[0] ? temp : NULL);
-    command_run(cs->consolehistory.history[cs->consolehistory.size-1],cs);
+    char tmp[4096];
+
+    while (n == -1 || n > 0)
+    {
+        if (cs->consolehistory.size == cs->consolehistory.max_size)
+        {
+            memset(cs->consolehistory.history[0],0,cs->consolehistory.alloc_r-1);
+            char *tmp = cs->consolehistory.history[0];
+            for (size_t i = 0; i < cs->consolehistory.size-1; i++)
+                cs->consolehistory.history[i] = cs->consolehistory.history[i+1];
+            cs->consolehistory.history[cs->consolehistory.size-1] = tmp;
+            cs->consolehistory.size--;
+        }
+
+        if (cs->consolehistory.size == cs->consolehistory.allocated)
+        {
+            cs->consolehistory.history = (char**)realloc(cs->consolehistory.history,(cs->consolehistory.allocated += cs->consolehistory.inc_r)*sizeof(char*));
+            for (size_t i = cs->consolehistory.allocated-cs->consolehistory.inc_r; i < cs->consolehistory.allocated; i++)
+                cs->consolehistory.history[i] = (char*)calloc(sizeof(char),cs->consolehistory.alloc_r);
+        }
+        cs->consolehistory.size++;
+
+        console_getline(cs->win[5],cs,cs->consolehistory.history,cs->consolehistory.size,cs->consolehistory.alloc_r-1,&args,first_text,add_text[0] ? add_text : NULL);
+
+        size_t i = 0, x = 0;
+        char *dm = cs->consolehistory.history[cs->consolehistory.size-1];
+        while (dm[i])
+        {
+            if (dm[i] == '\'')
+            {
+                tmp[x++] = dm[i++];
+                size_t end = (strchr(dm+i,'\'')-(dm+i))+1;
+                memcpy(tmp+x,dm+i,end);
+                i += end;
+                x += end;
+                continue;
+            }
+            if (src[i] == '$')
+            {
+                get_special(tmp,dm,&i,&x,cs);
+                continue;
+            }
+            tmp[x++] = dm[i++];
+        }
+        tmp[x] = '\0';
+        if (strcmp(tmp,"exit") == 0)
+            break;
+        command_run(tmp,cs);
+        if (n != -1)
+            n--;
+        args.y++;
+    }
+    if (flags&16)
+        return cs->consolehistory.history[cs->consolehistory.size-1];
+    return NULL;
 }
 
-void ___SEARCH(char *src, Csas *cs)
+char *___SEARCH(char *src, Csas *cs)
 {
     if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
         G_D(cs->current_ws,1)->enable ||
         #endif
         G_D(cs->current_ws,1)->size < 1)
-        return;
+        return NULL;
     size_t pos = 0, mul = 1;
     int selected = -1;
     int action = -1;
@@ -1691,8 +1821,7 @@ void ___SEARCH(char *src, Csas *cs)
                             case 'E': action = 5; break;
                         }
                         pos++;
-                        pos += findfirst(src+pos,isspace);
-                        pos += atop(temp,src+pos);
+                        pos += atop(temp,src+pos,cs);
                         break;
                 }
 
@@ -1778,17 +1907,17 @@ void ___SEARCH(char *src, Csas *cs)
             ___SEARCH("-n 1",cs);
             break;
     }
-
+    return NULL;
 }
 
-void ___SHELL(char *src, Csas *cs)
+char *___SHELL(char *src, Csas *cs)
 {
-	spawn(cfg->shell,"-c",src,F_NORMAL|F_WAIT|F_CONFIRM);
+	spawn(s_shell,"-c",src,F_NORMAL|F_WAIT|F_CONFIRM);
 
-	return;
+	return NULL;
 }
 
-void ___FILTER(char *src, Csas *cs)
+char *___FILTER(char *src, Csas *cs)
 {
     if (G_D(cs->current_ws,1)->oldsize == 0)
         G_D(cs->current_ws,1)->oldsize = G_D(cs->current_ws,1)->size;
@@ -1798,7 +1927,7 @@ void ___FILTER(char *src, Csas *cs)
     if (src[0] == '/')
     {
         G_D(cs->current_ws,1)->filter_set = false;
-        return;
+        return NULL;
     }
 
     G_D(cs->current_ws,1)->filter_set = true;
@@ -1821,5 +1950,5 @@ void ___FILTER(char *src, Csas *cs)
             i--;
         }
     }
-
+    return NULL;
 }
