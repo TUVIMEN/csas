@@ -52,18 +52,13 @@ void get_special(char *dest, const char *src, size_t *n, size_t *x, Csas *cs)
         memcpy(temp,src+*n,end);
         temp[end] = '\0';
         (*n) += end+1;
-        char *t = command_run(temp,cs);
-        if (t != NULL)
-        {
-            size_t c = strlen(t);
-            memcpy(dest+*x,t,c);
-            *x += c;
-        }
+        command_run(temp,cs,1); //!
     }
 }
 
 void get_clearline(char *dest, const char *src, size_t *n)
 {
+    *n += findfirst(src+(*n),isspace,-1);
     size_t x = 0;
 
     while (src[*n])
@@ -224,20 +219,16 @@ void config_load(const char *path, Csas *cs)
     char *file = mmap(NULL,sfile.st_size,PROT_READ,MAP_PRIVATE,fd,0);
     close(fd);
 
-    char line[16384];
-    char *r;
+    char line[LINE_SIZE_MAX];
 
+    endwin();
     for (size_t pos = 0, i = 0; file[pos]; i++)
     {
         get_clearline(line,file,&pos);
-        r = command_run(line,cs);
-        if (r != NULL)
-        {
-            endwin();
-            die("%s: %s\n\t%lu: %s",path,r,i,line);
-        }
+        command_run(line,cs,1);
         pos++;
     }
+    refresh();
 
     munmap(file,sfile.st_size);
     chdir(cs->ws[cs->current_ws].path);

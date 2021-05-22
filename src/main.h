@@ -89,6 +89,8 @@ typedef unsigned long long int ull;
 #define PATH_MAX 4096
 #endif
 
+#define LINE_SIZE_MAX (1<<15)
+
 #define DIR_INC_RATE 128
 #define DIR_BASE_RATE 64
 
@@ -399,6 +401,14 @@ struct AliasesT {
     ll v;
 };
 
+struct rla
+{
+    union {size_t s;char *p;} *a;
+    size_t s;
+    size_t as;
+    void (*sfree)(struct rla*);
+};
+
 struct WinArgs {
     WINDOW *place;
     short int x;
@@ -420,4 +430,12 @@ struct WinArgs {
     int max_posx;
     int max_posy;
     int cfg;
+};
+
+struct command
+{
+    char *name;
+    uchar type;
+    void *func;
+    int (*expand)(WINDOW*,char*,size_t,short int, bool*,struct rla*,struct WinArgs*,char**);
 };

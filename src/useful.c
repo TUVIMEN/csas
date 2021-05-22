@@ -637,11 +637,43 @@ char *mkpath(const char *dir, const char *name)
     return path;
 }
 
-size_t findfirst(const char *src, int (*func)(int))
+
+size_t findfirst(const char *src, int (*func)(int), size_t n)
 {
-    size_t pos = 0;
-    while (func(src[pos])) pos++;
+    register size_t pos = 0;
+    while (pos < n && src[pos] && func(src[pos])) pos++;
     return pos;
+}
+
+int get_word(char *dest, char *src, size_t n, size_t *dsize, size_t *ssize)
+{
+    if (n == 0 || dest == NULL || src == NULL)
+        return -1;
+    n--;
+    size_t i=0,j=0;
+    if (src[0] == '~')
+    {
+        i++;
+        char *home = getenv("HOME");
+        j = strlen(home);
+        memcpy(dest,home,j);
+    }
+    for (;j < n && src[i] && !isspace(src[i]); i++)
+    {
+        if (src[i] == '\\')
+            i++;
+        dest[j++] = src[i]; 
+    }
+    dest[j] = 0;
+    if (j >= n)
+        return -1;
+    if (dsize != NULL)
+        *dsize = j;
+    if (src[i] == '\'' || (src[i] == '"' && i != 0 && src[i-1] != '\\'))
+        i++;
+    if (ssize != NULL)
+        *ssize = i;
+    return 0;
 }
 
 extern struct AliasesT aliases[];
@@ -652,50 +684,50 @@ char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag
         "wasn't expecting an array","wasn't expecting a string",
         "wasn't expecting a integer","wasn't expecting a float"
     };
-    size_t PosBegin = 0, PosEnd = 0;
-    char temp[8192];
-    if (src[PosBegin] == '{')
+    size_t posb = 0, pose = 0;
+    char line[LINE_SIZE_MAX];
+    if (src[posb] == '{')
     {
         if (!(flag&SET_T_A))
             return messages[0];
-        for (int i = 0; src[PosBegin] != '}'; i++)
+        for (int i = 0; src[posb] != '}'; i++)
         {
-            PosBegin++;
-            PosEnd = 0;
-            PosBegin += findfirst(src+PosBegin,isspace);
-            while (src[PosBegin+PosEnd] && !isspace(src[PosBegin+PosEnd]) && src[PosBegin+PosEnd] != ',' && src[PosBegin+PosEnd] != '}')
-                PosEnd++;
+            posb++;
+            pose = 0;
+            posb += findfirst(src+posb,isspace,-1);
+            while (src[posb+pose] && !isspace(src[posb+pose]) && src[posb+pose] != ',' && src[posb+pose] != '}')
+                pose++;
 
-            strncpy(temp,src+PosBegin,PosEnd);
-            temp[PosEnd] = '\0';
+            strncpy(line,src+posb,pose);
+            line[pose] = '\0';
 
-            PosBegin += PosEnd;
-            PosBegin += findfirst(src+PosBegin,isspace);
+            posb += pose;
+            posb += findfirst(src+posb,isspace,-1);
 
-            char *r = atov(&(*(li**)dest)[i],temp,NULL,cs,flag&(~SET_T_A));
+            char *r = atov(&(*(li**)dest)[i],line,NULL,cs,flag&(~SET_T_A));
             if (r != NULL)
                 return r;
         }
-        PosBegin++;
+        posb++;
     }
-    else if (src[PosBegin] == '\'')
+    else if (src[posb] == '\'')
     {
         if (!(flag&SET_T_P))
             return messages[1];
-        PosBegin++;
-        PosEnd = strchr(src+PosBegin,'\'')-(src+PosBegin);
-        strncpy(*(char**)dest,src+PosBegin,PosEnd);
-        (*(char**)dest)[PosEnd] = '\0';
-        PosBegin += PosEnd+2;
+        posb++;
+        pose = strchr(src+posb,'\'')-(src+posb);
+        strncpy(*(char**)dest,src+posb,pose);
+        (*(char**)dest)[pose] = '\0';
+        posb += pose+2;
     }
-    else if (src[PosBegin] == '"')
+    else if (src[posb] == '"')
     {
         if (!(flag&SET_T_P))
             return messages[1];
-        PosBegin++;
-        PosEnd = strchr(src+PosBegin,'"')-(src+PosBegin)+1;
-        size_t i = PosBegin, x = 0;
-        while (i < PosEnd)
+        posb++;
+        pose = strchr(src+posb,'"')-(src+posb)+1;
+        size_t i = posb, x = 0;
+        while (i < pose)
         {
             if (src[i] == '$')
             {
@@ -705,7 +737,7 @@ char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag
             (*(char**)dest)[x++] = src[i++];
         }
         (*(char**)dest)[x] = '\0';
-        PosBegin += PosEnd+2;
+        posb += pose+2;
     }
     else
     {
@@ -713,50 +745,50 @@ char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag
         *(li*)dest = 0;
 
         do {
-            PosEnd = 0;
+            pose = 0;
             type = 0;
-            while (src[PosBegin+PosEnd] && !isspace(src[PosBegin+PosEnd]) && src[PosBegin+PosEnd] != '|')
+            while (src[posb+pose] && !isspace(src[posb+pose]) && src[posb+pose] != '|')
             {
-                if (src[PosBegin+PosEnd] == '.')
+                if (src[posb+pose] == '.')
                     type |= 0x1;
-                else if (isalpha(src[PosBegin+PosEnd]))
+                else if (isalpha(src[posb+pose]))
                     type |= 0x2;
-                PosEnd++;
+                pose++;
             }
-            memcpy(temp,src+PosBegin,PosEnd);
-            temp[PosEnd] = '\0';
+            memcpy(line,src+posb,pose);
+            line[pose] = '\0';
 
             if (type == 0)
             {
                 if (!(flag&SET_T_UI) && !(flag&SET_T_I))
                     return messages[2];
-                *(li*)dest |= atol(temp);
+                *(li*)dest |= atol(line);
             }
             else if (type == 1)
             {
                 if (!(flag&SET_T_F))
                     return messages[3];
-                *(double*)dest = atof(temp);
-                PosBegin += PosEnd;
-                PosBegin += findfirst(src+PosBegin,isspace);
+                *(double*)dest = atof(line);
+                posb += pose;
+                posb += findfirst(src+posb,isspace,-1);
                 goto END;
             }
             else
                 for (int i = 0; aliases[i].name; i++)
-                    if (strlen(aliases[i].name) == PosEnd && strncmp(temp,aliases[i].name,PosEnd) == 0)
+                    if (strlen(aliases[i].name) == pose && strncmp(line,aliases[i].name,pose) == 0)
                     {
                         *(li*)dest |= aliases[i].v;
                         break;
                     }
 
-            PosBegin += PosEnd;
-        } while (src[PosBegin++] == '|');
+            posb += pose;
+        } while (src[posb++] == '|');
 
     }
 
     END: ;
     if (size != NULL)
-        *size += PosBegin;
+        *size += posb;
     return NULL;
 }
 
@@ -777,7 +809,8 @@ wchar_t charconv(const char c)
 
 wchar_t *atok(char *src, wchar_t *dest)
 {
-    for (size_t i = 0, h = 0; src[i]; i++)
+    size_t i, h;
+    for (i = 0, h = 0; src[i]; i++)
     {
         if (src[i] == '<' && src[i+1] == 'C' && src[i+2] == '-' && src[i+3] && src[i+4] == '>')
         {
@@ -844,15 +877,16 @@ wchar_t *atok(char *src, wchar_t *dest)
             dest[h++] = charconv(src[i]);
         }
         else
-            dest[h++] = btowc(src[i]);
+            dest[h++] = wctob(src[i]);
     }
+    dest[h] = 0;
     return dest;
 }
 
 size_t atop(char *dest, const char *src, Csas *cs)
 {
     size_t pos = 0, x;
-    src += findfirst(src,isspace);
+    src += findfirst(src,isspace,-1);
     if (src[pos] == '"' || src[pos] == '\'')
     {
         atov(&dest,src,&pos,cs,SET_T_P);
@@ -883,17 +917,17 @@ size_t atop(char *dest, const char *src, Csas *cs)
     return pos;
 }
 
-char *atob(char *temp)
+char *atob(char *s)
 {
-    for (size_t i = 0; i < strlen(temp); i++)
+    for (size_t i = 0; i < strlen(s); i++)
     {
-        if(temp[i] == '\\' || temp[i] == '\"' || temp[i] == '\'' || temp[i] == ' ' || temp[i] == '(' || temp[i] == ')' || temp[i] == '[' || temp[i] == ']' || temp[i] == '{' || temp[i] == '}')
+        if(s[i] == '\\' || s[i] == '\"' || s[i] == '\'' || s[i] == ' ' || s[i] == '(' || s[i] == ')' || s[i] == '[' || s[i] == ']' || s[i] == '{' || s[i] == '}')
         {
-            for (size_t j = strlen(temp)+1; j > i; j--)
-                temp[j] = temp[j-1];
-            temp[i] = '\\';
+            for (size_t j = strlen(s)+1; j > i; j--)
+                s[j] = s[j-1];
+            s[i] = '\\';
             i++;
         }
     }
-    return temp;
+    return s;
 }

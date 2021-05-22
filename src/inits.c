@@ -21,6 +21,7 @@
 #include "useful.h"
 #include "sort.h"
 #include "functions.h"
+#include "expand.h"
 #include "load.h"
 #include "preview.h"
 #include "draw.h"
@@ -45,11 +46,9 @@ void addkey(char *c, char *v)
     }
 
     wchar_t temp[64];
-
     atok(c,temp);
 
     li found = -1;
-
     for (size_t i = 0; i < keys_t; i++)
     {
         if (wcscmp(temp,keys[i].keys) == 0)
@@ -69,7 +68,68 @@ void addkey(char *c, char *v)
     strcpy(keys[found].value,v);
 }
 
-void KeyInit()
+void addcommand(const char *name, const uchar type, void *func, const size_t s, void *expand)
+{
+    if (commandsl == commandsa)
+        commands = realloc(commands,(commandsa+=32)*sizeof(struct command));
+
+    li found = -1;
+    for (size_t i = 0; i < commandsl; i++)
+    {
+        if (strcmp(name,commands[i].name) == 0)
+        {
+            found = (li)i;
+            break;
+        }
+    }
+
+    if (found == -1)
+    {
+        found = (li)commandsl++;
+        commands[found].name = strdup(name);
+    }
+
+    commands[found].expand = expand;
+    commands[found].type = type;
+    free(commands[found].func);
+    
+    commands[found].func = (type == 'f') ? func : memcpy(malloc(s),func,s);
+}
+
+static void commands_init()
+{
+    addcommand("move",'f',cmd_move,8,NULL);
+    addcommand("fastselect",'f',cmd_fastselect,8,NULL);
+    addcommand("cd",'f',cmd_cd,8,expand_dir);
+    addcommand("rename",'f',cmd_rename,8,NULL);
+    addcommand("change_workspace",'f',cmd_change_workspace,8,NULL);
+    addcommand("gotop",'f',cmd_gotop,8,NULL); //!
+    addcommand("godown",'f',cmd_godown,8,NULL); //!
+    #ifdef __FILE_SIZE_ENABLE__
+    addcommand("getsize",'f',cmd_getsize,8,NULL);
+    #endif
+    addcommand("open_with",'f',cmd_open_with,8,expand_shell_commands);
+    addcommand("setgroup",'f',___SETGROUP,8,NULL);
+    addcommand("select",'f',cmd_select,8,expand_dir);
+    addcommand("togglevisual",'f',cmd_togglevisual,8,NULL);
+    addcommand("f_mod",'f',cmd_f_mod,8,expand_file);
+    addcommand("set",'f',cmd_set,8,expand_options);
+    addcommand("map",'f',cmd_map,8,NULL);
+    addcommand("search",'f',cmd_search,8,NULL);
+    addcommand("load",'f',cmd_load,8,expand_dir);
+    addcommand("exec",'f',cmd_exec,8,expand_shell_commands);
+    addcommand("quit",'f',cmd_quit,8,NULL);
+    addcommand("console",'f',cmd_console,8,NULL);
+    addcommand("bulk",'f',cmd_bulk,8,NULL);
+    addcommand("alias",'f',cmd_alias,8,NULL);
+    #ifdef __LOAD_CONFIG_ENABLE__
+    addcommand("source",'f',cmd_source,8,expand_file);
+    #endif
+    addcommand("shell",'f',cmd_shell,8,expand_shell);
+    addcommand("filter",'f',cmd_filter,8,NULL);
+}
+
+static void keys_init()
 {
     addkey("q","quit");
     addkey("Q","quit -f");
@@ -80,7 +140,7 @@ void KeyInit()
     addkey("h","move -l");
     addkey("l","move -r");
     addkey("g/","cd /");
-    addkey("gh","cd \"${HOME}\"");
+    addkey("gh","cd ~");
     addkey("gd","cd /dev");
     addkey("ge","cd /etc");
     addkey("gM","cd /mnt");
@@ -268,8 +328,9 @@ Csas *csas_init()
     cs->SearchList.size = 0;
     cs->SearchList.list = NULL;
 
-    KeyInit();
+    keys_init();
     settings_init();
+    commands_init();
 
     #ifdef __LOAD_CONFIG_ENABLE__
     if (s_config_load)
@@ -377,7 +438,7 @@ void csas_run(Csas *cs, const int argc, char **argv)
         csas_draw(cs,-1);
 
         if ((si = update_event(cs)) != -1)
-            command_run(keys[si].value,cs);
+            command_run(keys[si].value,cs,0);
 
         if (ActualTime != PastTime)
         {

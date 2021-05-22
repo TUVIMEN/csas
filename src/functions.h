@@ -23,32 +23,34 @@ int update_event(Csas *cs);
 void csas_exit(Csas *cs, const bool force);
 void move_to(Csas *cs, const int ws, const int which, const char *name);
 
-char *___SET(const char *src, Csas *cs);
+char *cmd_alias(const char *src, Csas *cs);
+char *cmd_rename(char *src, Csas *cs);
+char *cmd_set(const char *src, Csas *cs);
 #ifdef __LOAD_CONFIG_ENABLE__
-char *___INCLUDE(const char *src, Csas *cs);
+char *cmd_source(const char *src, Csas *cs);
 #endif
-char *___MAP(const char *src, Csas *cs);
-char *___MOVE(const char *src, Csas *cs);
-char *___QUIT(const char *src, Csas *cs);
-char *___CD(const char *src, Csas *cs);
-char *___OPEN_WITH(const char *src, Csas *cs);
-char *___GOTOP(const char *src, Csas *cs);
-char *___GODOWN(const char *src, Csas *cs);
-char *___CHANGEWORKSPACE(const char *src, Csas *cs);
+char *cmd_map(const char *src, Csas *cs);
+char *cmd_move(const char *src, Csas *cs);
+char *cmd_quit(const char *src, Csas *cs);
+char *cmd_cd(const char *src, Csas *cs);
+char *cmd_open_with(const char *src, Csas *cs);
+char *cmd_gotop(const char *src, Csas *cs);
+char *cmd_godown(const char *src, Csas *cs);
+char *cmd_change_workspace(const char *src, Csas *cs);
 #ifdef __FILE_SIZE_ENABLE__
-char *___GETSIZE(const char *src,Csas *cs);
+char *cmd_getsize(const char *src,Csas *cs);
 #endif
 char *___SETGROUP(const char *src, Csas *cs);
-char *___FASTSELECT(const char *src, Csas *cs);
-char *___TOGGLEVISUAL(const char *src, Csas *cs);
-char *___F_MOD(const char *src, Csas *cs);
-char *___SEARCH(const char *src, Csas *cs);
-char *___LOAD(const char *src, Csas *cs);
-char *___SELECT(const char *src, Csas *cs);
-char *___EXEC(const char *src, Csas *cs);
-char *___BULK(const char *src, Csas *cs);
-char *___CONSOLE(const char *src, Csas *cs);
-char *___SHELL(const char *src, Csas *cs);
-char *___FILTER(const char *src, Csas *cs);
+char *cmd_fastselect(const char *src, Csas *cs);
+char *cmd_togglevisual(const char *src, Csas *cs);
+char *cmd_f_mod(const char *src, Csas *cs);
+char *cmd_search(const char *src, Csas *cs);
+char *cmd_load(const char *src, Csas *cs);
+char *cmd_select(const char *src, Csas *cs);
+char *cmd_exec(const char *src, Csas *cs);
+char *cmd_bulk(const char *src, Csas *cs);
+char *cmd_console(const char *src, Csas *cs);
+char *cmd_shell(const char *src, Csas *cs);
+char *cmd_filter(const char *src, Csas *cs);
 
 #endif

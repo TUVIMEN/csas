@@ -19,7 +19,7 @@
 #include "main.h"
 #include "loading.h"
 #include "inits.h"
-#include "functions.h"
+#include "expand.h"
 #include "load.h"
 #include "useful.h"
 #include "preview.h"
@@ -27,61 +27,67 @@
 
 extern struct AliasesT aliases[];
 
-struct command
-{
-    char *name;
-    char *(*function)(const char*, Csas*);
-};
+extern struct command *commands;
+extern size_t commandsl;
 
-struct command commands[] = {
-    {"move",___MOVE},
-    {"fastselect",___FASTSELECT},
-    {"cd",___CD},
-    {"change_workspace",___CHANGEWORKSPACE},
-    {"gotop",___GOTOP},
-    {"godown",___GODOWN},
-    #ifdef __FILE_SIZE_ENABLE__
-    {"getsize",___GETSIZE},
-    #endif
-    {"open_with",___OPEN_WITH},
-    {"setgroup",___SETGROUP},
-    {"select",___SELECT},
-    {"togglevisual",___TOGGLEVISUAL},
-    {"f_mod",___F_MOD},
-    {"set",___SET},
-    {"map",___MAP},
-    {"search",___SEARCH},
-    {"load",___LOAD},
-    {"exec",___EXEC},
-    {"quit",___QUIT},
-    {"console",___CONSOLE},
-    {"bulk",___BULK},
-    #ifdef __LOAD_CONFIG_ENABLE__
-    {"include",___INCLUDE},
-    #endif
-    {"shell",___SHELL},
-    {"filter",___FILTER},
-    {NULL,NULL}
-};
-
-char *command_run(const char *src, Csas *cs)
+void command_run(char *src, Csas *cs, const int out)
 {
+    char temp[16384];
     size_t pos = 0, end = 0;
     
-    pos += findfirst(src,isspace);
+    pos += findfirst(src,isspace,-1);
     while (src[pos+end] && !isspace(src[pos+end])) end++;
 
-    for (int i = 0; commands[i].name; i++)
+    for (size_t i = 0; i < commandsl; i++)
     {
         if (end == strlen(commands[i].name) && strncmp(src+pos,commands[i].name,end) == 0)
         {
             pos += end;
-            pos += findfirst(src+pos,isspace);
-            return (*commands[i].function)(src+pos,cs);
+            pos += findfirst(src+pos,isspace,-1);
+            if (commands[i].type == 'f')
+            {
+                size_t j=0,x=0;
+                char *c = src+pos;
+                while (c[j])
+                {
+                    if (c[j] == '\'')
+                    {
+                        temp[x++] = c[j++];
+                        size_t e = (strchr(c+j,'\'')-(c+j))+1;
+                        memcpy(temp+x,c+j,e);
+                        j += e;
+                        x += e;
+                        continue;
+                    }
+                    //if (src[j] == '$') //!
+                    //{
+                    //    get_special(temp,c,&j,&x,cs);
+                    //    continue;
+                    //}
+                    if (c[j] == '~')
+                    {
+                        j++;
+                        char *home = getenv("HOME");
+                        size_t t = strlen(home);
+                        memcpy(temp+x,home,t);
+                        x += t;
+                        continue;
+                    }
+                    temp[x++] = c[j++];
+                }
+                temp[x] = '\0';
+                ((char *(*)(const char*,Csas*))commands[i].func)(temp,cs);
+                return;
+            }
+            else if (commands[i].type == 'a')
+            {
+                sprintf(temp,"%s %s",(char*)commands[i].func,src+pos);
+                command_run(temp,cs,out);
+                return;
+            }
             break;
         }
     }
-    return NULL;
 }
 
 void console_resize(WINDOW *win, const struct WinArgs *args)
@@ -130,10 +136,10 @@ void console_resize(WINDOW *win, const struct WinArgs *args)
     wrefresh(win);
 }
 
-void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t max, struct WinArgs *args, char *first, char *add)
+void console_getline(WINDOW *win, Csas *cs, char **history, size_t size, size_t max, struct WinArgs *args, char *first, char *add)
 {
     curs_set(1);
-    int Event;
+    int ev;
     console_resize(win,args);
 
     short int off = 0;
@@ -146,12 +152,8 @@ void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t 
         while (args->x-off >= win->_maxx) off++;
     }
 
-    char name_complete[NAME_MAX];
-    int *name_complete_arr = NULL;
-    size_t name_complete_t = 0;
-    size_t name_complete_actual = 0;
     bool tab_was_pressed = 0;
-    size_t name_n;
+    struct rla ex = {NULL,0,0,NULL};
 
     console_resize(win,args);
 
@@ -164,67 +166,12 @@ void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t 
         wmove(win,border+args->y,border+args->x+first_t-off);
         wrefresh(win);
 
-        switch (Event = getch())
+        switch (ev = getch())
         {
             case -1:
                 break;
-            case 9:
-            {
-                name_n = 0;
-                while (history[size-1][name_n] && !isspace(history[size-1][name_n]))
-                {
-                    name_complete[name_n] = history[size-1][name_n];
-                    name_n++;
-                }
-                name_complete[name_n] = 0;
-
-                if (history[size-1][name_n] == 0)
-                {
-                    if (!tab_was_pressed)
-                    {
-                        size_t best_match_n = 0, matched_n;
-                        for (int i = 0; commands[i].name; i++)
-                        {
-                            matched_n = 0;
-                            for (int j = 0; commands[i].name[j] && name_complete[j] && commands[i].name[j] == name_complete[j]; j++)
-                                matched_n++;
-
-                            if (matched_n > best_match_n)
-                            {
-                                name_complete_t = 0;
-                                free(name_complete_arr);
-                                name_complete_arr = NULL;
-                                best_match_n = matched_n;
-                                goto ADD_TO_ARR;
-                            }
-
-                            if (matched_n == best_match_n)
-                            {
-                                ADD_TO_ARR: ;
-                                name_complete_arr = (int*)realloc(name_complete_arr,++name_complete_t*sizeof(int));
-                                name_complete_arr[name_complete_t-1] = i;
-                            }
-                        }
-                        name_complete_actual = 0;
-                        tab_was_pressed = 1;
-                    }
-
-                    if (name_complete_t)
-                    {
-                        strcpy(history[size-1],commands[name_complete_arr[name_complete_actual++]].name);
-                        name_complete_actual = name_complete_actual*(name_complete_actual != name_complete_t);
-                        args->x = strlen(history[size-1]);
-                        if (name_complete_t == 1)
-                        {
-                            history[size-1][args->x++] = ' ';
-                            history[size-1][args->x] = 0;
-                            tab_was_pressed = 0;
-                        }
-
-                        while (args->x-off >= win->_maxx) off++;
-                    }
-                }
-            }
+            case '\t':
+                expand_commands(win,history[size-1],0,off,&tab_was_pressed,&ex,args,NULL);
                 break;
             case 10:
             case '\r':
@@ -344,7 +291,7 @@ void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t 
                 history[size-1][i+1] = 0;
                 for (; i >= args->x; i--)
                     history[size-1][i] = history[size-1][i-1];
-                history[size-1][args->x] = (char)Event;
+                history[size-1][args->x] = (char)ev;
                 args->x++;
                 if (border+args->x+first_t-off >= (size_t)win->_maxx) off++;
                 break;
@@ -352,10 +299,9 @@ void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t 
     }
 
     END: ;
-
-    free(name_complete_arr);
-    args->x = 0;
+    if (ex.sfree)
+        ex.sfree(&ex);
     curs_set(0);
-    //werase(win);
-    //wrefresh(win);
+    werase(win);
+    wrefresh(win);
 }

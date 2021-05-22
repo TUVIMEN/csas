@@ -178,23 +178,23 @@ static void *dir_load(void *arg)
     #endif
     fd = dirfd(d);
 
-    bool isOld = nd->size > 0;
+    bool isold = nd->size > 0;
 
     #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
-    struct Element *oldEl = NULL;
+    struct Element *oldel = NULL;
     size_t oldsize = 0, begin, end;
 
-    if (isOld)
+    if (isold)
     {
         begin = 0;
         end = nd->size;
-        oldEl = nd->el;
+        oldel = nd->el;
         oldsize = nd->size;
         nd->el = NULL;
         nd->size = 0;
     }
     #else
-    if (isOld)
+    if (isold)
         free_el(&nd->el,&nd->size);
     #endif
 
@@ -280,24 +280,24 @@ static void *dir_load(void *arg)
 
         memset(nd->el[nd->size].list,0,WORKSPACE_N);
         #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
-        if (isOld)
+        if (isold)
         {
             for (register size_t i = begin; i < end; i++)
             {
                 #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
                     #ifdef __FAST_RESCUE__
-                    if (oldEl[i].inode == dir->d_ino)
+                    if (oldel[i].inode == dir->d_ino)
                     #else
-                    if (strcmp(oldEl[i].name,dir->d_name) == 0)
+                    if (strcmp(oldel[i].name,dir->d_name) == 0)
                     #endif
                 #endif
                     #ifdef __CHECK_IF_FILE_HAS_THE_SAME_NAME__
-                    if (strcmp(oldEl[i].name,dir->d_name) == 0)
+                    if (strcmp(oldel[i].name,dir->d_name) == 0)
                     #endif
                     {
                         begin += 1*(i == begin);
                         end -= (i == end);
-                        memcpy(nd->el[nd->size].list,oldEl[i].list,WORKSPACE_N);
+                        memcpy(nd->el[nd->size].list,oldel[i].list,WORKSPACE_N);
                         break;
                     }
             }
@@ -331,8 +331,8 @@ static void *dir_load(void *arg)
     }
 
     #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
-    if (isOld)
-        free_el(&oldEl,&oldsize);
+    if (isold)
+        free_el(&oldel,&oldsize);
     #endif
 
     closedir(d);

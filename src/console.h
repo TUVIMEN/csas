@@ -20,7 +20,7 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
 
-char *command_run(const char *src, Csas *cs);
+void command_run(char *src, Csas *cs, const int out);
 void console_resize(WINDOW *win, const struct WinArgs *args);
 void console_getline(WINDOW *win, Csas *cs, char* *history, size_t size, size_t max, struct WinArgs *args, char *first, char *add);
 

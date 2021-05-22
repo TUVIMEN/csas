@@ -44,9 +44,10 @@ void file_rm(const int fd, const char *name);
 void file_cp(const int fd1, const int fd2, const char *name, char *buffer, const mode_t arg);
 void file_mv(const int fd1, const int fd2, const char *name, char *buffer, const mode_t arg);
 
-char *atob(char *temp); //path to shell arg
+char *atob(char *s); //path to shell arg
 char *mkpath(const char *dir, const char *name); //combines dir and file name to path
-size_t findfirst(const char *src, int (*func)(int));
+size_t findfirst(const char *src, int (*func)(int), size_t n);
+int get_word(char *dest, char *src, size_t n, size_t *dsize, size_t *ssize);
 char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag); //converts string to value
 wchar_t charconv(const char c); //changes char after '\'
 size_t atop(char *dest, const char *src, Csas *cs); //changes string to path
