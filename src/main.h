@@ -89,12 +89,14 @@ typedef unsigned long long int ull;
 #define PATH_MAX 4096
 #endif
 
-#define LINE_SIZE_MAX (1<<15)
-
-#define DIR_INC_RATE 128
-#define DIR_BASE_RATE 64
-
 #define TEMPTEMP "/tmp/CSAS-XXXXXX"
+
+#define CSAS_ECNF 1
+#define CSAS_EWE_A 2
+#define CSAS_EWE_P 3
+#define CSAS_EWE_I 4
+#define CSAS_EWE_F 5
+#define CSAS_ENOP 6
 
 #define G_D(x,y) cs->base[cs->ws[x].win[y]] // GET_DIR
 #define G_S(x,y) G_D(x,y)->selected[x]      // GET_SELECTED
@@ -104,6 +106,7 @@ typedef unsigned long long int ull;
 #define F_NORMAL 0x2
 #define F_CONFIRM 0x4
 #define F_WAIT 0x8
+#define F_MULTI 0x10
 
 #define T_DIR 1
 #define T_REG 2
@@ -128,6 +131,8 @@ typedef unsigned long long int ull;
     #define SORT_CTIME 7
     #define SORT_GID 8
     #define SORT_UID 9
+    #define SORT_ZNAME 10
+    #define SORT_LZNAME 10
 
     #define SORT_IF 1073741823
     #define SORT_BETTER_FILES 1073741824
@@ -369,7 +374,7 @@ typedef struct
         size_t max_size;
         size_t inc_r;
         size_t alloc_r;
-        char* *history;
+        char **history;
     } consolehistory;
     struct
     {
@@ -377,7 +382,7 @@ typedef struct
         size_t size;
         size_t inc_r;
         size_t pos;
-        char* *list;
+        char **list;
     } SearchList;
     #ifndef __SAVE_PREVIEW__
     uchar *cpreview;

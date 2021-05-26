@@ -125,7 +125,6 @@ static void commands_init()
     #ifdef __LOAD_CONFIG_ENABLE__
     addcommand("source",'f',cmd_source,8,expand_file);
     #endif
-    addcommand("shell",'f',cmd_shell,8,expand_shell);
     addcommand("filter",'f',cmd_filter,8,NULL);
 }
 
@@ -185,7 +184,12 @@ static void keys_init()
     addkey("oM","set SortMethod SORT_LNAME|SORT_REVERSE|SORT_BETTER_FILES");
     addkey("on","set SortMethod SORT_NAME|SORT_BETTER_FILES");
     addkey("oN","set SortMethod SORT_NAME|SORT_REVERSE|SORT_BETTER_FILES");
+    addkey("oz","set SortMethod SORT_ZNAME|SORT_BETTER_FILES");
+    addkey("oZ","set SortMethod SORT_ZNAME|SORT_REVERSE|SORT_BETTER_FILES");
+    addkey("ox","set SortMethod SORT_LZNAME|SORT_BETTER_FILES");
+    addkey("oX","set SortMethod SORT_LZNAME|SORT_REVERSE|SORT_BETTER_FILES");
     #endif
+    addkey("f","console -a 'filter '");
     addkey("dct","getsize -cs s");
     addkey("dCt","getsize -crs s");
     addkey("dst","getsize -s s");
@@ -231,9 +235,7 @@ static void keys_init()
     addkey("R","load -tm 2");
     addkey(":","console");
     addkey("cd","console -a 'cd '");
-    addkey("s","console -a 'shell '");
-    addkey("S","exec bash");
-    addkey("b","bulk -S sh -E vim -b mv -s 0 -R .");
+    addkey("S","exec -nw ${SHELL}");
     addkey("/","console -a 'search -N '");
     addkey("n","search -n 1");
     addkey("N","search -b 1");
@@ -256,23 +258,23 @@ static void settings_init()
     s_WindowBorder[2]               = 0;
     s_WindowBorder[3]               = 0;
     s_WindowBorder[4]               = 0;
-    s_WindowBorder[5]                = 0;
-    s_WindowBorder[6]                = 0;
-    s_WindowBorder[7]                = 0;
+    s_WindowBorder[5]               = 0;
+    s_WindowBorder[6]               = 0;
+    s_WindowBorder[7]               = 0;
     #ifdef __SORT_ELEMENTS_ENABLE__
-    s_BetterFiles                    = (li*)calloc(16,sizeof(li));
-    s_BetterFiles[0]                 = T_DIR;
-    s_BetterFiles[1]                 = T_DIR|T_SYMLINK;
+    s_BetterFiles                   = (li*)calloc(16,sizeof(li));
+    s_BetterFiles[0]                = T_DIR;
+    s_BetterFiles[1]                = T_DIR|T_SYMLINK;
     #endif
-    s_C_Group                        = malloc(sizeof(ll)*8);
-    s_C_Group[0]		                = COLOR_PAIR(3);
-    s_C_Group[1]		                = COLOR_PAIR(2);
-    s_C_Group[2]		                = COLOR_PAIR(1);
-    s_C_Group[3]		                = COLOR_PAIR(4);
-    s_C_Group[4]		                = COLOR_PAIR(5);
-    s_C_Group[5]		                = COLOR_PAIR(6);
-    s_C_Group[6]		                = COLOR_PAIR(7);
-    s_C_Group[7]		                = COLOR_PAIR(8);
+    s_C_Group                       = malloc(sizeof(ll)*8);
+    s_C_Group[0]		            = COLOR_PAIR(3);
+    s_C_Group[1]		            = COLOR_PAIR(2);
+    s_C_Group[2]		            = COLOR_PAIR(1);
+    s_C_Group[3]		            = COLOR_PAIR(4);
+    s_C_Group[4]		            = COLOR_PAIR(5);
+    s_C_Group[5]		            = COLOR_PAIR(6);
+    s_C_Group[6]		            = COLOR_PAIR(7);
+    s_C_Group[7]		            = COLOR_PAIR(8);
 }
 
 int initcurses()
@@ -438,7 +440,17 @@ void csas_run(Csas *cs, const int argc, char **argv)
         csas_draw(cs,-1);
 
         if ((si = update_event(cs)) != -1)
-            command_run(keys[si].value,cs,0);
+        {
+            int r = command_run(keys[si].value,cs);
+            if (r != 0)
+            {
+                char *fc = strchr(keys[si].value,' ');
+                if (fc)
+                    set_message(cs,s_C_Error,"%s: %s",fc,csas_strerror());
+                else
+                    set_message(cs,s_C_Error,"%s",csas_strerror());
+            }
+        }
 
         if (ActualTime != PastTime)
         {

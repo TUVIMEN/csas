@@ -25,23 +25,27 @@
 #include "preview.h"
 #include "draw.h"
 
+extern int csas_errno;
 extern struct AliasesT aliases[];
 
 extern struct command *commands;
 extern size_t commandsl;
 
-void command_run(char *src, Csas *cs, const int out)
+int command_run(char *src, Csas *cs)
 {
+    csas_errno = 0;
     char temp[16384];
     size_t pos = 0, end = 0;
     
     pos += findfirst(src,isspace,-1);
     while (src[pos+end] && !isspace(src[pos+end])) end++;
 
+    bool found = 0;
     for (size_t i = 0; i < commandsl; i++)
     {
         if (end == strlen(commands[i].name) && strncmp(src+pos,commands[i].name,end) == 0)
         {
+            found = 1;
             pos += end;
             pos += findfirst(src+pos,isspace,-1);
             if (commands[i].type == 'f')
@@ -59,11 +63,6 @@ void command_run(char *src, Csas *cs, const int out)
                         x += e;
                         continue;
                     }
-                    //if (src[j] == '$') //!
-                    //{
-                    //    get_special(temp,c,&j,&x,cs);
-                    //    continue;
-                    //}
                     if (c[j] == '~')
                     {
                         j++;
@@ -76,18 +75,22 @@ void command_run(char *src, Csas *cs, const int out)
                     temp[x++] = c[j++];
                 }
                 temp[x] = '\0';
-                ((char *(*)(const char*,Csas*))commands[i].func)(temp,cs);
-                return;
+                return ((int (*)(const char*,Csas*))commands[i].func)(temp,cs);
             }
             else if (commands[i].type == 'a')
             {
                 sprintf(temp,"%s %s",(char*)commands[i].func,src+pos);
-                command_run(temp,cs,out);
-                return;
+                return command_run(temp,cs);
             }
             break;
         }
     }
+    if (!found && src[0])
+    {
+        csas_errno = CSAS_ECNF;
+        return -1;
+    }
+    return 0;
 }
 
 void console_resize(WINDOW *win, const struct WinArgs *args)
@@ -136,7 +139,8 @@ void console_resize(WINDOW *win, const struct WinArgs *args)
     wrefresh(win);
 }
 
-void console_getline(WINDOW *win, Csas *cs, char **history, size_t size, size_t max, struct WinArgs *args, char *first, char *add)
+void console_getline(WINDOW *win, Csas *cs, char **history, size_t size, size_t max, struct WinArgs *args, char *first, char *add,
+    int (*expand)(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct rla *arr, struct WinArgs *args, char **end))
 {
     curs_set(1);
     int ev;
@@ -171,7 +175,8 @@ void console_getline(WINDOW *win, Csas *cs, char **history, size_t size, size_t 
             case -1:
                 break;
             case '\t':
-                expand_commands(win,history[size-1],0,off,&tab_was_pressed,&ex,args,NULL);
+                if (expand != NULL)
+                    expand(win,history[size-1],0,off,&tab_was_pressed,&ex,args,NULL);
                 break;
             case 10:
             case '\r':

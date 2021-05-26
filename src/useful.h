@@ -19,6 +19,7 @@
 #ifndef USEFUL_H
 #define USEFUL_H
 
+char *csas_strerror();
 void die(const char *p, ...);
 
 int spawn(char *file, char *arg1, char *arg2, const uchar mode);
@@ -37,6 +38,8 @@ char *lsperms(const int mode);
 
 size_t ttoa(const time_t *time, char *result); //time to string
 
+int strverscasecmp(const char *s1, const char *s2);
+
 void file_run(char *path);
 void path_shrink(char *path, const int max_size);
 
@@ -48,9 +51,9 @@ char *atob(char *s); //path to shell arg
 char *mkpath(const char *dir, const char *name); //combines dir and file name to path
 size_t findfirst(const char *src, int (*func)(int), size_t n);
 int get_word(char *dest, char *src, size_t n, size_t *dsize, size_t *ssize);
-char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag); //converts string to value
-wchar_t charconv(const char c); //changes char after '\'
-size_t atop(char *dest, const char *src, Csas *cs); //changes string to path
+int atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag); //converts string to value
+wchar_t charconv(const char c); //changes char after '\\'
+size_t atop(char *dest, const char *src, const char delim, Csas *cs); //changes string to path
 wchar_t *atok(char *src,  wchar_t  *dest); //changes string to keys
 
 #endif

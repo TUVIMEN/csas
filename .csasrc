@@ -5,6 +5,12 @@ map <right> 'move -r'
 map <up> 'move -u'
 map <down> 'move -d'
 
+alias shell "exec -ncw ${SHELL} -c $0"
+map s "console -a 'shell '"
+alias bulkrename 'bulk -n -S sh -E vim -b mv -ss'
+map b "bulkrename"
+map B "bulkrename -NR"
+
 set ThreadsForDir true
 set ThreadsForFile true
 set FileOpener "NULL"
@@ -40,7 +46,6 @@ set NumberLinesOff false
 set NumberLinesFromOne false
 set DirLoadingMode 0
 set DisplayingC DP_HSIZE
-set ShowHiddenFiles true
 set PreviewMaxThreads 8
 set SortMethod SORT_NAME|SORT_BETTER_FILES
 set BetterFiles {T_DIR,T_DIR|T_SYMLINK}

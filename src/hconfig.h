@@ -65,3 +65,7 @@
 
 #define WORKSPACE_N 10
 #define PREVIEW_MAX (1<<14)
+#define EXEC_ARGS_MAX (1<<9)
+#define LINE_SIZE_MAX (1<<15)
+#define DIR_INC_RATE 128
+#define DIR_BASE_RATE 64

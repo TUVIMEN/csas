@@ -160,9 +160,8 @@ static void *dir_load(void *arg)
         nd->enable = false;
         pthread_detach(nd->thread);
         pthread_exit(NULL);
-        #else
-        return NULL;
         #endif
+        return NULL;
     }
 
     struct dirent *dir;
@@ -363,9 +362,8 @@ static void *dir_load(void *arg)
         get_preview(cs);
     pthread_detach(nd->thread);
     pthread_exit(NULL);
-    #else
-    return NULL;
     #endif
+    return NULL;
 }
 
 int getdir(const char *path, Csas *cs, const int ws, const int which, const char mode
@@ -387,7 +385,8 @@ int getdir(const char *path, Csas *cs, const int ws, const int which, const char
 
     char temp[PATH_MAX];
 
-    realpath(path,temp);
+    if (realpath(path,temp) == NULL)
+        return -1;
 
     struct stat sfile1;
     if (stat(path,&sfile1) != 0)
@@ -508,16 +507,12 @@ int csas_cd(const char *path, const int ws, Csas *cs)
     {
         getcwd(tpath,PATH_MAX);
         t = memrchr(tpath,'/',strlen(tpath));
-        if (t)
-            t++;
+        if (t) t++;
     }
     #endif
 
     if (realpath(path,npath) == NULL || chdir(path) == -1)
-    {
-        set_message(cs,COLOR_PAIR(1),"%s: %s",path,strerror(errno));
         return -1;
-    }
 
     strcpy(cs->ws[ws].path,npath);
 
@@ -553,8 +548,7 @@ int csas_cd(const char *path, const int ws, Csas *cs)
         {
             #ifdef __FOLLOW_PARENT_DIR__
             t = memrchr(npath,'/',strlen(npath));
-            if (t)
-                t++;
+            if (t) t++;
             #endif
 
             getdir("..",cs,ws,0,s_DirLoadingMode

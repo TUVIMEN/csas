@@ -23,6 +23,8 @@
 #include "inits.h"
 #include "loading.h"
 
+int csas_errno = 0;
+
 #ifdef __COLOR_FILES_BY_EXTENSION__
 extern Extensions extensions[];
 #endif
@@ -37,6 +39,23 @@ extern char *s_FileOpener;
 extern char *s_Values;
 extern char *s_editor;
 
+char *csas_strerror()
+{
+    if (csas_errno == 0)
+        return strerror(errno);
+
+    static char *err[] = {
+        "command not found",
+        "wasn't expecting an array",
+        "wasn't expecting a string",
+        "wasn't expecting a integer",
+        "wasn't expecting a float",
+        "there's no such option",
+    };
+
+    return err[csas_errno-1];
+}
+
 void die(const char *p, ...)
 {
     va_list args;
@@ -47,11 +66,81 @@ void die(const char *p, ...)
     exit(-1);
 }
 
+static size_t parseargs(char *src, char **dest)
+{
+    if (src == NULL) return 0;
+    size_t x = 0;
+    dest[x++] = src;
+
+    while (*src)
+    {
+        if (*src == '\\')
+        {
+            for (size_t i = 0, l = strlen(src); i < l; i++)
+                src[i] = src[i+1];
+            src++;
+            continue;
+        }
+        if (*src == '\'')
+        {
+            for (size_t i = 0, l = strlen(src)-1; i < l; i++)
+                src[i] = src[i+1];
+            src++;
+            while (*src && *src != '\'') src++;
+            if (!*src) return x;
+            for (size_t i = 0, l = strlen(src)-1; i < l; i++)
+                src[i] = src[i+1];
+            src++;
+            continue;
+        }
+        if (*src == '"')
+        {
+            for (size_t i = 0, l = strlen(src)-1; i < l; i++)
+                src[i] = src[i+1];
+            src++;
+            while (*src && *src != '"')
+            {
+                if (*src == '\\')
+                {
+                    for (size_t i = 0, l = strlen(src); i < l; i++)
+                        src[i] = src[i+1];
+                    src++;
+                    continue;
+                }
+                src++;
+            }
+            if (!*src) return x;
+            for (size_t i = 0, l = strlen(src)-1; i < l; i++)
+                src[i] = src[i+1];
+            src++;
+        }
+        if (isspace(*src))
+        {
+            src += findfirst(src,isspace,-1)-1;
+            *src++ = '\0';
+            if (!*src) return x;
+            bool gc = 0;
+            if (*src == '$' && *(src+1) == '0')
+            {
+                *src++ = '\0';
+                *src++ = '\0';
+                gc = 1;
+            }
+            dest[x++] = src;
+            if (x == EXEC_ARGS_MAX) return 0;
+            if (gc) return x;
+            continue;
+        }
+        src++;
+    }
+    return x;
+}
+
 int spawn(char *file, char *arg1, char *arg2, const uchar flag)
 {
     if (!file || !*file) return -1;
 
-    char *argv[4] = {NULL};
+    char *argv[EXEC_ARGS_MAX] = {0};
 
     if (!arg1 && arg2)
     {
@@ -59,9 +148,16 @@ int spawn(char *file, char *arg1, char *arg2, const uchar flag)
         arg2 = NULL;
     }
 
-    argv[0] = file;
-    argv[1] = arg1;
-    argv[2] = arg2;
+    size_t x = 0;
+    if (flag&F_MULTI)
+    {
+        x = parseargs(file,argv);
+        if (x == 0) return -1;
+    }
+    else
+        argv[x++] = file;
+    argv[x++] = arg1;
+    argv[x++] = arg2;
 
     if (flag&F_NORMAL) endwin();
 
@@ -678,18 +774,17 @@ int get_word(char *dest, char *src, size_t n, size_t *dsize, size_t *ssize)
 
 extern struct AliasesT aliases[];
 
-char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag)
+int atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag)
 {
-    static char *messages[] = {
-        "wasn't expecting an array","wasn't expecting a string",
-        "wasn't expecting a integer","wasn't expecting a float"
-    };
     size_t posb = 0, pose = 0;
     char line[LINE_SIZE_MAX];
     if (src[posb] == '{')
     {
         if (!(flag&SET_T_A))
-            return messages[0];
+        {
+            csas_errno = CSAS_EWE_A;
+            return -1;
+        }
         for (int i = 0; src[posb] != '}'; i++)
         {
             posb++;
@@ -704,8 +799,8 @@ char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag
             posb += pose;
             posb += findfirst(src+posb,isspace,-1);
 
-            char *r = atov(&(*(li**)dest)[i],line,NULL,cs,flag&(~SET_T_A));
-            if (r != NULL)
+            int r = atov(&(*(li**)dest)[i],line,NULL,cs,flag&(~SET_T_A));
+            if (r != 0)
                 return r;
         }
         posb++;
@@ -713,7 +808,10 @@ char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag
     else if (src[posb] == '\'')
     {
         if (!(flag&SET_T_P))
-            return messages[1];
+        {
+            csas_errno = CSAS_EWE_P;
+            return -1;
+        }
         posb++;
         pose = strchr(src+posb,'\'')-(src+posb);
         strncpy(*(char**)dest,src+posb,pose);
@@ -723,21 +821,24 @@ char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag
     else if (src[posb] == '"')
     {
         if (!(flag&SET_T_P))
-            return messages[1];
-        posb++;
-        pose = strchr(src+posb,'"')-(src+posb)+1;
-        size_t i = posb, x = 0;
-        while (i < pose)
         {
-            if (src[i] == '$')
+            csas_errno = CSAS_EWE_P;
+            return -1;
+        }
+        posb++;
+        char const *c = src+posb;
+        size_t x = 0;
+        while (*c && *c != '"')
+        {
+            if (*c == '\\')
             {
-                get_special(*(char**)dest,src,&i,&x,cs);
+                c += 2;
                 continue;
             }
-            (*(char**)dest)[x++] = src[i++];
+            (*(char**)dest)[x++] = *c++;
         }
         (*(char**)dest)[x] = '\0';
-        posb += pose+2;
+        posb = (c-src)+2;
     }
     else
     {
@@ -761,13 +862,19 @@ char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag
             if (type == 0)
             {
                 if (!(flag&SET_T_UI) && !(flag&SET_T_I))
-                    return messages[2];
+                {
+                    csas_errno = CSAS_EWE_I;
+                    return -1;
+                }
                 *(li*)dest |= atol(line);
             }
             else if (type == 1)
             {
                 if (!(flag&SET_T_F))
-                    return messages[3];
+                {
+                    csas_errno = CSAS_EWE_F;
+                    return -1;
+                }
                 *(double*)dest = atof(line);
                 posb += pose;
                 posb += findfirst(src+posb,isspace,-1);
@@ -789,7 +896,83 @@ char *atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag
     END: ;
     if (size != NULL)
         *size += posb;
-    return NULL;
+    csas_errno = 0;
+    return 0;
+}
+
+/*
+ * The code for version compare is a modified version of the GLIBC
+ * and uClibc implementation of strverscmp()
+ */
+int strverscasecmp(const char *s1, const char *s2)
+{
+    #define  S_N    0x0
+    #define  S_I    0x3
+    #define  S_F    0x6
+    #define  S_Z    0x9
+    #define  CMP    2
+    #define  LEN    3
+    const unsigned char *p1 = (const unsigned char *) s1;
+    const unsigned char *p2 = (const unsigned char *) s2;
+
+    /* Symbol(s)    0       [1-9]   others
+         Transition   (10) 0  (01) d  (00) x   */
+    static const uint8_t next_state[] =
+    {
+        /* state    x    d    0  */
+        /* S_N */  S_N, S_I, S_Z,
+        /* S_I */  S_N, S_I, S_I,
+        /* S_F */  S_N, S_F, S_F,
+        /* S_Z */  S_N, S_F, S_Z
+    };
+
+    static const int8_t result_type[] =
+    {
+        /* state   x/x  x/d  x/0  d/x  d/d  d/0  0/x  0/d  0/0  */
+
+        /* S_N */  CMP, CMP, CMP, CMP, LEN, CMP, CMP, CMP, CMP,
+        /* S_I */  CMP, -1,  -1,  +1,  LEN, LEN, +1,  LEN, LEN,
+        /* S_F */  CMP, CMP, CMP, CMP, CMP, CMP, CMP, CMP, CMP,
+        /* S_Z */  CMP, +1,  +1,  -1,  CMP, CMP, -1,  CMP, CMP
+    };
+
+    if (p1 == p2)
+        return 0;
+
+    unsigned char c1 = toupper(*p1++);
+    unsigned char c2 = toupper(*p2++);
+    /* Hint: '0' is a digit too.  */
+    int state = S_N + ((c1 == '0') + (isdigit (c1) != 0));
+
+    int diff;
+    while ((diff = c1 - c2) == 0)
+    {
+        if (c1 == '\0')
+	        return diff;
+
+        state = next_state[state];
+        c1 = toupper(*p1++);
+        c2 = toupper(*p2++);
+        state += (c1 == '0') + (isdigit (c1) != 0);
+    }
+
+    state = result_type[state * 3 + (((c2 == '0') + (isdigit (c2) != 0)))];
+
+    switch (state)
+    {
+        case CMP:
+            return diff;
+
+        case LEN:
+            while (isdigit (*p1++))
+	        if (!isdigit (*p2++))
+	            return 1;
+
+        return isdigit (*p2) ? -1 : diff;
+
+        default:
+            return state;
+    }
 }
 
 wchar_t charconv(const char c)
@@ -883,7 +1066,7 @@ wchar_t *atok(char *src, wchar_t *dest)
     return dest;
 }
 
-size_t atop(char *dest, const char *src, Csas *cs)
+size_t atop(char *dest, const char *src, const char delim, Csas *cs)
 {
     size_t pos = 0, x;
     src += findfirst(src,isspace,-1);
@@ -894,7 +1077,7 @@ size_t atop(char *dest, const char *src, Csas *cs)
     else
     {
         x = 0;
-        while (src[pos] && !isspace(src[pos]))
+        while (src[pos] && src[pos] != delim)
         {
             if (src[pos] == '\\')
             {
@@ -903,9 +1086,10 @@ size_t atop(char *dest, const char *src, Csas *cs)
                 continue;
             }
 
-            if (src[pos] == '$')
+            if (src[pos] == '$' && src[pos+1] == '{')
             {
-                get_special(dest,src,&pos,&x,cs);
+                pos += 2;
+                get_env(dest,src,&pos,&x);
                 continue;
             }
 

@@ -21,6 +21,7 @@
 #ifdef __SORT_ELEMENTS_ENABLE__
 
 #include "sort.h"
+#include "useful.h"
 
 extern li *s_BetterFiles;
 
@@ -62,13 +63,22 @@ static int cmp_gid(struct Element *el1, struct Element *el2)
 static int cmp_uid(struct Element *el1, struct Element *el2)
     {return el1->pw > el2->pw;}
 #endif
+static int cmp_zname(struct Element *el1, struct Element *el2)
+{
+    char *n1 = el1->name, *n2 = el2->name;
+    while (*n1 == '0') n1++;
+    while (*n2 == '0') n2++;
+    return strverscasecmp(n1,n2);
+}
+static int cmp_lzname(struct Element *el1, struct Element *el2)
+    { return strverscmp(el1->name,el2->name); }
 
 int (*mas[])(struct Element*, struct Element*) = {
     [0]=cmp_type,
     #ifdef __FILE_SIZE_ENABLE__
     [1]=cmp_size,
     #endif
-    [2]=cmp_name,[3]=cmp_lname,
+    [2]=cmp_name,[3]=cmp_lname,[9]=cmp_zname,[10]=cmp_lzname,
     #ifdef __MTIME_ENABLE__
     [4]=cmp_mtime,
     #endif
@@ -82,7 +92,7 @@ int (*mas[])(struct Element*, struct Element*) = {
     [7]=cmp_gid,
     #endif
     #ifdef __FILE_GROUPS_ENABLE__
-    [8]=cmp_uid
+    [8]=cmp_uid,
     #endif
 };
 
@@ -101,11 +111,7 @@ static int comp(const void *el1, const void *el2, void *flag)
     }
 
     RESULT: ;
-    register int ret;
-
-    ret = (*mas[(*(ull*)flag&SORT_IF)-1])((struct Element*)el1,(struct Element*)el2);
-
-    return ret;
+    return (*mas[(*(ull*)flag&SORT_IF)-1])((struct Element*)el1,(struct Element*)el2);
 }
 
 static size_t find_border(const struct Element *el, size_t size)

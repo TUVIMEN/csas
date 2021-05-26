@@ -25,35 +25,21 @@
 #ifdef __LOAD_CONFIG_ENABLE__
 extern struct AliasesT aliases[];
 
-void get_special(char *dest, const char *src, size_t *n, size_t *x, Csas *cs)
+void get_env(char *dest, const char *src, size_t *n, size_t *x)
 {
-    if (src[(*n)+1] == '{')
+    size_t end = strchr(src+*n,'}')-(src+*n);
+    char temp[NAME_MAX], *temp2;
+    strncpy(temp,src+*n,end);
+    temp[end] = 0;
+    temp2 = getenv(temp);
+    if (temp2)
     {
-        *n += 2;
-        size_t end = strchr(src+*n,'}')-(src+*n);
-        char temp[NAME_MAX], *temp2;
-        strncpy(temp,src+*n,end);
-        temp[end] = 0;
-        temp2 = getenv(temp);
-        if (temp2)
-        {
-            size_t end1 = strlen(temp2);
-            memcpy(dest+*x,temp2,end1);
-            *x += end1-1;
-        }
-        *n += end+1;
-        (*x)++;
+        size_t end1 = strlen(temp2);
+        memcpy(dest+*x,temp2,end1);
+        *x += end1-1;
     }
-    else if (src[*n+1] == '(')
-    {
-        *n += 2;
-        char temp[4096];
-        size_t end = strchr(src+*n,')')-(src+*n);
-        memcpy(temp,src+*n,end);
-        temp[end] = '\0';
-        (*n) += end+1;
-        command_run(temp,cs,1); //!
-    }
+    *n += end+1;
+    (*x)++;
 }
 
 void get_clearline(char *dest, const char *src, size_t *n)
@@ -163,11 +149,10 @@ void get_clearline(char *dest, const char *src, size_t *n)
             continue;
         }
 
-        if (src[*n] == '$' && (src[*n+1] == '(' || src[*n+1]))
+        if (src[*n] == '$' && src[*n+1] == '{')
         {
             dest[x++] = src[(*n)++];
             dest[x++] = src[*n];
-            char comm = src[(*n)++] == '(' ? ')' : '}';
 
             while (src[*n])
             {
@@ -178,7 +163,7 @@ void get_clearline(char *dest, const char *src, size_t *n)
                         (*n)++;
                     continue;
                 }
-                if (src[*n] == comm)
+                if (src[*n] == '}')
                 {
                     dest[x++] = src[(*n)++];   
                     break;
@@ -220,12 +205,15 @@ void config_load(const char *path, Csas *cs)
     close(fd);
 
     char line[LINE_SIZE_MAX];
+    int r;
 
     endwin();
     for (size_t pos = 0, i = 0; file[pos]; i++)
     {
         get_clearline(line,file,&pos);
-        command_run(line,cs,1);
+        r = command_run(line,cs);
+        if (r != 0)
+            fprintf(stderr,"%s: %s\n%lu:\t%s\n",path,csas_strerror(),i,line);
         pos++;
     }
     refresh();
