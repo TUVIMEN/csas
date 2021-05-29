@@ -26,12 +26,12 @@
 #include "draw.h"
 
 extern int csas_errno;
-extern struct AliasesT aliases[];
+extern struct set_alias aliases[];
 
 extern struct command *commands;
 extern size_t commandsl;
 
-int command_run(char *src, Csas *cs)
+int command_run(char *src, csas *cs)
 {
     csas_errno = 0;
     char temp[16384];
@@ -41,59 +41,47 @@ int command_run(char *src, Csas *cs)
     while (src[pos+end] && !isspace(src[pos+end])) end++;
 
     bool found = 0;
-    for (size_t i = 0; i < commandsl; i++)
-    {
-        if (end == strlen(commands[i].name) && strncmp(src+pos,commands[i].name,end) == 0)
-        {
+    for (size_t i = 0; i < commandsl; i++)     {
+        if (end == strlen(commands[i].name) && strncmp(src+pos,commands[i].name,end) == 0) {
             found = 1;
             pos += end;
             pos += findfirst(src+pos,isspace,-1);
-            if (commands[i].type == 'f')
-            {
+            if (commands[i].type == 'f') {
                 size_t j=0,x=0;
                 char *c = src+pos;
-                while (c[j])
-                {
-                    if (c[j] == '\'')
-                    {
+                while (c[j]) {
+                    if (c[j] == '\'') {
                         temp[x++] = c[j++];
                         size_t e = (strchr(c+j,'\'')-(c+j))+1;
                         memcpy(temp+x,c+j,e);
                         j += e;
                         x += e;
-                        continue;
-                    }
-                    if (c[j] == '~')
-                    {
+                    } else if (c[j] == '~') {
                         j++;
                         char *home = getenv("HOME");
                         size_t t = strlen(home);
                         memcpy(temp+x,home,t);
                         x += t;
-                        continue;
-                    }
-                    temp[x++] = c[j++];
+                    } else
+                        temp[x++] = c[j++];
                 }
                 temp[x] = '\0';
-                return ((int (*)(const char*,Csas*))commands[i].func)(temp,cs);
-            }
-            else if (commands[i].type == 'a')
-            {
+                return ((int (*)(const char*,csas*))commands[i].func)(temp,cs);
+            } else if (commands[i].type == 'a') {
                 sprintf(temp,"%s %s",(char*)commands[i].func,src+pos);
                 return command_run(temp,cs);
             }
             break;
         }
     }
-    if (!found && src[0])
-    {
+    if (!found && src[0]) {
         csas_errno = CSAS_ECNF;
         return -1;
     }
     return 0;
 }
 
-void console_resize(WINDOW *win, const struct WinArgs *args)
+void console_resize(WINDOW *win, const struct winargs *args)
 {
     int sizex=0,sizey=0,posx=0,posy=0;
 
@@ -139,8 +127,8 @@ void console_resize(WINDOW *win, const struct WinArgs *args)
     wrefresh(win);
 }
 
-void console_getline(WINDOW *win, Csas *cs, char **history, size_t size, size_t max, struct WinArgs *args, char *first, char *add,
-    int (*expand)(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct rla *arr, struct WinArgs *args, char **end))
+void console_getline(WINDOW *win, csas *cs, char **history, size_t size, size_t max, struct winargs *args, char *first, char *add,
+    int (*expand)(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end))
 {
     curs_set(1);
     int ev;
@@ -149,34 +137,32 @@ void console_getline(WINDOW *win, Csas *cs, char **history, size_t size, size_t 
     short int off = 0;
     int border = (args->cfg&0x1) == 0x1;
     size_t first_t = strlen(first), z = size-1;
-    if (add)
-    {
-        strcpy(history[size-1],add);
+    char *h = history[size-1];
+    if (add) {
+        strcpy(h,add);
         args->x = strlen(add);
         while (args->x-off >= win->_maxx) off++;
     }
 
     bool tab_was_pressed = 0;
-    struct rla ex = {NULL,0,0,NULL};
+    struct expand_arg ex = {NULL,0,0,NULL};
 
     console_resize(win,args);
 
-    for (;;)
-    {
+    for (;;) {
         for (int i = border; i < win->_maxx-border; i++)
             mvwaddch(win,border+args->y,i,' ');
         mvwaddstr(win,border+args->y,border,first);
-        mvwaddnstr(win,border+args->y,border+first_t,history[size-1]+off,win->_maxx-border*2-first_t);
+        mvwaddnstr(win,border+args->y,border+first_t,h+off,win->_maxx-border*2-first_t);
         wmove(win,border+args->y,border+args->x+first_t-off);
         wrefresh(win);
 
-        switch (ev = getch())
-        {
+        switch (ev = getch()) {
             case -1:
                 break;
             case '\t':
                 if (expand != NULL)
-                    expand(win,history[size-1],0,off,&tab_was_pressed,&ex,args,NULL);
+                    expand(win,h,0,off,&tab_was_pressed,&ex,args,NULL);
                 break;
             case 10:
             case '\r':
@@ -185,29 +171,26 @@ void console_getline(WINDOW *win, Csas *cs, char **history, size_t size, size_t 
             case KEY_UP:
             case ('p'&0x1f):
                 tab_was_pressed = 0;
-                if (z > 0)
-                {
+                if (z > 0) {
                     z--;
-                    strcpy(history[size-1],history[z]);
-                    args->x = strlen(history[size-1]);
+                    strcpy(h,history[z]);
+                    args->x = strlen(h);
                     while (args->x-off >= win->_maxx) off++;
                 }
                 break;
             case KEY_DOWN:
             case ('n'&0x1f):
                 tab_was_pressed = 0;
-                if (z < size-1)
-                {
+                if (z < size-1) {
                     z++;
-                    if (z == size-1)
-                    {
-                        memset(history[size-1],0,max);
+                    if (z == size-1) {
+                        memset(h,0,max);
                         args->x = 0;
                         off = 0;
                         break;
                     }
-                    strcpy(history[size-1],history[z]);
-                    args->x = strlen(history[size-1]);
+                    strcpy(h,history[z]);
+                    args->x = strlen(h);
                     while (args->x-off >= win->_maxx) off++;
                 }
                 break;
@@ -221,12 +204,12 @@ void console_getline(WINDOW *win, Csas *cs, char **history, size_t size, size_t 
                 off = 0;
                 break;
             case ('e'&0x1f):
-                args->x = strlen(history[size-1]);
+                args->x = strlen(h);
                 while (args->x-off >= win->_maxx) off++;
                 break;
             case 27:
             case ('r'&0x1f):
-                history[size-1][0] = 0;
+                h[0] = 0;
                 goto END;
             case KEY_RESIZE:
                 args->y = 0;
@@ -238,10 +221,9 @@ void console_getline(WINDOW *win, Csas *cs, char **history, size_t size, size_t 
             case KEY_BACKSPACE:
             case ('h'&0x1f):
                 tab_was_pressed = 0;
-                if (args->x > 0)
-                {
-                    for (size_t i = args->x-1, j = strlen(history[size-1]); i <= j; i++)
-                        history[size-1][i] = history[size-1][i+1];
+                if (args->x > 0) {
+                    for (size_t i = args->x-1, j = strlen(h); i <= j; i++)
+                        h[i] = h[i+1];
                     args->x--;
                     if (off != 0) off--;
                 }
@@ -250,22 +232,20 @@ void console_getline(WINDOW *win, Csas *cs, char **history, size_t size, size_t 
                 break;
             case ('w'&0x1f):
                 tab_was_pressed = 0;
-                if (args->x > 0)
-                {
+                if (args->x > 0) {
                     do {
-                        for (size_t i = args->x-1, j = strlen(history[size-1]); i <= j; i++)
-                            history[size-1][i] = history[size-1][i+1];
+                        for (size_t i = args->x-1, j = strlen(h); i <= j; i++)
+                            h[i] = h[i+1];
                         args->x--;
                         if (off != 0) off--;
-                    } while (args->x != 0 && history[size-1][args->x-1] != ' ');
+                    } while (args->x != 0 && h[args->x-1] != ' ');
                 }
                 else
                     goto END;
                 break;
             case KEY_LEFT:
             case ('b'&0x1f):
-                if (args->x > 0)
-                {
+                if (args->x > 0) {
                     if (off != 0 && border+args->x+first_t-off == (size_t)win->_maxx/2)
                         off--;
                     args->x--;
@@ -273,30 +253,29 @@ void console_getline(WINDOW *win, Csas *cs, char **history, size_t size, size_t 
                 break;
             case KEY_RIGHT:
             case ('f'&0x1f):
-                if (history[size-1][args->x])
-                {
+                if (h[args->x]) {
                     if (border+args->x+first_t-off >= (size_t)win->_maxx)
                         off++;
                     args->x++;
                 }
                 break;
             case ('d'&0x1f):
-                while (history[size-1][args->x] && !isalnum(history[size-1][args->x])) args->x++;
-                while (isalnum(history[size-1][args->x])) args->x++;
-                while (history[size-1][args->x] && !isalnum(history[size-1][args->x])) args->x++;
+                while (h[args->x] && !isalnum(h[args->x])) args->x++;
+                while (isalnum(h[args->x])) args->x++;
+                while (h[args->x] && !isalnum(h[args->x])) args->x++;
                 break;
             case ('s'&0x1f):
-                while (history[size-1][args->x-1] && !isalnum(history[size-1][args->x-1])) args->x--;
-                while (isalnum(history[size-1][args->x-1])) args->x--;
-                while (history[size-1][args->x-1] && !isalnum(history[size-1][args->x-1])) args->x--;
+                while (h[args->x-1] && !isalnum(h[args->x-1])) args->x--;
+                while (isalnum(h[args->x-1])) args->x--;
+                while (h[args->x-1] && !isalnum(h[args->x-1])) args->x--;
                 break;
             default:
                 tab_was_pressed = 0;
-                int i = strlen(history[size-1]);
-                history[size-1][i+1] = 0;
+                int i = strlen(h);
+                h[i+1] = 0;
                 for (; i >= args->x; i--)
-                    history[size-1][i] = history[size-1][i-1];
-                history[size-1][args->x] = (char)ev;
+                    h[i] = h[i-1];
+                h[args->x] = (char)ev;
                 args->x++;
                 if (border+args->x+first_t-off >= (size_t)win->_maxx) off++;
                 break;
@@ -304,8 +283,7 @@ void console_getline(WINDOW *win, Csas *cs, char **history, size_t size, size_t 
     }
 
     END: ;
-    if (ex.sfree)
-        ex.sfree(&ex);
+    if (ex.sfree) ex.sfree(&ex);
     curs_set(0);
     werase(win);
     wrefresh(win);

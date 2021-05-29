@@ -19,11 +19,11 @@
 #ifndef EXPAND_H
 #define EXPAND_H
 
-int expand_file(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct rla *arr, struct WinArgs *args, char **end);
-int expand_dir(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct rla *arr, struct WinArgs *args, char **end);
-int expand_options(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct rla *arr, struct WinArgs *args, char **end);
-int expand_shell_commands(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct rla *arr, struct WinArgs *args, char **end);
-int expand_commands(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct rla *arr, struct WinArgs *args, char **end);
-int expand_shell(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct rla *arr, struct WinArgs *args, char **end);
+int expand_file(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end);
+int expand_dir(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end);
+int expand_options(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end);
+int expand_shell_commands(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end);
+int expand_commands(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end);
+int expand_shell(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end);
 
 #endif

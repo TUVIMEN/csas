@@ -19,7 +19,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-struct AliasesT aliases[] = {
+struct set_alias aliases[] = {
     {"false",0},{"true",1},{"COL_0",COLOR_PAIR(0x0)},{"COL_1",COLOR_PAIR(0x1)},
     {"COL_2",COLOR_PAIR(0x2)},{"COL_3",COLOR_PAIR(0x3)},{"COL_4",COLOR_PAIR(0x4)},
     {"COL_5",COLOR_PAIR(0x5)},{"COL_6",COLOR_PAIR(0x6)},{"COL_7",COLOR_PAIR(0x7)},
@@ -135,7 +135,7 @@ li s_C_Selected=A_REVERSE|A_BOLD,s_C_Exec_set=A_BOLD,s_C_Exec_col=COLOR_PAIR(2),
     s_C_Bar_Dir=COLOR_PAIR(4)|A_BOLD,s_C_Bar_Name=A_NORMAL|A_BOLD,s_C_Bar_WorkSpace=A_NORMAL|A_BOLD,*s_C_Group=NULL,
     s_C_Bar_F=COLOR_PAIR(0),s_C_Bar_E=COLOR_PAIR(0),s_C_Borders=0;
 
-struct option cfg_names[] = {
+struct set_option cfg_names[] = {
     #ifdef __THREADS_FOR_DIR_ENABLE__
     {"ThreadsForDir",SET_T_B,&s_ThreadsForDir},
     #endif
@@ -216,7 +216,8 @@ struct option cfg_names[] = {
 };
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
-Extensions extensions[] = {
+fext extensions[] = {
+    //Video || Audio
     {"aiff",'V'}, {"mkv",'V'}, {"avi",'V'}, {"flac",'V'}, {"flv",'V'},
     {"m4a",'V'}, {"m4b",'V'}, {"m4p",'V'}, {"mp2",'V'}, {"avchd",'V'},
     {"mp3",'V'}, {"mp4",'V'}, {"mpe",'V'}, {"mpg",'V'}, {"mpv",'V'},
@@ -226,16 +227,15 @@ Extensions extensions[] = {
     {"aa",'V'}, {"ac3",'V'}, {"mj2",'V'}, {"mpc",'V'}, {"mpc8",'V'},
     {"m4v",'V'}, {"oga",'V'}, {"ogv",'V'}, {"rvi",'V'}, {"alac",'V'},
     {"rmvb",'V'},
-    //Video || Audio
+    //Images
     {"gif",'I'}, {"jpeg",'I'}, {"jpg",'I'}, {"png",'I'}, {"raw",'I'},
     {"tiff",'I'}, {"bmp",'I'}, {"tga",'I'}, {"gvs",'I'}, {"webp",'I'},
     {"svg",'I'},
-    //Image
+    //Archives
     {"tar",'A'}, {"jar",'A'}, {"rar",'A'}, {"bz2",'A'}, {"exe",'A'},
     {"gz",'A'}, {"img",'A'}, {"iso",'A'}, {"lzma",'A'}, {"tbz2",'A'},
     {"tgz",'A'}, {"z",'A'}, {"zx",'A'}, {"zip",'A'}, {"7z",'A'},
     {"xz",'A'},
-    //Archive
     {NULL,'\0'}
 };
 #endif
@@ -244,7 +244,7 @@ struct command *commands = NULL;
 size_t commandsl = 0;
 size_t commandsa = 0;
 
-FileSignatures signatures[] = {
+fsig signatures[] = {
     { 1,     0,     0,      SEEK_SET,       "<svg",4,"eog"},
     { 1,     1,     0,      SEEK_SET,       "%PDF",4,"zathura"},
     { 1,     1,     0,      SEEK_SET,       "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A",8,"sxiv"},
@@ -300,7 +300,7 @@ FileSignatures signatures[] = {
     { 0,     0,     0,      0,              NULL,0,NULL}
 };
 
-Key *keys = NULL;
+xkey *keys = NULL;
 size_t keys_t = 0;
 size_t keys_a = 0;
 

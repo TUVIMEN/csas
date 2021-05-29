@@ -51,9 +51,9 @@ char *atob(char *s); //path to shell arg
 char *mkpath(const char *dir, const char *name); //combines dir and file name to path
 size_t findfirst(const char *src, int (*func)(int), size_t n);
 int get_word(char *dest, char *src, size_t n, size_t *dsize, size_t *ssize);
-int atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag); //converts string to value
+int atov(void *dest, const char *src, size_t *size, csas *cs, const uchar flag); //converts string to value
 wchar_t charconv(const char c); //changes char after '\\'
-size_t atop(char *dest, const char *src, const char delim, Csas *cs); //changes string to path
+size_t atop(char *dest, const char *src, const char delim, csas *cs); //changes string to path
 wchar_t *atok(char *src,  wchar_t  *dest); //changes string to keys
 
 #endif

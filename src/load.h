@@ -20,9 +20,9 @@
 #define LOAD_H
 
 #ifdef __UPDATE_FILES__
-void updatefile(struct Element *el, const char *path);
+void updatefile(struct xfile *xf, const char *path);
 #endif
-int getdir(const char *path, Csas *cs, const int ws, const int which, const char mode
+int getdir(const char *path, csas *cs, const int ws, const int which, const char mode
 #ifdef __FOLLOW_PARENT_DIR__
 , char *searched_name
 #endif
@@ -30,6 +30,6 @@ int getdir(const char *path, Csas *cs, const int ws, const int which, const char
 , const bool threaded
 #endif
 );
-int csas_cd(const char *path, const int ws, Csas *cs);
+int csas_cd(const char *path, const int ws, csas *cs);
 
 #endif

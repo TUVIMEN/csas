@@ -26,10 +26,10 @@
 int csas_errno = 0;
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
-extern Extensions extensions[];
+extern fext extensions[];
 #endif
 
-extern FileSignatures signatures[];
+extern fsig signatures[];
 
 static struct sigaction oldsighup;
 static struct sigaction oldsigtstp;
@@ -72,17 +72,14 @@ static size_t parseargs(char *src, char **dest)
     size_t x = 0;
     dest[x++] = src;
 
-    while (*src)
-    {
-        if (*src == '\\')
-        {
+    while (*src) {
+        if (*src == '\\') {
             for (size_t i = 0, l = strlen(src); i < l; i++)
                 src[i] = src[i+1];
             src++;
             continue;
         }
-        if (*src == '\'')
-        {
+        if (*src == '\'') {
             for (size_t i = 0, l = strlen(src)-1; i < l; i++)
                 src[i] = src[i+1];
             src++;
@@ -91,17 +88,13 @@ static size_t parseargs(char *src, char **dest)
             for (size_t i = 0, l = strlen(src)-1; i < l; i++)
                 src[i] = src[i+1];
             src++;
-            continue;
-        }
-        if (*src == '"')
-        {
+            continue; }
+        if (*src == '"') {
             for (size_t i = 0, l = strlen(src)-1; i < l; i++)
                 src[i] = src[i+1];
             src++;
-            while (*src && *src != '"')
-            {
-                if (*src == '\\')
-                {
+            while (*src && *src != '"') {
+                if (*src == '\\') {
                     for (size_t i = 0, l = strlen(src); i < l; i++)
                         src[i] = src[i+1];
                     src++;
@@ -114,14 +107,12 @@ static size_t parseargs(char *src, char **dest)
                 src[i] = src[i+1];
             src++;
         }
-        if (isspace(*src))
-        {
+        if (isspace(*src)) {
             src += findfirst(src,isspace,-1)-1;
             *src++ = '\0';
             if (!*src) return x;
             bool gc = 0;
-            if (*src == '$' && *(src+1) == '0')
-            {
+            if (*src == '$' && *(src+1) == '0') {
                 *src++ = '\0';
                 *src++ = '\0';
                 gc = 1;
@@ -142,15 +133,13 @@ int spawn(char *file, char *arg1, char *arg2, const uchar flag)
 
     char *argv[EXEC_ARGS_MAX] = {0};
 
-    if (!arg1 && arg2)
-    {
+    if (!arg1 && arg2) {
         arg1 = arg2;
         arg2 = NULL;
     }
 
     size_t x = 0;
-    if (flag&F_MULTI)
-    {
+    if (flag&F_MULTI) {
         x = parseargs(file,argv);
         if (x == 0) return -1;
     }
@@ -163,10 +152,8 @@ int spawn(char *file, char *arg1, char *arg2, const uchar flag)
 
     pid_t pid = xfork(flag);
 
-    if (pid == 0)
-    {
-        if (flag&F_SILENT)
-        {
+    if (pid == 0) {
+        if (flag&F_SILENT) {
             int fd = open("/dev/null",O_WRONLY);
             dup2(fd,1);
             dup2(fd,2);
@@ -174,19 +161,15 @@ int spawn(char *file, char *arg1, char *arg2, const uchar flag)
         }
         execvp(file,argv);
         _exit(1);
-    }
-    else
-    {
+    } else {
         if (flag&F_WAIT)
             while (waitpid(pid,NULL,0) == -1);
 
     	sigaction(SIGHUP, &oldsighup, NULL);
     	sigaction(SIGTSTP, &oldsigtstp, NULL);
 
-        if (flag&F_NORMAL)
-        {
-            if (flag&F_CONFIRM)
-            {
+        if (flag&F_NORMAL) {
+            if (flag&F_CONFIRM) {
                 printf("\nPress ENTER to continue");
                 fflush(stdout);
                 while (getch() != '\n');
@@ -201,8 +184,7 @@ int spawn(char *file, char *arg1, char *arg2, const uchar flag)
 char *stoa(ull value)
 {
     static char ret[8];
-    if (value == 0)
-    {
+    if (value == 0) {
         ret[0] = '0';
         ret[1] = '\0';
         return ret;
@@ -211,8 +193,7 @@ char *stoa(ull value)
     off_t rem = 0;
 
     uchar too = 0;
-    while (value >= 1024)
-    {
+    while (value >= 1024) {
         rem = value & 0x3ff;
         value >>= 10;
         too++;
@@ -220,48 +201,38 @@ char *stoa(ull value)
 
     uchar i;
 
-    for (i = 0; value != 0; i++)
-    {
+    for (i = 0; value != 0; i++) {
         ret[i] = value%10+48;
         value /= 10;
     }
     
-    for (uchar temp, j = 0, g = i-1; j < g; j++, g--)
-    {
+    for (uchar temp, j = 0, g = i-1; j < g; j++, g--) {
         temp = ret[j];
         ret[j] = ret[g];
         ret[g] = temp;
     }
 
-    if (rem != 0 && i < 3)
-    {
-        if (i == 1)
-        {
+    if (rem != 0 && i < 3) {
+        if (i == 1) {
             rem = (rem*1000)>>10;
             rem /= 10;
-            if (rem%10 >= 5)
-            {
+            if (rem%10 >= 5) {
                 rem = (rem/10) + 1;
                 if (rem == 10)
                     rem = 0;
             }
             else
                 rem /= 10;
-        }
-        else if (i == 2)
-        {
+        } else if (i == 2) {
             rem = (rem*1000)>>10;
-            if (rem%10 >= 5)
-            {
+            if (rem%10 >= 5) {
                 rem = (rem/10)+1;
                 if (rem == 100)
                     rem = 0;
             }
             else
                 rem /= 10;
-        }
-        else if (i > 0)
-        {
+        } else if (i > 0) {
             rem = (rem*10000)>>10;
             if (rem%10 >= 5) {
                 rem = (rem/10)+1;
@@ -273,13 +244,11 @@ char *stoa(ull value)
         }
 
         ret[i++] = '.';
-        for (; rem != 0; i++)
-        {
+        for (; rem != 0; i++) {
             ret[i] = rem%10+48;
             rem /= 10;
         }
-        if (ret[i-3] == '.')
-        {
+        if (ret[i-3] == '.') {
             uchar temp = ret[i-1];
             ret[i-1] = ret[i-2];
             ret[i-2] = temp;
@@ -307,22 +276,17 @@ int get_dirsize(const int fd, ull *count, ull *size, const uchar flag)
     int tfd;
     struct stat st;
 
-    while ((dir = readdir(d)))
-    {
+    while ((dir = readdir(d))) {
         if (dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
             continue;
         if (flag&D_R && dir->d_type == 4 &&
-            faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
-        {
+            faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1) {
             get_dirsize(tfd,count,size,flag);
             close(tfd);
-        }
-        else
-        {
+        } else {
             if (flag&D_C)
                 (*count)++;
-            if (flag&D_S)
-            {
+            if (flag&D_S) {
                 fstatat(fd,dir->d_name,&st,AT_SYMLINK_NOFOLLOW);
                 if ((st.st_mode&S_IFMT) == S_IFREG)
                     *size += st.st_size;
@@ -356,8 +320,7 @@ char *lsperms(const int mode)
     const char *const rwx[] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
 	static char bits[11] = {0};
 
-    switch (mode & S_IFMT)
-    {
+    switch (mode & S_IFMT) {
         case S_IFREG:
             bits[0] = '-';
             break;
@@ -397,27 +360,21 @@ pid_t xfork(uchar flag)
     pid_t p = fork();
     struct sigaction act = {.sa_handler=SIG_DFL};
 
-    if (p > 0)
-    {
+    if (p > 0) {
         sigaction(SIGHUP,&(struct sigaction){.sa_handler=SIG_IGN},&oldsighup);
 		sigaction(SIGTSTP,&act,&oldsigtstp);
     }
-    else if (p == 0)
-    {
-        if (flag&F_WAIT)
-        {
+    else if (p == 0) {
+        if (flag&F_WAIT) {
             sigaction(SIGHUP,&act,NULL);
             sigaction(SIGINT,&act,NULL);
             sigaction(SIGQUIT,&act,NULL);
             sigaction(SIGTSTP,&act,NULL);
-		}
-        else
-        {
+		} else {
             p = fork();
 			if (p > 0)
 				_exit(EXIT_SUCCESS);
-			else if (p == 0)
-            {
+			else if (p == 0) {
 				sigaction(SIGHUP,&act,NULL);
 				sigaction(SIGINT,&act,NULL);
 				sigaction(SIGQUIT,&act,NULL);
@@ -439,8 +396,7 @@ void file_run(char *path)
 {
     if (strcmp(s_FileOpener,"NULL") != 0)
         spawn(s_FileOpener,path,NULL,F_NORMAL|F_WAIT);
-    else
-    {
+    else {
         struct stat sfile;
         if (stat(path,&sfile) == -1)
             return;
@@ -477,17 +433,14 @@ void file_run(char *path)
 
         char *nest = (char*)malloc(32);
 
-        for (register int i = 0; signatures[i].sig != NULL; i++)
-        {
-            if (signatures[i].binary == binary)
-            {
+        for (register int i = 0; signatures[i].sig != NULL; i++) {
+            if (signatures[i].binary == binary) {
                 memset(nest,0,32);
                 lseek(fd,signatures[i].pos,signatures[i].from);
 
                 buf_t = read(fd,nest,signatures[i].len);
 
-                if (strcmp(nest,signatures[i].sig) == 0)
-                {
+                if (strcmp(nest,signatures[i].sig) == 0) {
                     spawn(signatures[i].comma_com,path,NULL,signatures->run_in_bg ? F_SILENT : F_NORMAL|F_WAIT);
                     return;
                 }
@@ -508,15 +461,12 @@ void file_rm(const int fd, const char *name)
     struct stat sfile;
     fstatat(fd,name,&sfile,0);
 
-    if ((sfile.st_mode& S_IFMT) == S_IFDIR)
-    {
+    if ((sfile.st_mode& S_IFMT) == S_IFDIR) {
         int temp;
-        if ((temp = openat(fd,name,O_DIRECTORY)) != -1)
-        {
+        if ((temp = openat(fd,name,O_DIRECTORY)) != -1) {
             DIR *d = fdopendir(temp);
             struct dirent *dir;
-            if (d)
-            {
+            if (d) {
                 while ((dir = readdir(d)))
                     if (!(dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0'))))
                         file_rm(temp,dir->d_name);
@@ -542,24 +492,17 @@ void file_cp(const int fd1, const int fd2, const char *name, char *buffer, const
     strcpy(temp,name);
     ull num = 0;
 
-    if (!(arg&M_MERGE && (sfile.st_mode&S_IFMT) == S_IFDIR))
-    {
-        if (arg&M_CHNAME)
-        {
-            while (faccessat(fd1,temp,F_OK,0) == 0)
-            {
-                if (snprintf(temp,NAME_MAX-1,"%s_%lld",name,num) == NAME_MAX)
-                {
+    if (!(arg&M_MERGE && (sfile.st_mode&S_IFMT) == S_IFDIR)) {
+        if (arg&M_CHNAME) {
+            while (faccessat(fd1,temp,F_OK,0) == 0) {
+                if (snprintf(temp,NAME_MAX-1,"%s_%lld",name,num) == NAME_MAX) {
                     free(temp);
                     return;
                 }
                 num++;
             }
-        }
-        else if (arg&M_DCPY)
-        {
-            if (faccessat(fd1,temp,F_OK,0) != 0)
-            {
+        } else if (arg&M_DCPY) {
+            if (faccessat(fd1,temp,F_OK,0) != 0) {
                 free(temp);
                 return;
             }
@@ -568,18 +511,14 @@ void file_cp(const int fd1, const int fd2, const char *name, char *buffer, const
             file_rm(fd1,temp);
     }
 
-    if ((sfile.st_mode& S_IFMT) == S_IFDIR)
-    {
-        if ((fd3 = openat(fd2,name,O_DIRECTORY)) != -1)
-        {
+    if ((sfile.st_mode& S_IFMT) == S_IFDIR) {
+        if ((fd3 = openat(fd2,name,O_DIRECTORY)) != -1) {
             DIR *d = fdopendir(fd3);
             struct dirent *dir;
 
-            if (d)
-            {
+            if (d) {
                 mkdirat(fd1,temp,sfile.st_mode);
-                if ((fd4 = openat(fd1,temp,O_DIRECTORY)) != -1)
-                {
+                if ((fd4 = openat(fd1,temp,O_DIRECTORY)) != -1) {
                     while ((dir = readdir(d)))
                         if (!(dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0'))))
                             file_cp(fd4,fd3,dir->d_name,buffer,arg);
@@ -593,10 +532,8 @@ void file_cp(const int fd1, const int fd2, const char *name, char *buffer, const
     }
     else
     {
-        if ((fd3 = openat(fd2,name,O_RDONLY)) != -1)
-        {
-            if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sfile.st_mode)) != -1)
-            {
+        if ((fd3 = openat(fd2,name,O_RDONLY)) != -1) {
+            if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sfile.st_mode)) != -1) {
                 int bytesread;
                 while ((bytesread = read(fd3,buffer,s_CopyBufferSize)) > 0)
                     write(fd4,buffer,bytesread);
@@ -621,24 +558,17 @@ void file_mv(const int fd1, const int fd2, const char *name, char *buffer, const
     strcpy(temp,name);
     ull num = 0;
 
-    if (!(arg&M_MERGE && (sfile.st_mode&S_IFMT) == S_IFDIR))
-    {
-        if (arg&M_CHNAME)
-        {
-            while (faccessat(fd1,temp,F_OK,0) == 0)
-            {
-                if (snprintf(temp,NAME_MAX-1,"%s_%lld",name,num) == NAME_MAX-1)
-                {
+    if (!(arg&M_MERGE && (sfile.st_mode&S_IFMT) == S_IFDIR)) {
+        if (arg&M_CHNAME) {
+            while (faccessat(fd1,temp,F_OK,0) == 0) {
+                if (snprintf(temp,NAME_MAX-1,"%s_%lld",name,num) == NAME_MAX-1) {
                     free(temp);
                     return;
                 }
                 num++;
             }
-        }
-        else if (arg&M_DCPY)
-        {
-            if (faccessat(fd1,temp,F_OK,0) != 0)
-            {
+        } else if (arg&M_DCPY) {
+            if (faccessat(fd1,temp,F_OK,0) != 0) {
                 free(temp);
                 return;
             }
@@ -647,18 +577,14 @@ void file_mv(const int fd1, const int fd2, const char *name, char *buffer, const
             file_rm(fd1,temp);
     }
 
-    if ((sfile.st_mode& S_IFMT) == S_IFDIR)
-    {
-        if ((fd3 = openat(fd2,name,O_DIRECTORY)) != -1)
-        {
+    if ((sfile.st_mode& S_IFMT) == S_IFDIR) {
+        if ((fd3 = openat(fd2,name,O_DIRECTORY)) != -1) {
             DIR *d = fdopendir(fd3);
             struct dirent *dir;
 
-            if (d)
-            {
+            if (d) {
                 mkdirat(fd1,temp,sfile.st_mode);
-                if ((fd4 = openat(fd1,temp,O_DIRECTORY)) != -1)
-                {
+                if ((fd4 = openat(fd1,temp,O_DIRECTORY)) != -1) {
                     while ((dir = readdir(d)))
                         if (!(dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0'))))
                             file_mv(fd4,fd3,dir->d_name,buffer,arg);
@@ -671,12 +597,9 @@ void file_mv(const int fd1, const int fd2, const char *name, char *buffer, const
             unlinkat(fd2,name,AT_REMOVEDIR);
         }
     }
-    else
-    {
-        if ((fd3 = openat(fd2,name,O_RDONLY)) != -1)
-        {
-            if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sfile.st_mode)) != -1)
-            {
+    else {
+        if ((fd3 = openat(fd2,name,O_RDONLY)) != -1) {
+            if ((fd4 = openat(fd1,temp,O_WRONLY|O_CREAT,sfile.st_mode)) != -1) {
                 int bytesread;
                 while ((bytesread = read(fd3,buffer,s_CopyBufferSize)) > 0)
                     write(fd4,buffer,bytesread);
@@ -684,11 +607,9 @@ void file_mv(const int fd1, const int fd2, const char *name, char *buffer, const
                 close(fd4);
                 unlinkat(fd2,name,0);
             }
-
             close(fd3);
         }
     }
-
     free(temp);
 }
 
@@ -701,25 +622,19 @@ size_t ttoa(const time_t *time, char *result)
 void path_shrink(char *path, const int max_size)
 {
     int size = strlen(path), bottom;
-    if (size > 2)
-        bottom = 2;
-    else
-        return;
+    if (size > 2) bottom = 2;
+    else return;
 
-    while (size > max_size)
-    {
-        while (path[bottom] != '/')
-        {
+    while (size > max_size) {
+        while (path[bottom] != '/') {
             for (int j = bottom; j < size; j++)
                 path[j] = path[j+1];
             path[size-1] = '\0';
             --size;
         }
         bottom+=2;
-        if (bottom > size-1)
-            return;
+        if (bottom > size-1) return;
     }
-
 }
 
 char *mkpath(const char *dir, const char *name)
@@ -743,50 +658,41 @@ size_t findfirst(const char *src, int (*func)(int), size_t n)
 
 int get_word(char *dest, char *src, size_t n, size_t *dsize, size_t *ssize)
 {
-    if (n == 0 || dest == NULL || src == NULL)
-        return -1;
+    if (n == 0 || dest == NULL || src == NULL) return -1;
     n--;
     size_t i=0,j=0;
-    if (src[0] == '~')
-    {
+    if (src[0] == '~') {
         i++;
         char *home = getenv("HOME");
         j = strlen(home);
         memcpy(dest,home,j);
     }
-    for (;j < n && src[i] && !isspace(src[i]); i++)
-    {
+    for (;j < n && src[i] && !isspace(src[i]); i++) {
         if (src[i] == '\\')
             i++;
         dest[j++] = src[i]; 
     }
     dest[j] = 0;
-    if (j >= n)
-        return -1;
-    if (dsize != NULL)
-        *dsize = j;
+    if (j >= n) return -1;
+    if (dsize != NULL) *dsize = j;
     if (src[i] == '\'' || (src[i] == '"' && i != 0 && src[i-1] != '\\'))
         i++;
-    if (ssize != NULL)
-        *ssize = i;
+    if (ssize != NULL) *ssize = i;
     return 0;
 }
 
-extern struct AliasesT aliases[];
+extern struct set_alias aliases[];
 
-int atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag)
+int atov(void *dest, const char *src, size_t *size, csas *cs, const uchar flag)
 {
     size_t posb = 0, pose = 0;
     char line[LINE_SIZE_MAX];
-    if (src[posb] == '{')
-    {
-        if (!(flag&SET_T_A))
-        {
+    if (src[posb] == '{') {
+        if (!(flag&SET_T_A)) {
             csas_errno = CSAS_EWE_A;
             return -1;
         }
-        for (int i = 0; src[posb] != '}'; i++)
-        {
+        for (int i = 0; src[posb] != '}'; i++) {
             posb++;
             pose = 0;
             posb += findfirst(src+posb,isspace,-1);
@@ -800,15 +706,11 @@ int atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag)
             posb += findfirst(src+posb,isspace,-1);
 
             int r = atov(&(*(li**)dest)[i],line,NULL,cs,flag&(~SET_T_A));
-            if (r != 0)
-                return r;
+            if (r != 0) return r;
         }
         posb++;
-    }
-    else if (src[posb] == '\'')
-    {
-        if (!(flag&SET_T_P))
-        {
+    } else if (src[posb] == '\'') {
+        if (!(flag&SET_T_P)) {
             csas_errno = CSAS_EWE_P;
             return -1;
         }
@@ -817,21 +719,16 @@ int atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag)
         strncpy(*(char**)dest,src+posb,pose);
         (*(char**)dest)[pose] = '\0';
         posb += pose+2;
-    }
-    else if (src[posb] == '"')
-    {
-        if (!(flag&SET_T_P))
-        {
+    } else if (src[posb] == '"') {
+        if (!(flag&SET_T_P)) {
             csas_errno = CSAS_EWE_P;
             return -1;
         }
         posb++;
         char const *c = src+posb;
         size_t x = 0;
-        while (*c && *c != '"')
-        {
-            if (*c == '\\')
-            {
+        while (*c && *c != '"') {
+            if (*c == '\\') {
                 c += 2;
                 continue;
             }
@@ -839,17 +736,14 @@ int atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag)
         }
         (*(char**)dest)[x] = '\0';
         posb = (c-src)+2;
-    }
-    else
-    {
+    } else {
         int type;
         *(li*)dest = 0;
 
         do {
             pose = 0;
             type = 0;
-            while (src[posb+pose] && !isspace(src[posb+pose]) && src[posb+pose] != '|')
-            {
+            while (src[posb+pose] && !isspace(src[posb+pose]) && src[posb+pose] != '|') {
                 if (src[posb+pose] == '.')
                     type |= 0x1;
                 else if (isalpha(src[posb+pose]))
@@ -859,19 +753,15 @@ int atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag)
             memcpy(line,src+posb,pose);
             line[pose] = '\0';
 
-            if (type == 0)
-            {
+            if (type == 0) {
                 if (!(flag&SET_T_UI) && !(flag&SET_T_I))
                 {
                     csas_errno = CSAS_EWE_I;
                     return -1;
                 }
                 *(li*)dest |= atol(line);
-            }
-            else if (type == 1)
-            {
-                if (!(flag&SET_T_F))
-                {
+            } else if (type == 1) {
+                if (!(flag&SET_T_F)) {
                     csas_errno = CSAS_EWE_F;
                     return -1;
                 }
@@ -879,18 +769,15 @@ int atov(void *dest, const char *src, size_t *size, Csas *cs, const uchar flag)
                 posb += pose;
                 posb += findfirst(src+posb,isspace,-1);
                 goto END;
-            }
-            else
+            } else {
                 for (int i = 0; aliases[i].name; i++)
-                    if (strlen(aliases[i].name) == pose && strncmp(line,aliases[i].name,pose) == 0)
-                    {
+                    if (strlen(aliases[i].name) == pose && strncmp(line,aliases[i].name,pose) == 0) {
                         *(li*)dest |= aliases[i].v;
                         break;
                     }
-
+            }
             posb += pose;
         } while (src[posb++] == '|');
-
     }
 
     END: ;
@@ -917,8 +804,7 @@ int strverscasecmp(const char *s1, const char *s2)
 
     /* Symbol(s)    0       [1-9]   others
          Transition   (10) 0  (01) d  (00) x   */
-    static const uint8_t next_state[] =
-    {
+    static const uint8_t next_state[] = {
         /* state    x    d    0  */
         /* S_N */  S_N, S_I, S_Z,
         /* S_I */  S_N, S_I, S_I,
@@ -926,8 +812,7 @@ int strverscasecmp(const char *s1, const char *s2)
         /* S_Z */  S_N, S_F, S_Z
     };
 
-    static const int8_t result_type[] =
-    {
+    static const int8_t result_type[] = {
         /* state   x/x  x/d  x/0  d/x  d/d  d/0  0/x  0/d  0/0  */
 
         /* S_N */  CMP, CMP, CMP, CMP, LEN, CMP, CMP, CMP, CMP,
@@ -936,8 +821,7 @@ int strverscasecmp(const char *s1, const char *s2)
         /* S_Z */  CMP, +1,  +1,  -1,  CMP, CMP, -1,  CMP, CMP
     };
 
-    if (p1 == p2)
-        return 0;
+    if (p1 == p2) return 0;
 
     unsigned char c1 = toupper(*p1++);
     unsigned char c2 = toupper(*p2++);
@@ -945,10 +829,8 @@ int strverscasecmp(const char *s1, const char *s2)
     int state = S_N + ((c1 == '0') + (isdigit (c1) != 0));
 
     int diff;
-    while ((diff = c1 - c2) == 0)
-    {
-        if (c1 == '\0')
-	        return diff;
+    while ((diff = c1 - c2) == 0) {
+        if (c1 == '\0') return diff;
 
         state = next_state[state];
         c1 = toupper(*p1++);
@@ -958,18 +840,14 @@ int strverscasecmp(const char *s1, const char *s2)
 
     state = result_type[state * 3 + (((c2 == '0') + (isdigit (c2) != 0)))];
 
-    switch (state)
-    {
+    switch (state) {
         case CMP:
             return diff;
-
         case LEN:
             while (isdigit (*p1++))
 	        if (!isdigit (*p2++))
 	            return 1;
-
         return isdigit (*p2) ? -1 : diff;
-
         default:
             return state;
     }
@@ -993,107 +871,78 @@ wchar_t charconv(const char c)
 wchar_t *atok(char *src, wchar_t *dest)
 {
     size_t i, h;
-    for (i = 0, h = 0; src[i]; i++)
-    {
-        if (src[i] == '<' && src[i+1] == 'C' && src[i+2] == '-' && src[i+3] && src[i+4] == '>')
-        {
+    for (i = 0, h = 0; src[i]; i++) {
+        if (src[i] == '<' && src[i+1] == 'C' && src[i+2] == '-' && src[i+3] && src[i+4] == '>') {
             for (int g = 0; g < 4; g++)
                 for (int j = i+(g == 3); src[j]; j++)
                     src[j] = src[j+1];
             dest[h++] = src[i]&0x1f;
-        }
-        else if (strncasecmp(src+i,"<space>",7) == 0)
-        {
+        } else if (strncasecmp(src+i,"<space>",7) == 0) {
             for (int g = 0; g < 6; g++)
                 for (int j = i; src[j]; j++)
                     src[j] = src[j+1];
             dest[h++] = btowc(' ');
-        }
-        else if (strncasecmp(src+i,"<esc>",5) == 0)
-        {
+        } else if (strncasecmp(src+i,"<esc>",5) == 0) {
             for (int g = 0; g < 4; g++)
                 for (int j = i; src[j]; j++)
                     src[j] = src[j+1];
             dest[h++] = KEY_EXIT;
-        }
-        else if (strncasecmp(src+i,"<left>",6) == 0)
-        {
+        } else if (strncasecmp(src+i,"<left>",6) == 0) {
             for (int g = 0; g < 5; g++)
                 for (int j = i; src[j]; j++)
                     src[j] = src[j+1];
             dest[h++] = KEY_LEFT;
-        }
-        else if (strncasecmp(src+i,"<right>",7) == 0)
-        {
+        } else if (strncasecmp(src+i,"<right>",7) == 0) {
             for (int g = 0; g < 6; g++)
                 for (int j = i; src[j]; j++)
                     src[j] = src[j+1];
             dest[h++] = KEY_RIGHT;
-        }
-        else if (strncasecmp(src+i,"<up>",4) == 0)
-        {
+        } else if (strncasecmp(src+i,"<up>",4) == 0) {
             for (int g = 0; g < 3; g++)
                 for (int j = i; src[j]; j++)
                     src[j] = src[j+1];
             dest[h++] = KEY_UP;
-        }
-        else if (strncasecmp(src+i,"<down>",6) == 0)
-        {
+        } else if (strncasecmp(src+i,"<down>",6) == 0) {
             for (int g = 0; g < 5; g++)
                 for (int j = i; src[j]; j++)
                     src[j] = src[j+1];
             dest[h++] = KEY_DOWN;
-        }
-        else if (strncasecmp(src+i,"<br>",4) == 0)
-        {
+        } else if (strncasecmp(src+i,"<br>",4) == 0) {
             for (int g = 0; g < 3; g++)
                 for (int j = i; src[j]; j++)
                     src[j] = src[j+1];
             dest[h++] = KEY_ENTER;
-        }
-        else if (src[i] == '\\' && src[i+1])
-        {
+        } else if (src[i] == '\\' && src[i+1]) {
             size_t j;
             for (j = i; j < strlen(src)-1; j++)
                 src[j] = src[j+1];
             src[j+1] = '\0';
             dest[h++] = charconv(src[i]);
-        }
-        else
+        } else
             dest[h++] = wctob(src[i]);
     }
     dest[h] = 0;
     return dest;
 }
 
-size_t atop(char *dest, const char *src, const char delim, Csas *cs)
+size_t atop(char *dest, const char *src, const char delim, csas *cs)
 {
     size_t pos = 0, x;
     src += findfirst(src,isspace,-1);
     if (src[pos] == '"' || src[pos] == '\'')
-    {
         atov(&dest,src,&pos,cs,SET_T_P);
-    }
-    else
-    {
+    else {
         x = 0;
-        while (src[pos] && src[pos] != delim)
-        {
-            if (src[pos] == '\\')
-            {
+        while (src[pos] && src[pos] != delim) {
+            if (src[pos] == '\\') {
                 dest[x++] = src[++pos];
                 pos++;
-                continue;
-            }
-
-            if (src[pos] == '$' && src[pos+1] == '{')
-            {
+            } else if (src[pos] == '$' && src[pos+1] == '{') {
                 pos += 2;
                 get_env(dest,src,&pos,&x);
                 continue;
-            }
-
-            dest[x++] = src[pos++];
+            } else
+                dest[x++] = src[pos++];
         }
         dest[x] = '\0';
     }
@@ -1103,10 +952,8 @@ size_t atop(char *dest, const char *src, const char delim, Csas *cs)
 
 char *atob(char *s)
 {
-    for (size_t i = 0; i < strlen(s); i++)
-    {
-        if(s[i] == '\\' || s[i] == '\"' || s[i] == '\'' || s[i] == ' ' || s[i] == '(' || s[i] == ')' || s[i] == '[' || s[i] == ']' || s[i] == '{' || s[i] == '}')
-        {
+    for (size_t i = 0; i < strlen(s); i++) {
+        if(s[i] == '\\' || s[i] == '\"' || s[i] == '\'' || s[i] == ' ' || s[i] == '(' || s[i] == ')' || s[i] == '[' || s[i] == ']' || s[i] == '{' || s[i] == '}') {
             for (size_t j = strlen(s)+1; j > i; j--)
                 s[j] = s[j-1];
             s[i] = '\\';

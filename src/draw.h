@@ -19,9 +19,9 @@
 #ifndef DRAW_H
 #define DRAW_H
 
-void set_message(Csas *cs, const int attr, const char *fmt, ...);
+void set_message(csas *cs, const int attr, const char *fmt, ...);
 void run_preview(WINDOW *w, uchar *c, ssize_t size, uli flags);
-void csas_draw(Csas *cs,const int which);
-void setborders(Csas *cs, const int which);
+void csas_draw(csas *cs,const int which);
+void setborders(csas *cs, const int which);
 
 #endif

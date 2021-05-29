@@ -29,14 +29,13 @@
 #include "inits.h"
 #include "functions.h"
 
-struct loaddir_s
-{
-    struct Dir *d;
+struct loaddir_s {
+    struct xdir *d;
     #ifdef __FOLLOW_PARENT_DIR__
     char *searched_name;
     #endif
     #if defined(__THREADS_FOR_DIR_ENABLE__) || defined(__FOLLOW_PARENT_DIR__)
-    Csas *b;
+    csas *b;
     int ws;
     int which;
     #endif
@@ -52,14 +51,12 @@ extern li s_Win1Enable;
 extern li s_Win1Display;
 
 #ifdef __UPDATE_FILES__
-void updatefile(struct Element *el, const char *path)
+void updatefile(struct xfile *xf, const char *path)
 {
     int fd = open(path,O_DIRECTORY);
-    if (fd == -1)
-        return;
+    if (fd == -1) return;
     struct stat st;
-    if (fstatat(fd,el->name,&st,0) == -1)
-    {
+    if (fstatat(fd,xf->name,&st,0) == -1) {
         close(fd);
         return;
     }
@@ -67,55 +64,54 @@ void updatefile(struct Element *el, const char *path)
     close(fd);
 
     #ifdef __INODE_ENABLE__
-    el->inode = st.st_ino;
+    xf->inode = st.st_ino;
     #endif
 
     #ifdef __MTIME_ENABLE__
-    el->mtim = st.st_mtim.tv_sec;
+    xf->mtim = st.st_mtim.tv_sec;
     #endif
     #ifdef __ATIME_ENABLE__
-    el->atim = st.st_atim.tv_sec;
+    xf->atim = st.st_atim.tv_sec;
     #endif
     #ifdef __CTIME_ENABLE__
-    el->ctim = st.st_ctim.tv_sec;
+    xf->ctim = st.st_ctim.tv_sec;
     #endif
     #ifdef __MODE_ENABLE__
-    el->mode = st.st_mode;
+    xf->mode = st.st_mode;
     #endif
 
     #ifdef __FILE_SIZE_ENABLE__
-    if ((el->type&T_GT) != T_DIR)
-    {
-        el->size = st.st_size*((el->type&T_SYMLINK) == 0)
-        +st.st_size*((el->type&T_SYMLINK) != 0);
+    if ((xf->type&T_GT) != T_DIR) {
+        xf->size = st.st_size*((xf->type&T_SYMLINK) == 0)
+        +st.st_size*((xf->type&T_SYMLINK) != 0);
     }
     #endif
 
     #ifdef __COLOR_FILES_BY_EXTENSION__
-    el->ftype = 1;
+    xf->ftype = 1;
     #endif
 
     #ifdef __FILE_OWNERS_ENABLE__
-    el->pw = st.st_uid;
+    xf->pw = st.st_uid;
     #endif
     #ifdef __FILE_GROUPS_ENABLE__
-    el->gr = st.st_gid;
+    xf->gr = st.st_gid;
     #endif
 
     #ifdef __DEV_ENABLE__
-    el->dev = st.st_dev;
+    xf->dev = st.st_dev;
     #endif
     #ifdef __NLINK_ENABLE__
-    el->nlink = st.st_nlink;
+    xf->nlink = st.st_nlink;
     #endif
     #ifdef __RDEV_ENABLE__
-    el->rdev = st.st_rdev;
+    xf->rdev = st.st_rdev;
     #endif
     #ifdef __BLK_SIZE_ENABLE__
-    el->blksize = st.st_blksize;
+    xf->blksize = st.st_blksize;
     #endif
     #ifdef __BLOCKS_ENABLE__
-    el->blocks = st.st_blocks;
+    xf->blocks = st.st_blocks;
     #endif
 }
 #endif
@@ -123,8 +119,7 @@ void updatefile(struct Element *el, const char *path)
 
 static uchar mode_to_type(const mode_t mode)
 {
-    switch (mode & S_IFMT)
-    {
+    switch (mode & S_IFMT) {
         case S_IFBLK:  return T_BDEV;
         case S_IFCHR:  return T_DEV;
         case S_IFDIR:  return T_DIR;
@@ -138,20 +133,19 @@ static uchar mode_to_type(const mode_t mode)
 
 static void *dir_load(void *arg)
 {
-    struct Dir *nd = ((struct loaddir_s*)arg)->d;
+    struct xdir *nd = ((struct loaddir_s*)arg)->d;
     #ifdef __FOLLOW_PARENT_DIR__
     char *searched_name = ((struct loaddir_s*)arg)->searched_name;
     #endif
     #if defined(__THREADS_FOR_DIR_ENABLE__) || defined(__FOLLOW_PARENT_DIR__)
-    Csas *cs = ((struct loaddir_s*)arg)->b;
+    csas *cs = ((struct loaddir_s*)arg)->b;
     int ws = ((struct loaddir_s*)arg)->ws;
     int which = ((struct loaddir_s*)arg)->which;
     #endif
     free(arg);
 
     DIR *d;
-    if ((d = opendir(nd->path)) == NULL)
-    {
+    if ((d = opendir(nd->path)) == NULL) {
         nd->permission_denied = 1;
         #ifdef __FOLLOW_PARENT_DIR__
         free(searched_name);
@@ -180,28 +174,26 @@ static void *dir_load(void *arg)
     bool isold = nd->size > 0;
 
     #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
-    struct Element *oldel = NULL;
+    struct xfile *oldel = NULL;
     size_t oldsize = 0, begin, end;
 
-    if (isold)
-    {
+    if (isold) {
         begin = 0;
         end = nd->size;
-        oldel = nd->el;
+        oldel = nd->xf;
         oldsize = nd->size;
-        nd->el = NULL;
+        nd->xf = NULL;
         nd->size = 0;
     }
     #else
     if (isold)
-        free_el(&nd->el,&nd->size);
+        free_xfile(&nd->xf,&nd->size);
     #endif
 
     buffer_size = 0;
     size_t name_lenght;
 
-    while ((dir = readdir(d)))
-    {
+    while ((dir = readdir(d))) {
         #ifdef __HIDE_FILES__
         if (dir->d_name[0] == '.')
             continue;
@@ -210,79 +202,73 @@ static void *dir_load(void *arg)
             continue;
 
         if (nd->size == buffer_size)
-            nd->el = (struct Element*)realloc(nd->el,(buffer_size+=DIR_INC_RATE)*sizeof(struct Element));
+            nd->xf = (struct xfile*)realloc(nd->xf,(buffer_size+=DIR_INC_RATE)*sizeof(struct xfile));
 
         name_lenght = strlen(dir->d_name)+1;
-        nd->el[nd->size].nlen = name_lenght;
-        nd->el[nd->size].name = memcpy(malloc(name_lenght),dir->d_name,name_lenght);
+        nd->xf[nd->size].nlen = name_lenght;
+        nd->xf[nd->size].name = memcpy(malloc(name_lenght),dir->d_name,name_lenght);
 
-        nd->el[nd->size].type = 0;
+        nd->xf[nd->size].type = 0;
         #ifdef __SAVE_PREVIEW__
-        nd->el[nd->size].cpreview = NULL;
-        nd->el[nd->size].previewl = 0;
+        nd->xf[nd->size].cpreview = NULL;
+        nd->xf[nd->size].previewl = 0;
         #endif
 
         fstatat(fd,dir->d_name,&sfile,AT_SYMLINK_NOFOLLOW);
 
-        if ((sfile.st_mode&S_IFMT) == S_IFLNK)
-        {
+        if ((sfile.st_mode&S_IFMT) == S_IFLNK) {
             if (fstatat(fd,dir->d_name,&sfile2,0) == -1)
-                nd->el[nd->size].type |= T_FILE_MISSING;
-            else
-            {
-                nd->el[nd->size].type = mode_to_type(sfile2.st_mode);
-                nd->el[nd->size].type |= T_SYMLINK;
+                nd->xf[nd->size].type |= T_FILE_MISSING;
+            else {
+                nd->xf[nd->size].type = mode_to_type(sfile2.st_mode);
+                nd->xf[nd->size].type |= T_SYMLINK;
             }
         }
         else
-            nd->el[nd->size].type = mode_to_type(sfile.st_mode);
+            nd->xf[nd->size].type = mode_to_type(sfile.st_mode);
 
         #ifdef __INODE_ENABLE__
-        nd->el[nd->size].inode = dir->d_ino;
+        nd->xf[nd->size].inode = dir->d_ino;
         #endif
 
         #ifdef __MTIME_ENABLE__
-        nd->el[nd->size].mtim = sfile.st_mtim.tv_sec;
+        nd->xf[nd->size].mtim = sfile.st_mtim.tv_sec;
         #endif
         #ifdef __ATIME_ENABLE__
-        nd->el[nd->size].atim = sfile.st_atim.tv_sec;
+        nd->xf[nd->size].atim = sfile.st_atim.tv_sec;
         #endif
         #ifdef __CTIME_ENABLE__
-        nd->el[nd->size].ctim = sfile.st_ctim.tv_sec;
+        nd->xf[nd->size].ctim = sfile.st_ctim.tv_sec;
         #endif
         #ifdef __MODE_ENABLE__
-        nd->el[nd->size].mode = sfile.st_mode;
+        nd->xf[nd->size].mode = sfile.st_mode;
         #endif
 
         #ifdef __FILE_SIZE_ENABLE__
-        if ((s_DirSizeMethod&D_F) != D_F && (nd->el[nd->size].type&T_GT) == T_DIR)
-        {
-            if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1)
-            {
+        if ((s_DirSizeMethod&D_F) != D_F && (nd->xf[nd->size].type&T_GT) == T_DIR) {
+            if (faccessat(fd,dir->d_name,R_OK,0) == 0 && (tfd = openat(fd,dir->d_name,O_DIRECTORY)) != -1) {
                 count = 0;
                 size = 0;
                 get_dirsize(tfd,&count,&size,s_DirSizeMethod);
-                nd->el[nd->size].size = (s_DirSizeMethod&D_C) ? count : size;
+                nd->xf[nd->size].size = (s_DirSizeMethod&D_C) ? count : size;
                 close(tfd);
             }
             else
-                nd->el[nd->size].size = 0;
+                nd->xf[nd->size].size = 0;
         }
         else
-            nd->el[nd->size].size = sfile.st_size*((nd->el[nd->size].type&T_SYMLINK) == 0)
-            +sfile2.st_size*((nd->el[nd->size].type&T_SYMLINK) != 0);
+            nd->xf[nd->size].size = sfile.st_size*((nd->xf[nd->size].type&T_SYMLINK) == 0)
+            +sfile2.st_size*((nd->xf[nd->size].type&T_SYMLINK) != 0);
         #endif
 
         #ifdef __COLOR_FILES_BY_EXTENSION__
-        nd->el[nd->size].ftype = 1;
+        nd->xf[nd->size].ftype = 1;
         #endif
 
-        memset(nd->el[nd->size].list,0,WORKSPACE_N);
+        memset(nd->xf[nd->size].list,0,WORKSPACE_N);
         #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
-        if (isold)
-        {
-            for (register size_t i = begin; i < end; i++)
-            {
+        if (isold) {
+            for (register size_t i = begin; i < end; i++) {
                 #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
                     #ifdef __FAST_RESCUE__
                     if (oldel[i].inode == dir->d_ino)
@@ -296,7 +282,7 @@ static void *dir_load(void *arg)
                     {
                         begin += 1*(i == begin);
                         end -= (i == end);
-                        memcpy(nd->el[nd->size].list,oldel[i].list,WORKSPACE_N);
+                        memcpy(nd->xf[nd->size].list,oldel[i].list,WORKSPACE_N);
                         break;
                     }
             }
@@ -304,26 +290,26 @@ static void *dir_load(void *arg)
         #endif
 
         #ifdef __FILE_OWNERS_ENABLE__
-        nd->el[nd->size].pw = sfile.st_uid;
+        nd->xf[nd->size].pw = sfile.st_uid;
         #endif
         #ifdef __FILE_GROUPS_ENABLE__
-        nd->el[nd->size].gr = sfile.st_gid;
+        nd->xf[nd->size].gr = sfile.st_gid;
         #endif
 
         #ifdef __DEV_ENABLE__
-        nd->el[nd->size].dev = sfile.st_dev;
+        nd->xf[nd->size].dev = sfile.st_dev;
         #endif
         #ifdef __NLINK_ENABLE__
-        nd->el[nd->size].nlink = sfile.st_nlink;
+        nd->xf[nd->size].nlink = sfile.st_nlink;
         #endif
         #ifdef __RDEV_ENABLE__
-        nd->el[nd->size].rdev = sfile.st_rdev;
+        nd->xf[nd->size].rdev = sfile.st_rdev;
         #endif
         #ifdef __BLK_SIZE_ENABLE__
-        nd->el[nd->size].blksize = sfile.st_blksize;
+        nd->xf[nd->size].blksize = sfile.st_blksize;
         #endif
         #ifdef __BLOCKS_ENABLE__
-        nd->el[nd->size].blocks = sfile.st_blocks;
+        nd->xf[nd->size].blocks = sfile.st_blocks;
         #endif
 
         nd->size++;
@@ -331,19 +317,18 @@ static void *dir_load(void *arg)
 
     #ifdef __RESCUE_SELECTED_IF_DIR_CHANGE_ENABLE__
     if (isold)
-        free_el(&oldel,&oldsize);
+        free_xfile(&oldel,&oldsize);
     #endif
 
     closedir(d);
     close(fd);
 
     if (buffer_size != nd->size)
-        nd->el = (struct Element*)realloc(nd->el,(nd->size)*sizeof(struct Element));
+        nd->xf = (struct xfile*)realloc(nd->xf,(nd->size)*sizeof(struct xfile));
 
-    if (nd->size > 0)
-    {
+    if (nd->size > 0) {
         #ifdef __SORT_ELEMENTS_ENABLE__
-        sort_el(nd->el,nd->size,s_SortMethod);
+        sort_xfile(nd->xf,nd->size,s_SortMethod);
         #endif
 
         #ifdef __FOLLOW_PARENT_DIR__
@@ -366,7 +351,7 @@ static void *dir_load(void *arg)
     return NULL;
 }
 
-int getdir(const char *path, Csas *cs, const int ws, const int which, const char mode
+int getdir(const char *path, csas *cs, const int ws, const int which, const char mode
 #ifdef __FOLLOW_PARENT_DIR__
 , char *searched_name
 #endif
@@ -396,25 +381,20 @@ int getdir(const char *path, Csas *cs, const int ws, const int which, const char
 
     int found = -1;
     
-    for (size_t i = 0; i < cs->size; i++)
-    {
-        if (strcmp(cs->base[i]->path,temp) == 0)
-        {
+    for (size_t i = 0; i < cs->size; i++) {
+        if (strcmp(cs->base[i]->path,temp) == 0) {
             found = i;
             exists = true;
             break;
         }
     }
 
-    if (found == -1)
-    {
-        if (cs->size == cs->asize)
-        {
-            cs->base = (struct Dir**)realloc(cs->base,(cs->asize+=DIR_BASE_RATE)*sizeof(struct Dir*));
-            for (size_t i = cs->asize-DIR_BASE_RATE; i < cs->asize; i++)
-            {
-                cs->base[i] = (struct Dir*)malloc(sizeof(struct Dir));
-                cs->base[i]->el = NULL;
+    if (found == -1) {
+        if (cs->size == cs->asize) {
+            cs->base = (struct xdir**)realloc(cs->base,(cs->asize+=DIR_BASE_RATE)*sizeof(struct xdir*));
+            for (size_t i = cs->asize-DIR_BASE_RATE; i < cs->asize; i++) {
+                cs->base[i] = (struct xdir*)malloc(sizeof(struct xdir));
+                cs->base[i]->xf = NULL;
                 cs->base[i]->size = 0;
                 #ifdef __THREADS_FOR_DIR_ENABLE__
                 cs->base[i]->enable = false;
@@ -434,17 +414,13 @@ int getdir(const char *path, Csas *cs, const int ws, const int which, const char
 
     cs->ws[ws].win[which] = found;
 
-    if (!exists)
-    {
+    if (!exists) {
         cs->base[found]->permission_denied = 0;
         cs->base[found]->inode = sfile1.st_ino;
         cs->base[found]->ctime = sfile1.st_ctim;
         cs->base[found]->path = strcpy(malloc(PATH_MAX),temp);
-    }
-    else
-    {
-        if (sfile1.st_ctim.tv_sec != cs->base[found]->ctime.tv_sec || sfile1.st_ctim.tv_nsec != cs->base[found]->ctime.tv_nsec)
-        {
+    } else {
+        if (sfile1.st_ctim.tv_sec != cs->base[found]->ctime.tv_sec || sfile1.st_ctim.tv_nsec != cs->base[found]->ctime.tv_nsec) {
             cs->base[found]->ctime = sfile1.st_ctim;
             cs->base[found]->changed = true;
         }
@@ -453,8 +429,7 @@ int getdir(const char *path, Csas *cs, const int ws, const int which, const char
     if (cs->base[found]->permission_denied)
         return -1;
 
-    if (mode == 0 && exists)
-        return -1;
+    if (mode == 0 && exists) return -1;
 
     if (mode == 1 && exists && !cs->base[found]->changed)
         return -1;
@@ -492,7 +467,7 @@ int getdir(const char *path, Csas *cs, const int ws, const int which, const char
     return 0;
 }
 
-int csas_cd(const char *path, const int ws, Csas *cs)
+int csas_cd(const char *path, const int ws, csas *cs)
 {
     char npath[PATH_MAX]
     #ifdef __FOLLOW_PARENT_DIR__
@@ -503,8 +478,7 @@ int csas_cd(const char *path, const int ws, Csas *cs)
     ;
 
     #ifdef __FOLLOW_PARENT_DIR__
-    if (!s_Win1Enable && b)
-    {
+    if (!s_Win1Enable && b) {
         getcwd(tpath,PATH_MAX);
         t = memrchr(tpath,'/',strlen(tpath));
         if (t) t++;
@@ -535,8 +509,7 @@ int csas_cd(const char *path, const int ws, Csas *cs)
     #endif
     );
 
-    if (s_Win1Enable)
-    {
+    if (s_Win1Enable) {
         werase(cs->win[0]);
         if (s_Borders)
             setborders(cs,0);
@@ -577,10 +550,8 @@ int csas_cd(const char *path, const int ws, Csas *cs)
     #ifdef __THREADS_FOR_DIR_ENABLE__
     loaded == -1 &&
     #endif
-        ws == cs->current_ws && s_Win3Enable)
-    {
-        if (G_D(ws,1)->size == 0)
-        {
+        ws == cs->current_ws && s_Win3Enable) {
+        if (G_D(ws,1)->size == 0) {
             werase(cs->win[2]);
             if (s_Borders)
                 setborders(cs,2);

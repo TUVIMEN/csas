@@ -33,47 +33,47 @@ static bool ismatching(const uchar src)
     return 0;
 }
 
-static int cmp_type(struct Element *el1, struct Element *el2)
+static int cmp_type(struct xfile *el1, struct xfile *el2)
     {return el1->type > el2->type;}
 #ifdef __FILE_SIZE_ENABLE__
-static int cmp_size(struct Element *el1, struct Element *el2)
+static int cmp_size(struct xfile *el1, struct xfile *el2)
     {return el1->size < el2->size;}
 #endif
-static int cmp_name(struct Element *el1, struct Element *el2)
+static int cmp_name(struct xfile *el1, struct xfile *el2)
     {return strcasecmp(el1->name,el2->name);}
-static int cmp_lname(struct Element *el1, struct Element *el2)
+static int cmp_lname(struct xfile *el1, struct xfile *el2)
     {return strcmp(el1->name,el2->name);}
 #ifdef __MTIME_ENABLE__
-static int cmp_mtime(struct Element *el1, struct Element *el2)
+static int cmp_mtime(struct xfile *el1, struct xfile *el2)
     {return el1->mtim > el2->mtim;}
 #endif
 #ifdef __ATIME_ENABLE__
-static int cmp_atime(struct Element *el1, struct Element *el2)
+static int cmp_atime(struct xfile *el1, struct xfile *el2)
     {return el1->atim > el2->atim;}
 #endif
 #ifdef __CTIME_ENABLE__
-static int cmp_ctime(struct Element *el1, struct Element *el2)
+static int cmp_ctime(struct xfile *el1, struct xfile *el2)
     {return el1->ctim > el2->ctim;}
 #endif
 #ifdef __FILE_GROUPS_ENABLE__
-static int cmp_gid(struct Element *el1, struct Element *el2)
+static int cmp_gid(struct xfile *el1, struct xfile *el2)
     {return el1->gr > el2->gr;}
 #endif
 #ifdef __FILE_GROUPS_ENABLE__
-static int cmp_uid(struct Element *el1, struct Element *el2)
+static int cmp_uid(struct xfile *el1, struct xfile *el2)
     {return el1->pw > el2->pw;}
 #endif
-static int cmp_zname(struct Element *el1, struct Element *el2)
+static int cmp_zname(struct xfile *el1, struct xfile *el2)
 {
     char *n1 = el1->name, *n2 = el2->name;
     while (*n1 == '0') n1++;
     while (*n2 == '0') n2++;
     return strverscasecmp(n1,n2);
 }
-static int cmp_lzname(struct Element *el1, struct Element *el2)
+static int cmp_lzname(struct xfile *el1, struct xfile *el2)
     { return strverscmp(el1->name,el2->name); }
 
-int (*mas[])(struct Element*, struct Element*) = {
+int (*mas[])(struct xfile*, struct xfile*) = {
     [0]=cmp_type,
     #ifdef __FILE_SIZE_ENABLE__
     [1]=cmp_size,
@@ -102,8 +102,8 @@ static int comp(const void *el1, const void *el2, void *flag)
     {
         register bool g1 = 0, g2 = 0;
 
-        g1 = ismatching(((struct Element*)el1)->type);
-        g2 = ismatching(((struct Element*)el2)->type);
+        g1 = ismatching(((struct xfile*)el1)->type);
+        g2 = ismatching(((struct xfile*)el2)->type);
 
         if (!g1 && !g2) goto RESULT;
         if (!g1 && g2) return 1;
@@ -111,50 +111,44 @@ static int comp(const void *el1, const void *el2, void *flag)
     }
 
     RESULT: ;
-    return (*mas[(*(ull*)flag&SORT_IF)-1])((struct Element*)el1,(struct Element*)el2);
+    return (*mas[(*(ull*)flag&SORT_IF)-1])((struct xfile*)el1,(struct xfile*)el2);
 }
 
-static size_t find_border(const struct Element *el, size_t size)
+static size_t find_border(const struct xfile *xf, size_t size)
 {
     register size_t ret = 0;
     for (register size_t i = 0; i < size && ret == 0; i++)
-        ret = i*!ismatching(el[i].type);
+        ret = i*!ismatching(xf[i].type);
     return ret;
 }
 
-void sort_el(struct Element *el, const size_t size, ull flag)
+void sort_xfile(struct xfile *xf, const size_t size, ull flag)
 {
     if ((flag&SORT_IF) != SORT_NONE)
-        qsort_r(el,size,sizeof(struct Element),comp,&flag);
+        qsort_r(xf,size,sizeof(struct xfile),comp,&flag);
 
     if (!(flag & SORT_REVERSE))
         return;
     
     register size_t border = 0, i, j;
-    struct Element temp;
+    struct xfile temp;
 
-    if (flag & SORT_BETTER_FILES)
-    {
-        border = find_border(el,size);
-
-        if (border)
-        {
-            for (i = 0, j = border-1; i < j; i++, j--)
-            {
-                temp = el[i];
-                el[i] = el[j];
-                el[j] = temp;
+    if (flag & SORT_BETTER_FILES) {
+        border = find_border(xf,size);
+        if (border) {
+            for (i = 0, j = border-1; i < j; i++, j--) {
+                temp = xf[i];
+                xf[i] = xf[j];
+                xf[j] = temp;
             }
         }
     }
 
-    if (border != size)
-    {
-        for (i = border, j = size-1; i < j; i++, j--)
-        {
-            temp = el[i];
-            el[i] = el[j];
-            el[j] = temp;
+    if (border != size) {
+        for (i = border, j = size-1; i < j; i++, j--) {
+            temp = xf[i];
+            xf[i] = xf[j];
+            xf[j] = temp;
         }
     }
 }

@@ -22,10 +22,10 @@
 void addkey(char *c, char *v);
 void addcommand(const char *name, const uchar type, void *func, const size_t s, void *expand);
 int initcurses();
-Csas *csas_init();
-void csas_run(Csas *cs, const int argc, char **argv);
-void update_size(Csas *cs);
-void free_el(struct Element **el, size_t *size);
-void csas_free(Csas *cs);
+csas *csas_init();
+void csas_run(csas *cs, const int argc, char **argv);
+void update_size(csas *cs);
+void free_xfile(struct xfile **xf, size_t *size);
+void csas_free(csas *cs);
 
 #endif

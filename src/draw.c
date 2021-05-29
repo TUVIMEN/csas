@@ -67,9 +67,9 @@ extern li s_C_Bar_Dir;
 extern li s_C_Bar_Name;
 extern li s_Bar2Enable;
 
-void set_message(Csas *cs, const int attr, const char *fmt, ...)
+void set_message(csas *cs, const int attr, const char *fmt, ...)
 {
-    struct WinArgs args = {stdscr,0,0,-1,1,1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,0};
+    struct winargs args = {stdscr,0,0,-1,1,1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,0};
     console_resize(cs->win[5],&args);
     werase(cs->win[5]);
     va_list va_args;
@@ -82,35 +82,30 @@ void set_message(Csas *cs, const int attr, const char *fmt, ...)
     cs->ws[cs->current_ws].show_message = true;
 }
 
-void setborders(Csas *cs, const int which)
-{
-    if ((which == -1 || which == 0) && s_Win1Enable)
-    {
+void setborders(csas *cs, const int which) {
+    if ((which == -1 || which == 0) && s_Win1Enable) {
         wattron(cs->win[0],s_C_Borders);
         wborder(cs->win[0],s_WindowBorder[0],s_WindowBorder[1],s_WindowBorder[2],s_WindowBorder[3],s_WindowBorder[4],s_WindowBorder[5],s_WindowBorder[6],s_WindowBorder[7]);
         wattroff(cs->win[0],s_C_Borders);
     }
-    if (which == -1 || which == 1)
-    {
+    if (which == -1 || which == 1) {
         wattron(cs->win[1],s_C_Borders);
         wborder(cs->win[1],s_WindowBorder[0],s_WindowBorder[1],s_WindowBorder[2],s_WindowBorder[3],s_WindowBorder[4],s_WindowBorder[5],s_WindowBorder[6],s_WindowBorder[7]);
         wattroff(cs->win[1],s_C_Borders);
     }
-    if ((which == -1 || which == 2) && s_Win3Enable)
-    {
+    if ((which == -1 || which == 2) && s_Win3Enable) {
         wattron(cs->win[2],s_C_Borders);
         wborder(cs->win[2],s_WindowBorder[0],s_WindowBorder[1],s_WindowBorder[2],s_WindowBorder[3],s_WindowBorder[4],s_WindowBorder[5],s_WindowBorder[6],s_WindowBorder[7]);
         wattroff(cs->win[2],s_C_Borders);
     }
 }
 
-static int colorel(const struct Element *src, const bool select)
+static int colorel(const struct xfile *src, const bool select)
 {
     register int set = 0, col = 0;
 
     #ifdef __MODE_ENABLE__
-    if (src->mode & S_IXUSR)
-    {
+    if (src->mode & S_IXUSR) {
         set |= s_C_Exec_set;
         col = s_C_Exec_col;
     }
@@ -120,20 +115,16 @@ static int colorel(const struct Element *src, const bool select)
 
     if (src->type&T_FILE_MISSING)
         col = s_C_FileMissing;
-    else
-    {
-        if (src->type&T_SYMLINK && s_C_SymLink)
-        {
+    else {
+        if (src->type&T_SYMLINK && s_C_SymLink) {
             col = s_C_SymLink;
             goto END;
         }
 
-        switch(src->type&T_GT)
-        {
+        switch(src->type&T_GT) {
             case T_REG:
                 #ifdef __COLOR_FILES_BY_EXTENSION__
-                switch(src->ftype)
-                {
+                switch(src->ftype) {
                     case 'A': col = s_C_FType_A; break;
                     case 'I': col = s_C_FType_I; break;
                     case 'V': col = s_C_FType_V; break;
@@ -157,8 +148,7 @@ static int colorel(const struct Element *src, const bool select)
 #ifdef __FILESYSTEM_INFO_ENABLE__
 static char *fsname(const li ftype)
 {
-    switch (ftype)
-    {
+    switch (ftype) {
         case 0xadf5:      return " ADFS_SUPER_MAGIC";
         case 0xadff:      return " AFFS_SUPER_MAGIC";
         case 0x5346414F:  return " AFS_SUPER_MAGIC";
@@ -241,7 +231,7 @@ static char *fsname(const li ftype)
 }
 #endif
 
-static void flagstoa(size_t *size, const int flags, char *result, struct Element *cs)
+static void flagstoa(size_t *size, const int flags, char *result, struct xfile *cs)
 {
     #ifdef __FILE_GROUPS_ENABLE__
     struct group  *gr;
@@ -262,8 +252,7 @@ static void flagstoa(size_t *size, const int flags, char *result, struct Element
     if (flags&DP_TYPE)
         *size += sprintf(result+*size,"%d ",cs->type);
     #ifdef __COLOR_FILES_BY_EXTENSION__
-    if (flags&DP_FTYPE)
-    {
+    if (flags&DP_FTYPE) {
         if (cs->ftype > 32)
             *size += sprintf(result+*size,"%c ",cs->ftype);
         else
@@ -279,8 +268,7 @@ static void flagstoa(size_t *size, const int flags, char *result, struct Element
         *size += sprintf(result+*size,"%ld ",cs->inode);
     #endif
     #ifdef __FILE_OWNERS_ENABLE__
-    if ((pw = getpwuid(cs->pw)) != NULL)
-    {
+    if ((pw = getpwuid(cs->pw)) != NULL) {
         if (flags&DP_PWDIR)
             *size += sprintf(result+*size,"%s ",pw->pw_dir);
         if (flags&DP_PWGECOS)
@@ -299,8 +287,7 @@ static void flagstoa(size_t *size, const int flags, char *result, struct Element
     #endif
 
     #ifdef __FILE_GROUPS_ENABLE__
-    if ((gr = getgrgid(cs->gr)) != NULL)
-    {
+    if ((gr = getgrgid(cs->gr)) != NULL) {
         if (flags&DP_GRGID)
             *size += sprintf(result+*size,"%d ",gr->gr_gid);
         if (flags&DP_GRNAME)
@@ -343,16 +330,14 @@ static void flagstoa(size_t *size, const int flags, char *result, struct Element
     #ifdef __FILE_SIZE_ENABLE__
     if (flags&DP_SIZE)
         *size += sprintf(result+*size,"%lld ",cs->size);
-    if (flags&DP_HSIZE)
-    {
+    if (flags&DP_HSIZE) {
         if (cs->size < 1024)
             *size += sprintf(result+*size,"%lld ",cs->size);
         else
             *size += sprintf(result+*size,"%s ",stoa(cs->size));
     }
     #endif
-    if (flags&DP_LINK_PATH)
-    {
+    if (flags&DP_LINK_PATH) {
         ssize_t temp = readlink(cs->name,result+*size,PATH_MAX);
         *size += (temp != -1)*temp;
         result[(*size)++] = ' ';
@@ -360,7 +345,7 @@ static void flagstoa(size_t *size, const int flags, char *result, struct Element
     }
 }
 
-void csas_draw(Csas *cs, const int which)
+void csas_draw(csas *cs, const int which)
 {
     int color, line_off1, line_off2;;
     char NameTemp[PATH_MAX];
@@ -371,8 +356,7 @@ void csas_draw(Csas *cs, const int which)
     if (s_Win3Display && cs->ws[cs->current_ws].win[2] == -1)
         get_preview(cs);
 
-    for (int i = 0; i < 3; i++)
-    {
+    for (int i = 0; i < 3; i++) {
         if (which != -1 && i != which)
             continue;
         if (cs->ws[cs->current_ws].win[i] == -1)
@@ -388,17 +372,14 @@ void csas_draw(Csas *cs, const int which)
         
         werase(cs->win[i]);
 
-        if (i == 2 && !s_Win3Display)
-        {
+        if (i == 2 && !s_Win3Display) {
             #ifndef __SAVE_PREVIEW__
-            if (cs->spreview&F_TEXT)
-            {
+            if (cs->spreview&F_TEXT) {
                 run_preview(cs->win[i],cs->cpreview,cs->previewl,cs->spreview);
                 wrefresh(cs->win[i]);
             }
             #else
-            if (G_ES(cs->current_ws,1).spreview&F_TEXT)
-            {
+            if (G_ES(cs->current_ws,1).spreview&F_TEXT) {
                 run_preview(cs->win[i],G_ES(cs->current_ws,1).cpreview,
                     G_ES(cs->current_ws,1).previewl,
                     G_ES(cs->current_ws,1).spreview);
@@ -410,8 +391,7 @@ void csas_draw(Csas *cs, const int which)
 
         wattron(cs->win[i],s_C_Error);
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        if (G_D(cs->current_ws,i)->enable)
-        {
+        if (G_D(cs->current_ws,i)->enable) {
             snprintf(NameTemp,cs->win[i]->_maxx-((s_Borders+1)+2),"LOADING");
             mvwaddstr(cs->win[i],s_Borders,s_Borders+3,NameTemp);
             wattroff(cs->win[i],s_C_Error);
@@ -419,16 +399,14 @@ void csas_draw(Csas *cs, const int which)
             continue;
         }
         #endif
-        if (G_D(cs->current_ws,i)->permission_denied)
-        {
+        if (G_D(cs->current_ws,i)->permission_denied) {
             snprintf(NameTemp,cs->win[i]->_maxx-((s_Borders+1)+2),"NOT ACCESSIBLE");
             mvwaddstr(cs->win[i],s_Borders,s_Borders+3,NameTemp);
             wattroff(cs->win[i],s_C_Error);
             wrefresh(cs->win[i]);
             continue;
         }
-        if (G_D(cs->current_ws,i)->size == 0)
-        {
+        if (G_D(cs->current_ws,i)->size == 0) {
             snprintf(NameTemp,cs->win[i]->_maxx-((s_Borders+1)+2),"EMPTY");
             mvwaddstr(cs->win[i],s_Borders,s_Borders+3,NameTemp);
             wattroff(cs->win[i],s_C_Error);
@@ -440,26 +418,23 @@ void csas_draw(Csas *cs, const int which)
         line_off1 = 0;
 
         #ifdef __SORT_ELEMENTS_ENABLE__
-        if (G_D(cs->current_ws,i)->sort_m != s_SortMethod)
-        {
+        if (G_D(cs->current_ws,i)->sort_m != s_SortMethod) {
             G_D(cs->current_ws,i)->sort_m = s_SortMethod;
             if (G_D(cs->current_ws,i)->size > 0)
-                sort_el(G_D(cs->current_ws,i)->el,G_D(cs->current_ws,i)->size,s_SortMethod);
+                sort_xfile(G_D(cs->current_ws,i)->xf,G_D(cs->current_ws,i)->size,s_SortMethod);
         }
         #endif
 
-        for (size_t j = G_D(cs->current_ws,i)->ltop[cs->current_ws]; j-G_D(cs->current_ws,i)->ltop[cs->current_ws] < (size_t)cs->win[i]->_maxy-(s_Borders*2)+1 && j < G_D(cs->current_ws,i)->size; j++)
-        {
+        for (size_t j = G_D(cs->current_ws,i)->ltop[cs->current_ws]; j-G_D(cs->current_ws,i)->ltop[cs->current_ws] < (size_t)cs->win[i]->_maxy-(s_Borders*2)+1 && j < G_D(cs->current_ws,i)->size; j++) {
             #ifdef __COLOR_FILES_BY_EXTENSION__
-            if (G_D(cs->current_ws,i)->el[j].ftype == 1)
-                G_D(cs->current_ws,i)->el[j].ftype = check_extension(G_D(cs->current_ws,i)->el[j].name);
+            if (G_D(cs->current_ws,i)->xf[j].ftype == 1)
+                G_D(cs->current_ws,i)->xf[j].ftype = check_extension(G_D(cs->current_ws,i)->xf[j].name);
             #endif
-            color = colorel(&G_D(cs->current_ws,i)->el[j],(j == G_S(cs->current_ws,i)));
+            color = colorel(&G_D(cs->current_ws,i)->xf[j],(j == G_S(cs->current_ws,i)));
 
 
             wattron(cs->win[i],color);
-            if (s_FillBlankSpace && j == G_S(cs->current_ws,i))
-            {
+            if (s_FillBlankSpace && j == G_S(cs->current_ws,i)) {
                 for (int g = s_Borders+1; g < cs->win[i]->_maxx-s_Borders-1+((i == 2)*2)*!s_Borders+(((i == 1)*2)*!s_Win3Enable)*!s_Borders; g++)
                     mvwaddch(cs->win[i],s_Borders+j-G_D(cs->current_ws,i)->ltop[cs->current_ws],g+s_Borders,' ');
             }
@@ -469,21 +444,18 @@ void csas_draw(Csas *cs, const int which)
             NameTemp[0] = '\0';
             line_off2 = 0;
 
-            if (i == 1)
-            {
+            if (i == 1) {
                 #ifdef __UPDATE_FILES__
                 updatefile(&G_ES(cs->current_ws,i),G_D(cs->current_ws,i)->path);
                 #endif
 
-                if (s_DisplayingC != 0)
-                {
-                    flagstoa(&cont_s[0],s_DisplayingC,MainTemp,&G_D(cs->current_ws,i)->el[j]);
+                if (s_DisplayingC != 0) {
+                    flagstoa(&cont_s[0],s_DisplayingC,MainTemp,&G_D(cs->current_ws,i)->xf[j]);
 
                     mvwaddstr(cs->win[i],s_Borders+j-G_D(cs->current_ws,i)->ltop[cs->current_ws],cs->win[i]->_maxx-cont_s[0]-1+(((i == 1)*2)*!s_Win3Enable)*!s_Borders,MainTemp);
                 }
 
-                if (s_NumberLinesOff)
-                {
+                if (s_NumberLinesOff) {
                     line_off1 = 0;
                     cont_s[1] = G_D(cs->current_ws,i)->size;
                     while (cont_s[1] > 9) { cont_s[1] /= 10; line_off1++; }
@@ -493,20 +465,18 @@ void csas_draw(Csas *cs, const int which)
                     while (cont_s[1] > 9) { cont_s[1] /= 10; line_off2++; };
                 }
 
-                if (s_NumberLines)
-                {
+                if (s_NumberLines) {
 					sprintf(temp,"%lu ",j+s_NumberLinesFromOne);
                     strcat(NameTemp,temp);
                 }
             }
 
-            strcat(NameTemp,G_D(cs->current_ws,i)->el[j].name);
+            strcat(NameTemp,G_D(cs->current_ws,i)->xf[j].name);
             cont_s[1] = strlen(NameTemp);
 
             if (cs->win[i]->_maxx < (ll)(cont_s[0]+s_Borders+1))
                 NameTemp[0] = 0;
-            else if ((size_t)cont_s[1] > cs->win[i]->_maxx-cont_s[0]-2-((s_Borders+1)+1)-s_Borders)
-            {
+            else if ((size_t)cont_s[1] > cs->win[i]->_maxx-cont_s[0]-2-((s_Borders+1)+1)-s_Borders) {
                 NameTemp[cs->win[i]->_maxx-cont_s[0]-3-((s_Borders+1)+1)-s_Borders] = '~';
                 NameTemp[cs->win[i]->_maxx-cont_s[0]-2-((s_Borders+1)+1)-s_Borders] = '\0';
             }
@@ -515,7 +485,7 @@ void csas_draw(Csas *cs, const int which)
 
             wattroff(cs->win[i],color);
 
-            if (G_D(cs->current_ws,i)->el[j].list[cs->current_ws]&(1<<cs->ws[cs->current_ws].sel_group))
+            if (G_D(cs->current_ws,i)->xf[j].list[cs->current_ws]&(1<<cs->ws[cs->current_ws].sel_group))
                 color = s_C_Group[cs->ws[cs->current_ws].sel_group];
             else
                 color = 0;
@@ -530,13 +500,11 @@ void csas_draw(Csas *cs, const int which)
         wrefresh(cs->win[i]);
     }
 
-    if ((which == 3 || which == -1) && s_Bar1Enable)
-    {
+    if ((which == 3 || which == -1) && s_Bar1Enable) {
         // 3
         cont_s[2] = 0;
 
-        if ((s_Bar1Settings & B_WORKSPACES) == B_WORKSPACES)
-        {
+        if ((s_Bar1Settings & B_WORKSPACES) == B_WORKSPACES) {
             for (int i = 0; i < WORKSPACE_N; i++)
                 cont_s[2] += cs->ws[i].exists;
 
@@ -546,8 +514,7 @@ void csas_draw(Csas *cs, const int which)
         cont_s[3] = 0;
 
         #ifdef __USER_NAME_ENABLE__
-        if ((s_Bar1Settings & B_UHNAME) == B_UHNAME)
-        {
+        if ((s_Bar1Settings & B_UHNAME) == B_UHNAME) {
             wattron(cs->win[3],s_C_User_S_D);
             if (s_UserRHost)
                 sprintf(temp,s_UserHostPattern,cs->hostn,cs->usern);
@@ -563,15 +530,12 @@ void csas_draw(Csas *cs, const int which)
             #ifdef __THREADS_FOR_DIR_ENABLE__
             !G_D(cs->current_ws,1)->enable &&
             #endif
-            G_D(cs->current_ws,1)->size > 0)
-        {
+            G_D(cs->current_ws,1)->size > 0) {
             if (G_D(cs->current_ws,1)->size <= G_S(cs->current_ws,1))
                 G_S(cs->current_ws,1) = G_D(cs->current_ws,1)->size-1;
-            if ((s_Bar1Settings & B_DIR) == B_DIR)
-            {
+            if ((s_Bar1Settings & B_DIR) == B_DIR) {
                 strcpy(MainTemp,cs->ws[cs->current_ws].path);
-                if (!(cs->ws[cs->current_ws].path[0] == '/' && cs->ws[cs->current_ws].path[1] == '\0'))
-                {
+                if (!(cs->ws[cs->current_ws].path[0] == '/' && cs->ws[cs->current_ws].path[1] == '\0')) {
                     strcat(MainTemp,"/");
                     path_shrink(MainTemp,cs->win[3]->_maxx-(cont_s[3]+1+cont_s[2]+((s_Bar1Settings & B_NAME) == B_NAME ? strlen(G_ES(cs->current_ws,1).name) : 0)));
                 }
@@ -582,25 +546,20 @@ void csas_draw(Csas *cs, const int which)
                 
                 cont_s[3] += strlen(MainTemp)+1;
             }
-            if ((s_Bar1Settings & B_NAME) == B_NAME)
-            {
+            if ((s_Bar1Settings & B_NAME) == B_NAME) {
                 wattron(cs->win[3],s_C_Bar_Name);
                 mvwaddstr(cs->win[3],0,cont_s[3],G_ES(cs->current_ws,1).name);
                 wattroff(cs->win[3],s_C_Bar_Name);
             }
         }
 
-        if ((s_Bar1Settings & B_WORKSPACES) == B_WORKSPACES)
-        {
+        if ((s_Bar1Settings & B_WORKSPACES) == B_WORKSPACES) {
             cont_s[2] /= 3;
 
-            if (cont_s[2] > 1)
-            {
+            if (cont_s[2] > 1) {
                 cont_s[2] = 2;
-                for (int i = WORKSPACE_N-1; i > -1; i--)
-                {
-                    if (cs->ws[i].exists)
-                    {
+                for (int i = WORKSPACE_N-1; i > -1; i--) {
+                    if (cs->ws[i].exists) {
                         if (i == cs->current_ws)
                             wattron(cs->win[3],s_C_Bar_WorkSpace_Selected);
                         else
@@ -624,15 +583,13 @@ void csas_draw(Csas *cs, const int which)
         // 3
     }
 
-    if (s_Bar2Enable && (which == -1 || which == 4))
-    {
+    if (s_Bar2Enable && (which == -1 || which == 4)) {
         // 4
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
             !G_D(cs->current_ws,1)->enable &&
             #endif
-            G_D(cs->current_ws,1)->size > 0)
-        {
+            G_D(cs->current_ws,1)->size > 0) {
             flagstoa(&cont_s[0],s_Bar2Settings,MainTemp,&G_ES(cs->current_ws,1));
             wattron(cs->win[4],s_C_Bar_F);
             mvwaddstr(cs->win[4],0,0,MainTemp);
@@ -645,8 +602,7 @@ void csas_draw(Csas *cs, const int which)
 
         if (s_Bar1Settings & B_CSF && cs->was_typed)
             cont_s[0] += sprintf(MainTemp+cont_s[0],"%s",cs->typed_keys);
-        if (s_Bar1Settings & B_MODES)
-        {
+        if (s_Bar1Settings & B_MODES) {
             if (G_D(cs->current_ws,1)->changed)
                 cont_s[0] += sprintf(MainTemp+cont_s[0]," C");
 
@@ -694,8 +650,7 @@ void csas_draw(Csas *cs, const int which)
             #ifdef __THREADS_FOR_DIR_ENABLE__
             !G_D(cs->current_ws,1)->enable &&
             #endif
-            G_D(cs->current_ws,1)->size > 0)
-        {
+            G_D(cs->current_ws,1)->size > 0) {
             if (s_Bar1Settings & B_POSITION)
                 cont_s[0] += sprintf(MainTemp+cont_s[0]," %ld/%lu",G_S(cs->current_ws,1)+1,G_D(cs->current_ws,1)->size);
         }
@@ -709,8 +664,7 @@ void csas_draw(Csas *cs, const int which)
         // 4
     }
 
-    if (cs->ws[cs->current_ws].show_message)
-    {
+    if (cs->ws[cs->current_ws].show_message) {
         cs->ws[cs->current_ws].show_message = false;
         wrefresh(cs->win[5]);
     }

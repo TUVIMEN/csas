@@ -35,16 +35,12 @@ void run_preview(WINDOW *w, uchar *c, ssize_t size, uli flags)
 {
     register int posx = 1+s_Borders*2, posy = s_Borders;
 
-    for (register ssize_t i = 0; i < size && posy <= w->_maxy-s_Borders; i++)
-    {
-        if (flags&F_WRAP && w->_maxx-(s_Borders*2)-1 < posx)
-        {
+    for (register ssize_t i = 0; i < size && posy <= w->_maxy-s_Borders; i++) {
+        if (flags&F_WRAP && w->_maxx-(s_Borders*2)-1 < posx) {
             posy++;
             posx = 1+s_Borders*2;
             mvwaddch(w,posy,posx++,c[i]);
-        }
-        else if (c[i] == '\n')
-        {
+        } else if (c[i] == '\n') {
             posy++;
             posx = 1+(s_Borders<<1);
         }
@@ -63,7 +59,7 @@ static void *getfromfile(void *arg)
     threads_size++;
     #endif
     char *buffer = NULL;
-    Csas *cs = (Csas*)arg;
+    csas *cs = (csas*)arg;
     int fd;
     #ifndef __SAVE_PREVIEW__
     cs->previewl = 0;
@@ -91,8 +87,7 @@ static void *getfromfile(void *arg)
     #endif
 
     G_ES(cs->current_ws,1).previewl = 0;
-    if (G_ES(cs->current_ws,1).cpreview != NULL)
-    {
+    if (G_ES(cs->current_ws,1).cpreview != NULL) {
         free(G_ES(cs->current_ws,1).cpreview);
         G_ES(cs->current_ws,1).cpreview = NULL;
     }
@@ -105,16 +100,14 @@ static void *getfromfile(void *arg)
 
     uchar bina = 0;
 
-    for (ssize_t i = 0; i < buffl; i++)
-    {
+    for (ssize_t i = 0; i < buffl; i++) {
         if ((buffer[i] >= 0x07 && buffer[i] <= 0xd) || (buffer[i] >= 0x20 && buffer[i] <= 0x7e))
             continue;
         bina = 1;
         break;
     }
 
-    if (!bina)
-    {
+    if (!bina) {
         if (!(s_PreviewSettings&PREV_ASCII))
             goto END_t;
         lseek(fd,0,SEEK_SET);
@@ -123,17 +116,14 @@ static void *getfromfile(void *arg)
         cs->spreview = F_TEXT;
         #else
         buffl = read(fd,buffer,PREVIEW_MAX);
-        if (buffl != 0)
-        {
+        if (buffl != 0) {
             G_ES(cs->current_ws,1).cpreview = malloc(buffl);
             memcpy(G_ES(cs->current_ws,1).cpreview,buffer,buffl);
             G_ES(cs->current_ws,1).previewl = buffl;
         }
         G_ES(cs->current_ws,1).spreview = F_TEXT;
         #endif
-    }
-    else
-    {
+    } else {
         if (!(s_PreviewSettings&PREV_BINARY))
             goto END_t;
 
@@ -141,16 +131,13 @@ static void *getfromfile(void *arg)
         if (pipe(pipes) == -1)
             goto END_t;
 
-        if (vfork() == 0)
-        {
+        if (vfork() == 0) {
             dup2(pipes[1],1);
             close(pipes[0]);
             close(pipes[1]);
             execlp(s_BinaryPreview,s_BinaryPreview,G_ES(cs->current_ws,1).name,NULL);
             _exit(1);
-        }
-        else
-        {
+        } else {
             close(pipes[1]);
             while (wait(NULL) != -1);
             #ifndef __SAVE_PREVIEW__
@@ -158,8 +145,7 @@ static void *getfromfile(void *arg)
             cs->spreview = F_TEXT|F_WRAP;
             #else
             buffl = read(pipes[0],buffer,PREVIEW_MAX);
-            if (buffl != 0)
-            {
+            if (buffl != 0) {
                 G_ES(cs->current_ws,1).cpreview = malloc(buffl);
                 memcpy(G_ES(cs->current_ws,1).cpreview,buffer,buffl);
                 G_ES(cs->current_ws,1).previewl = buffl;
@@ -182,8 +168,7 @@ static void *getfromfile(void *arg)
     #endif
     close(fd);
     #ifdef __THREADS_FOR_FILE_ENABLE__
-    if (s_ThreadsForFile)
-    {
+    if (s_ThreadsForFile) {
         pthread_detach(pthread_self());
         pthread_exit(NULL);
     }
@@ -191,7 +176,7 @@ static void *getfromfile(void *arg)
     return NULL;
 }
 
-void get_preview(Csas *cs)
+void get_preview(csas *cs)
 {
     #ifdef __THREADS_FOR_FILE_ENABLE__
     if (threads_size >= s_PreviewMaxThreads)
@@ -205,11 +190,9 @@ void get_preview(Csas *cs)
         return;
 
     werase(cs->win[2]);
-    if (s_Borders)
-        setborders(cs,2);
+    if (s_Borders) setborders(cs,2);
 
-    if (s_PreviewSettings&PREV_DIR && (G_ES(cs->current_ws,1).type&T_GT) == T_DIR)
-    {
+    if (s_PreviewSettings&PREV_DIR && (G_ES(cs->current_ws,1).type&T_GT) == T_DIR) {
         s_Win3Display = true;
         getdir(G_ES(cs->current_ws,1).name,cs,cs->current_ws,2,s_DirLoadingMode
         #ifdef __FOLLOW_PARENT_DIR__
@@ -224,8 +207,7 @@ void get_preview(Csas *cs)
 
     s_Win3Display = false;
 
-    if (s_PreviewSettings&PREV_FILE && (G_ES(cs->current_ws,1).type&T_GT) == T_REG)
-    {
+    if (s_PreviewSettings&PREV_FILE && (G_ES(cs->current_ws,1).type&T_GT) == T_REG) {
         #ifdef __THREADS_FOR_FILE_ENABLE__
         if (s_ThreadsForFile)
         {

@@ -35,11 +35,9 @@
 
 void addkey(char *c, char *v)
 {
-    if (keys_t == keys_a)
-    {
-        keys = (Key*)realloc(keys,(keys_a+=32)*sizeof(Key));
-        for (size_t i = keys_t; i < keys_a; i++)
-        {
+    if (keys_t == keys_a) {
+        keys = (xkey*)realloc(keys,(keys_a+=32)*sizeof(xkey));
+        for (size_t i = keys_t; i < keys_a; i++) {
             keys[i].keys = (wchar_t*)malloc(64*sizeof(wchar_t));
             keys[i].value = NULL;
         }
@@ -49,17 +47,14 @@ void addkey(char *c, char *v)
     atok(c,temp);
 
     li found = -1;
-    for (size_t i = 0; i < keys_t; i++)
-    {
-        if (wcscmp(temp,keys[i].keys) == 0)
-        {
+    for (size_t i = 0; i < keys_t; i++) {
+        if (wcscmp(temp,keys[i].keys) == 0) {
             found = (li)i;
             break;
         }
     }
 
-    if (found == -1)
-        found = (li)keys_t++;
+    if (found == -1) found = (li)keys_t++;
 
     wcpcpy(keys[found].keys,temp);
 
@@ -74,17 +69,14 @@ void addcommand(const char *name, const uchar type, void *func, const size_t s, 
         commands = realloc(commands,(commandsa+=32)*sizeof(struct command));
 
     li found = -1;
-    for (size_t i = 0; i < commandsl; i++)
-    {
-        if (strcmp(name,commands[i].name) == 0)
-        {
+    for (size_t i = 0; i < commandsl; i++) {
+        if (strcmp(name,commands[i].name) == 0) {
             found = (li)i;
             break;
         }
     }
 
-    if (found == -1)
-    {
+    if (found == -1) {
         found = (li)commandsl++;
         commands[found].name = strdup(name);
     }
@@ -117,7 +109,7 @@ static void commands_init()
     addcommand("map",'f',cmd_map,8,NULL);
     addcommand("search",'f',cmd_search,8,NULL);
     addcommand("load",'f',cmd_load,8,expand_dir);
-    addcommand("exec",'f',cmd_exec,8,expand_shell_commands);
+    addcommand("exec",'f',cmd_exec,8,expand_shell);
     addcommand("quit",'f',cmd_quit,8,NULL);
     addcommand("console",'f',cmd_console,8,NULL);
     addcommand("bulk",'f',cmd_bulk,8,NULL);
@@ -237,8 +229,8 @@ static void keys_init()
     addkey("cd","console -a 'cd '");
     addkey("S","exec -nw ${SHELL}");
     addkey("/","console -a 'search -N '");
-    addkey("n","search -n 1");
-    addkey("N","search -b 1");
+    addkey("n","search -n");
+    addkey("N","search -p");
 }
 
 static void settings_init()
@@ -291,8 +283,7 @@ int initcurses()
     notimeout(stdscr,true);
 	set_escdelay(25);
 
-    if (has_colors() && s_EnableColor)
-    {
+    if (has_colors() && s_EnableColor) {
         start_color();
         use_default_colors();
 
@@ -305,9 +296,9 @@ int initcurses()
     return 0;
 }
 
-Csas *csas_init()
+csas *csas_init()
 {
-    Csas *cs = (Csas*)malloc(sizeof(Csas));
+    csas *cs = (csas*)malloc(sizeof(csas));
 
     #ifdef __FILESYSTEM_INFO_ENABLE__
     statfs(".",&cs->fs);
@@ -317,30 +308,28 @@ Csas *csas_init()
     cs->was_typed = false;
     cs->typed_keys = (char*)malloc(64);
 
-    cs->consolehistory.allocated = 0;
-    cs->consolehistory.size = 0;
-    cs->consolehistory.history = NULL;
-    cs->consolehistory.max_size = 32;
-    cs->consolehistory.alloc_r = 8192;
-    cs->consolehistory.inc_r = 8;
+    cs->consoleh.allocated = 0;
+    cs->consoleh.size = 0;
+    cs->consoleh.history = NULL;
+    cs->consoleh.max_size = 32;
+    cs->consoleh.alloc_r = 8192;
+    cs->consoleh.inc_r = 8;
 
-    cs->SearchList.allocated = 0;
-    cs->SearchList.inc_r = 16;
-    cs->SearchList.pos = 0;
-    cs->SearchList.size = 0;
-    cs->SearchList.list = NULL;
+    cs->searchlist.allocated = 0;
+    cs->searchlist.inc_r = 16;
+    cs->searchlist.pos = 0;
+    cs->searchlist.size = 0;
+    cs->searchlist.list = NULL;
 
     keys_init();
     settings_init();
     commands_init();
 
     #ifdef __LOAD_CONFIG_ENABLE__
-    if (s_config_load)
-    {
+    if (s_config_load) {
         config_load("/etc/csasrc",cs);
         char *HomeTemp = getenv("HOME");
-        if (HomeTemp != NULL)
-        {
+        if (HomeTemp != NULL) {
             char temp[PATH_MAX];
             sprintf(temp,"%s/.csasrc",HomeTemp);
             config_load(temp,cs);
@@ -375,8 +364,7 @@ Csas *csas_init()
     gethostname(cs->hostn,63);
     #endif
 
-    for (int i = 0; i < WORKSPACE_N; i++)
-    {
+    for (int i = 0; i < WORKSPACE_N; i++) {
         cs->ws[i].path = NULL;
         cs->ws[i].exists = 0;
         cs->ws[i].sel_group = 0;
@@ -395,7 +383,7 @@ Csas *csas_init()
     return cs;
 }
 
-void csas_run(Csas *cs, const int argc, char **argv)
+void csas_run(csas *cs, const int argc, char **argv)
 {
     time_t ActualTime, PastTime = 0;
     struct timespec MainTimer;
@@ -410,8 +398,7 @@ void csas_run(Csas *cs, const int argc, char **argv)
     else
         path = ".";
     
-    if (csas_cd(path,cs->current_ws,cs) == -1)
-    {
+    if (csas_cd(path,cs->current_ws,cs) == -1) {
         endwin();
         err(-1,"%s",path);
     }
@@ -482,26 +469,23 @@ void csas_run(Csas *cs, const int argc, char **argv)
     csas_free(cs);
 }
 
-void update_size(Csas *cs)
+void update_size(csas *cs)
 {
     clear();
     getmaxyx(stdscr,cs->wy,cs->wx);
 
-    if (s_Bar1Enable)
-    {
+    if (s_Bar1Enable) {
         wresize(cs->win[3],1,cs->wx);
         mvwin(cs->win[3],0,1);
         werase(cs->win[3]);
     }
-    if (s_Bar2Enable)
-    {
+    if (s_Bar2Enable) {
         wresize(cs->win[4],1,cs->wx);
         mvwin(cs->win[4],(cs->wy-1)*!s_StatusBarOnTop+s_StatusBarOnTop-(!s_Bar1Enable*s_StatusBarOnTop),0);
         werase(cs->win[4]);
     }
 
-    if (s_Win1Enable)
-    {
+    if (s_Win1Enable) {
         wresize(cs->win[0],cs->wy-2+!s_Bar1Enable+!s_Bar2Enable,cs->wx*s_WinSizeMod[0]);
         mvwin(cs->win[0],1+s_StatusBarOnTop-!s_Bar1Enable-(!s_Bar2Enable*s_StatusBarOnTop),0);
         cs->win_middle = cs->win[0]->_maxx;
@@ -510,19 +494,16 @@ void update_size(Csas *cs)
     wresize(cs->win[1],cs->wy-2+!s_Bar1Enable+!s_Bar2Enable,(cs->wx*(s_WinSizeMod[1]*s_Win3Enable))+(!s_Win3Enable*(cs->wx-cs->win_middle)));
     mvwin(cs->win[1],1+s_StatusBarOnTop-!s_Bar1Enable-(!s_Bar2Enable*s_StatusBarOnTop),cs->win_middle);
     werase(cs->win[1]);
-    if (s_Win3Enable)
-    {
+    if (s_Win3Enable) {
         wresize(cs->win[2],cs->wy-2+!s_Bar1Enable+!s_Bar2Enable,cs->wx-cs->win[1]->_maxx-cs->win_middle);
         mvwin(cs->win[2],1+s_StatusBarOnTop-!s_Bar1Enable-(!s_Bar2Enable*s_StatusBarOnTop),cs->win[1]->_maxx+cs->win_middle);
         werase(cs->win[2]);
     }
 
     refresh();
-    if (s_Borders)
-        setborders(cs,-1);
+    if (s_Borders) setborders(cs,-1);
 
-    for (int i = 0; i < 3; i++)
-    {
+    for (int i = 0; i < 3; i++) {
         if (cs->ws[cs->current_ws].win[i] == -1)
             continue;
         if (i == 0 && (!s_Win1Enable || !s_Win1Display))
@@ -546,10 +527,8 @@ void update_size(Csas *cs)
         if (G_D(cs->current_ws,i)->ltop[cs->current_ws]+cs->win[i]->_maxy < G_S(cs->current_ws,i))
             G_D(cs->current_ws,i)->ltop[cs->current_ws] = G_S(cs->current_ws,i)-cs->win[i]->_maxy;
 
-        for (size_t j = G_D(cs->current_ws,i)->ltop[cs->current_ws]; j-G_D(cs->current_ws,i)->ltop[cs->current_ws] < (size_t)cs->win[i]->_maxy-(s_Borders*2)+1; j++)
-        {
-            if (j == G_D(cs->current_ws,i)->size)
-            {
+        for (size_t j = G_D(cs->current_ws,i)->ltop[cs->current_ws]; j-G_D(cs->current_ws,i)->ltop[cs->current_ws] < (size_t)cs->win[i]->_maxy-(s_Borders*2)+1; j++) {
+            if (j == G_D(cs->current_ws,i)->size) {
                 if (G_D(cs->current_ws,i)->ltop[cs->current_ws] != 0)
                     G_D(cs->current_ws,i)->ltop[cs->current_ws] = G_D(cs->current_ws,i)->size-1-cs->win[i]->_maxy;
                 break;
@@ -559,21 +538,20 @@ void update_size(Csas *cs)
 }
 
 
-void free_el(struct Element* *el, size_t *size)
+void free_xfile(struct xfile **xf, size_t *size)
 {
-    for (size_t i = 0; i < *size; i++)
-    {
-        free((*el)[i].name);
+    for (size_t i = 0; i < *size; i++) {
+        free((*xf)[i].name);
         #ifdef __SAVE_PREVIEW__
-        free((*el)[i].cpreview);
+        free((*xf)[i].cpreview);
         #endif
     }
-    free(*el);
-    *el = NULL;
+    free(*xf);
+    *xf = NULL;
     *size = 0;
 }
 
-void csas_free(Csas *cs)
+void csas_free(csas *cs)
 {
     #ifdef __THREADS_FOR_DIR_ENABLE__
     for (size_t i = 0; i < cs->size; i++)
@@ -593,8 +571,7 @@ void csas_free(Csas *cs)
     for (int i = 0; i < WORKSPACE_N; i++)
         free(cs->ws[i].path);
 
-    for (size_t i = 0; i < cs->size; i++)
-    {
+    for (size_t i = 0; i < cs->size; i++) {
         free(cs->base[i]->path);
         free(cs->base[i]->selected);
         free(cs->base[i]->ltop);
@@ -603,13 +580,13 @@ void csas_free(Csas *cs)
         if (cs->base[i]->oldsize > cs->base[i]->size)
             cs->base[i]->size = cs->base[i]->oldsize;
 
-        free_el(&cs->base[i]->el,&cs->base[i]->size);
+        free_xfile(&cs->base[i]->xf,&cs->base[i]->size);
     }
     free(cs->base);
 
-    for (size_t i = 0; i < cs->consolehistory.allocated; i++)
-        free(cs->consolehistory.history[i]);
-    free(cs->consolehistory.history);
+    for (size_t i = 0; i < cs->consoleh.allocated; i++)
+        free(cs->consoleh.history[i]);
+    free(cs->consoleh.history);
 
     free(cs);
 }

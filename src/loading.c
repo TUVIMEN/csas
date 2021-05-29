@@ -23,7 +23,7 @@
 #include "useful.h"
 
 #ifdef __LOAD_CONFIG_ENABLE__
-extern struct AliasesT aliases[];
+extern struct set_alias aliases[];
 
 void get_env(char *dest, const char *src, size_t *n, size_t *x)
 {
@@ -32,8 +32,7 @@ void get_env(char *dest, const char *src, size_t *n, size_t *x)
     strncpy(temp,src+*n,end);
     temp[end] = 0;
     temp2 = getenv(temp);
-    if (temp2)
-    {
+    if (temp2) {
         size_t end1 = strlen(temp2);
         memcpy(dest+*x,temp2,end1);
         *x += end1-1;
@@ -47,23 +46,16 @@ void get_clearline(char *dest, const char *src, size_t *n)
     *n += findfirst(src+(*n),isspace,-1);
     size_t x = 0;
 
-    while (src[*n])
-    {
-        if (src[*n] == '\\')
-        {
+    while (src[*n]) {
+        if (src[*n] == '\\') {
             (*n)++;
-            if (src[*n] == '\n')
-            {
+            if (src[*n] == '\n') {
                 dest[x++] = ' ';
                 if (src[++(*n)] == 0) {dest[x] = 0; break;}
-            }
-            else if (src[*n] == ' ')
-            {
+            } else if (src[*n] == ' ') {
                 dest[x++] = src[*n-1];
                 dest[x++] = src[(*n)++];
-            }
-            else
-            {
+            } else {
                 dest[x++] = charconv(src[*n]);
                 if (src[*n] == 0) break;
                 (*n)++;
@@ -71,17 +63,14 @@ void get_clearline(char *dest, const char *src, size_t *n)
             continue;
         }
 
-        if (src[*n] == '\n' || src[*n] == ';')
-        {
+        if (src[*n] == '\n' || src[*n] == ';') {
             dest[x] = '\0';
             break;
         }
 
-        if (src[*n] == '\'')
-        {
+        if (src[*n] == '\'') {
             dest[x++] = src[(*n)++];
-            while (src[*n])
-            {
+            while (src[*n]) {
                 if (src[*n] == '\'')
                 {
                     dest[x++] = src[(*n)++];
@@ -92,21 +81,17 @@ void get_clearline(char *dest, const char *src, size_t *n)
             continue;
         }
 
-        if (src[*n] == '"')
-        {
+        if (src[*n] == '"') {
             dest[x++] = src[(*n)++];
-            while (src[*n])
-            {
-                if (src[*n] == '\\')
-                {
+            while (src[*n]) {
+                if (src[*n] == '\\') {
                     dest[x++] = charconv(src[++(*n)]);
                     if (src[*n] == 0) break;
                     (*n)++;
                     continue;
                 }
                 
-                if (src[*n] == '"')
-                {
+                if (src[*n] == '"') {
                     dest[x++] = src[(*n)++];
                     break;
                 }
@@ -115,15 +100,11 @@ void get_clearline(char *dest, const char *src, size_t *n)
             continue;
         }
 
-        if (src[*n] == '/')
-        {
-            if (src[*n+1] == '/')
-            {
+        if (src[*n] == '/') {
+            if (src[*n+1] == '/') {
                 (*n) += 2;
-                while (src[*n])
-                {
-                    if (src[*n] == '\\')
-                    {
+                while (src[*n]) {
+                    if (src[*n] == '\\') {
                         if (src[++(*n)] == 0) break;
                         if (src[++(*n)] == 0) break;
                         continue;
@@ -132,15 +113,12 @@ void get_clearline(char *dest, const char *src, size_t *n)
                     (*n)++;
                 }
                 (*n)++;
-            }
-            else if (src[*n+1] == '*')
-            {
+            } else if (src[*n+1] == '*') {
                 *n += 2;
-                if (src[(*n)] != 0)
-                {
-                    while (src[(*n)++])
-                    {
-                        if (src[*n] == '*' && src[*n+1] == '/') break;
+                if (src[(*n)] != 0) {
+                    while (src[(*n)++]) {
+                        if (src[*n] == '*' && src[*n+1] == '/')
+                            break;
                     }
                     *n += 3;
                 }
@@ -149,22 +127,18 @@ void get_clearline(char *dest, const char *src, size_t *n)
             continue;
         }
 
-        if (src[*n] == '$' && src[*n+1] == '{')
-        {
+        if (src[*n] == '$' && src[*n+1] == '{') {
             dest[x++] = src[(*n)++];
             dest[x++] = src[*n];
 
-            while (src[*n])
-            {
-                if (src[*n] == '\\')
-                {
+            while (src[*n]) {
+                if (src[*n] == '\\') {
                     dest[x++] = charconv(src[++(*n)]);
                     if (src[*n] == 0) break;
                         (*n)++;
                     continue;
                 }
-                if (src[*n] == '}')
-                {
+                if (src[*n] == '}') {
                     dest[x++] = src[(*n)++];   
                     break;
                 }
@@ -177,7 +151,7 @@ void get_clearline(char *dest, const char *src, size_t *n)
     }
 }
 
-void config_load(const char *path, Csas *cs)
+void config_load(const char *path, csas *cs)
 {
     int fd;
     if ((fd = open(path,O_RDONLY)) == -1)
@@ -186,8 +160,7 @@ void config_load(const char *path, Csas *cs)
     char temp[PATH_MAX];
     strcpy(temp,path);
 
-    if (temp[0] == '/')
-    {
+    if (temp[0] == '/') {
         size_t end = strlen(temp)-1;
         for (; temp[end] != '/'; end--) temp[end] = 0;
     }
@@ -195,8 +168,7 @@ void config_load(const char *path, Csas *cs)
     chdir(temp);
 
     struct stat sfile;
-    if (fstat(fd,&sfile) == -1)
-    {
+    if (fstat(fd,&sfile) == -1) {
         close(fd);
         return;
     }

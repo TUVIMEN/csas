@@ -20,6 +20,6 @@
 #define PREVIEW_H
 
 void run_preview(WINDOW *w, uchar *c, ssize_t size, uli flags);
-void get_preview(Csas *cs);
+void get_preview(csas *cs);
 
 #endif

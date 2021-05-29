@@ -19,37 +19,37 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-int update_event(Csas *cs);
-void csas_exit(Csas *cs, const bool force);
-void move_to(Csas *cs, const int ws, const int which, const char *name);
+int update_event(csas *cs);
+void csas_exit(csas *cs, const bool force);
+void move_to(csas *cs, const int ws, const int which, const char *name);
 
-int cmd_alias(const char *src, Csas *cs);
-int cmd_rename(char *src, Csas *cs);
-int cmd_set(const char *src, Csas *cs);
+int cmd_alias(const char *src, csas *cs);
+int cmd_rename(char *src, csas *cs);
+int cmd_set(const char *src, csas *cs);
 #ifdef __LOAD_CONFIG_ENABLE__
-int cmd_source(const char *src, Csas *cs);
+int cmd_source(const char *src, csas *cs);
 #endif
-int cmd_map(const char *src, Csas *cs);
-int cmd_move(const char *src, Csas *cs);
-int cmd_quit(const char *src, Csas *cs);
-int cmd_cd(const char *src, Csas *cs);
-int cmd_open_with(const char *src, Csas *cs);
-int cmd_gotop(const char *src, Csas *cs);
-int cmd_godown(const char *src, Csas *cs);
-int cmd_change_workspace(const char *src, Csas *cs);
+int cmd_map(const char *src, csas *cs);
+int cmd_move(const char *src, csas *cs);
+int cmd_quit(const char *src, csas *cs);
+int cmd_cd(const char *src, csas *cs);
+int cmd_open_with(const char *src, csas *cs);
+int cmd_gotop(const char *src, csas *cs);
+int cmd_godown(const char *src, csas *cs);
+int cmd_change_workspace(const char *src, csas *cs);
 #ifdef __FILE_SIZE_ENABLE__
-int cmd_getsize(const char *src,Csas *cs);
+int cmd_getsize(const char *src,csas *cs);
 #endif
-char *___SETGROUP(const char *src, Csas *cs);
-int cmd_fastselect(const char *src, Csas *cs);
-int cmd_togglevisual(const char *src, Csas *cs);
-int cmd_f_mod(const char *src, Csas *cs);
-int cmd_search(const char *src, Csas *cs);
-int cmd_load(const char *src, Csas *cs);
-int cmd_select(const char *src, Csas *cs);
-int cmd_exec(const char *src, Csas *cs);
-int cmd_bulk(const char *src, Csas *cs);
-int cmd_console(const char *src, Csas *cs);
-int cmd_filter(const char *src, Csas *cs);
+char *___SETGROUP(const char *src, csas *cs);
+int cmd_fastselect(const char *src, csas *cs);
+int cmd_togglevisual(const char *src, csas *cs);
+int cmd_f_mod(const char *src, csas *cs);
+int cmd_search(const char *src, csas *cs);
+int cmd_load(const char *src, csas *cs);
+int cmd_select(const char *src, csas *cs);
+int cmd_exec(const char *src, csas *cs);
+int cmd_bulk(const char *src, csas *cs);
+int cmd_console(const char *src, csas *cs);
+int cmd_filter(const char *src, csas *cs);
 
 #endif

@@ -20,7 +20,7 @@
 #define LOADING_H
 
 #ifdef __LOAD_CONFIG_ENABLE__
-void config_load(const char *dest, Csas *src);
+void config_load(const char *dest, csas *src);
 #endif
 
 void get_env(char *dest, const char *src, size_t *n, size_t *x);
