@@ -231,6 +231,9 @@ static void keys_init()
     addkey("/","console -a 'search -N '");
     addkey("n","search -n");
     addkey("N","search -p");
+    addkey("a","rename");
+    addkey("u","undo -n");
+    addkey("U","undo -p");
 }
 
 static void settings_init()
@@ -281,7 +284,6 @@ int initcurses()
     curs_set(0);
     keypad(stdscr,true);
     notimeout(stdscr,true);
-	set_escdelay(25);
 
     if (has_colors() && s_EnableColor) {
         start_color();
@@ -290,7 +292,7 @@ int initcurses()
         for (int i = 0; i < 16; i++)
             init_pair(i,i,-1);
     }
-
+    
 	set_escdelay(25);
 
     return 0;
@@ -308,18 +310,9 @@ csas *csas_init()
     cs->was_typed = false;
     cs->typed_keys = (char*)malloc(64);
 
-    cs->consoleh.allocated = 0;
-    cs->consoleh.size = 0;
-    cs->consoleh.history = NULL;
-    cs->consoleh.max_size = 32;
-    cs->consoleh.alloc_r = 8192;
-    cs->consoleh.inc_r = 8;
-
-    cs->searchlist.allocated = 0;
-    cs->searchlist.inc_r = 16;
-    cs->searchlist.pos = 0;
-    cs->searchlist.size = 0;
-    cs->searchlist.list = NULL;
+    cs->consoleh = flexarr_init(sizeof(char*),CONSOLE_HIStORY_INC_RATE,CONSOLE_HISTORY_MAX_SIZE);
+    cs->searchlist_pos = 0;
+    cs->searchlist = flexarr_init(sizeof(char*),SEARCH_LIST_INC_RATE,-1);
 
     keys_init();
     settings_init();
@@ -353,15 +346,13 @@ csas *csas_init()
 
     cs->win_middle = 0;
 
-    cs->size = 0;
-    cs->asize = 0;
-    cs->base = NULL;
+    cs->base = flexarr_init(sizeof(struct xdir*),DIR_BASE_INC_RATE,-1);
 
     #ifdef __USER_NAME_ENABLE__
-    cs->hostn = (char*)malloc(64);
-    cs->usern = (char*)malloc(64);
-    getlogin_r(cs->usern,63);
-    gethostname(cs->hostn,63);
+    cs->hostn = (char*)malloc(NAME_MAX);
+    cs->usern = (char*)malloc(NAME_MAX);
+    getlogin_r(cs->usern,NAME_MAX);
+    gethostname(cs->hostn,NAME_MAX);
     #endif
 
     for (int i = 0; i < WORKSPACE_N; i++) {
@@ -524,19 +515,44 @@ void update_size(csas *cs)
         if (G_D(cs->current_ws,i)->size == 0)
             continue;
 
-        if (G_D(cs->current_ws,i)->ltop[cs->current_ws]+cs->win[i]->_maxy < G_S(cs->current_ws,i))
-            G_D(cs->current_ws,i)->ltop[cs->current_ws] = G_S(cs->current_ws,i)-cs->win[i]->_maxy;
-
-        for (size_t j = G_D(cs->current_ws,i)->ltop[cs->current_ws]; j-G_D(cs->current_ws,i)->ltop[cs->current_ws] < (size_t)cs->win[i]->_maxy-(s_Borders*2)+1; j++) {
-            if (j == G_D(cs->current_ws,i)->size) {
-                if (G_D(cs->current_ws,i)->ltop[cs->current_ws] != 0)
-                    G_D(cs->current_ws,i)->ltop[cs->current_ws] = G_D(cs->current_ws,i)->size-1-cs->win[i]->_maxy;
-                break;
-            }
+        if (G_S(cs->current_ws,i) >= G_D(cs->current_ws,i)->size)
+        {
+            if (G_D(cs->current_ws,i)->size == 0)
+                G_S(cs->current_ws,i) = 0;
+            else    
+                G_S(cs->current_ws,i) = G_D(cs->current_ws,i)->size-1;
         }
+
+        if (G_D(cs->current_ws,i)->size-1 < (size_t)cs->win[i]->_maxy)
+            G_D(cs->current_ws,i)->ltop[cs->current_ws] = 0;
+        else if (G_D(cs->current_ws,i)->ltop[cs->current_ws]+(cs->win[i]->_maxy-cs->win[i]->_maxy*s_MoveOffSet) < G_S(cs->current_ws,i))
+            G_D(cs->current_ws,i)->ltop[cs->current_ws] = G_S(cs->current_ws,i)-(cs->win[i]->_maxy-cs->win[i]->_maxy*s_MoveOffSet);
+        else if (G_D(cs->current_ws,i)->ltop[cs->current_ws]+cs->win[i]->_maxy > G_D(cs->current_ws,i)->size-1)
+            G_D(cs->current_ws,i)->ltop[cs->current_ws] = G_D(cs->current_ws,i)->size-1-cs->win[i]->_maxy;
     }
 }
 
+struct xdir *xdir_init()
+{
+    struct xdir *ret = calloc(sizeof(struct xdir),1);
+    ret->ltop = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
+    ret->selected = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
+    ret->move_to = (char**)calloc(WORKSPACE_N,sizeof(char*));
+    return ret;
+}
+
+void xdir_free(struct xdir *xdr)
+{
+    free(xdr->path);
+    free(xdr->selected);
+    free(xdr->ltop);
+    free(xdr->filter);
+
+    if (xdr->oldsize > xdr->size)
+        xdr->size = xdr->oldsize;
+    free_xfile(&xdr->xf,&xdr->size);
+    free(xdr);
+}
 
 void free_xfile(struct xfile **xf, size_t *size)
 {
@@ -553,10 +569,12 @@ void free_xfile(struct xfile **xf, size_t *size)
 
 void csas_free(csas *cs)
 {
+    register flexarr *tmp;
+    tmp = cs->base;
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    for (size_t i = 0; i < cs->size; i++)
-        if (cs->base[i]->enable)
-            pthread_cancel(cs->base[i]->thread);
+    for (size_t i = 0; i < tmp->size; i++)
+        if (((struct xdir**)tmp->v)[i]->enable)
+            pthread_cancel(((struct xdir**)tmp->v)[i]->thread);
     #endif
 
     for (int i = 0; i < 6; i++)
@@ -568,25 +586,21 @@ void csas_free(csas *cs)
     free(cs->usern);
     #endif
 
+    tmp = cs->searchlist;   
+    flexarr_free(tmp);
+
+    register workspace *ws = cs->ws;
     for (int i = 0; i < WORKSPACE_N; i++)
-        free(cs->ws[i].path);
+        free(ws[i].path);
 
-    for (size_t i = 0; i < cs->size; i++) {
-        free(cs->base[i]->path);
-        free(cs->base[i]->selected);
-        free(cs->base[i]->ltop);
-        free(cs->base[i]->filter);
+    tmp = cs->base;
+    for (size_t i = 0; i < tmp->size; i++)
+        xdir_free(((struct xdir**)tmp->v)[i]);
+    flexarr_free(tmp);
 
-        if (cs->base[i]->oldsize > cs->base[i]->size)
-            cs->base[i]->size = cs->base[i]->oldsize;
-
-        free_xfile(&cs->base[i]->xf,&cs->base[i]->size);
-    }
-    free(cs->base);
-
-    for (size_t i = 0; i < cs->consoleh.allocated; i++)
-        free(cs->consoleh.history[i]);
-    free(cs->consoleh.history);
+    for (size_t i = 0; i < cs->consoleh->size; i++)
+        free(((char**)cs->consoleh->v)[i]);
+    flexarr_free(cs->consoleh);
 
     free(cs);
 }

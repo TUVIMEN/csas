@@ -56,4 +56,8 @@ wchar_t charconv(const char c); //changes char after '\\'
 size_t atop(char *dest, const char *src, const char delim, csas *cs); //changes string to path
 wchar_t *atok(char *src,  wchar_t  *dest); //changes string to keys
 
+flexarr *flexarr_init(const size_t nmemb, const size_t inc_r, const size_t max_size);
+void *flexarr_inc(flexarr *f);
+void flexarr_free(flexarr *f);
+
 #endif

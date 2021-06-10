@@ -962,3 +962,32 @@ char *atob(char *s)
     }
     return s;
 }
+
+flexarr *flexarr_init(const size_t nmemb, const size_t inc_r, const size_t max_size)
+{
+    flexarr *ret = calloc(sizeof(flexarr),1);
+    ret->inc_r = inc_r;
+    ret->nmemb = nmemb;
+    ret->max_size = max_size;
+    return ret;
+}
+
+void *flexarr_inc(flexarr *f)
+{
+    if (f->size == f->asize) {
+        f->v = realloc(f->v,(f->asize+=f->inc_r)*f->nmemb);
+        if (f->v == NULL)
+            return NULL;
+    }
+    register size_t n = f->size++*f->nmemb;
+    return f->v+n;
+}
+
+void flexarr_free(flexarr *f)
+{
+    free(f->v);
+    f->v = NULL;
+    f->size = 0;
+    f->asize = 0;
+    free(f);
+}

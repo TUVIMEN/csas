@@ -78,7 +78,8 @@ int update_event(csas *cs)
     int *passed = NULL;
     size_t passedl = 0;
 
-    if ((int)event == 27) { cs->was_typed = false; return -1; }
+    if ((int)event == 27) {cs->was_typed = false; return -1;}
+
     cs->typed_keys[strlen(cs->typed_keys)] = event;
 
     for (size_t i = 0; i < keys_t; i++) {
@@ -312,31 +313,34 @@ static char *bulk(csas *cs, const int ws, const int selected, char **args, const
     bool comment_write;
     char *temp;
 
-    for (size_t i = 0; i < cs->size; i++) {
+    flexarr *base = cs->base;
+    struct xdir **vbase = (struct xdir**)base->v;
+
+    for (size_t i = 0; i < base->size; i++) {
         if (!(
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        !cs->base[i]->enable &&
+        !vbase[i]->enable &&
         #endif
-        cs->base[i]->size > 0))
+        vbase[i]->size > 0))
             continue;
 
         if (pathl) {
             if (flag & 0x2) {
-                if (!strstr(cs->base[i]->path,args[0]))
+                if (!strstr(vbase[i]->path,args[0]))
                     continue;
             }
-            else if ((strcmp(cs->base[i]->path,args[0]) != 0))
+            else if ((strcmp(vbase[i]->path,args[0]) != 0))
                 continue;
         }
 
         comment_write = flag&0x4;
-        for (size_t j = 0; j < cs->base[i]->size; j++) {
-            if (selected == -1 ? 1 : (cs->base[i]->xf[j].list[ws]&selected)) {
+        for (size_t j = 0; j < vbase[i]->size; j++) {
+            if (selected == -1 ? 1 : (vbase[i]->xf[j].list[ws]&selected)) {
                 if (!comment_write) {
-                    fprintf(file,"//\t%s\n",cs->base[i]->path);
+                    fprintf(file,"//\t%s\n",vbase[i]->path);
                     comment_write = 1;
                 }
-                temp = (flag & 0x1) ? mkpath(cs->base[i]->path,cs->base[i]->xf[j].name) : cs->base[i]->xf[j].name;
+                temp = (flag & 0x1) ? mkpath(vbase[i]->path,vbase[i]->xf[j].name) : vbase[i]->xf[j].name;
                 fprintf(file,"%s\n",temp);
             }
         }
@@ -360,25 +364,25 @@ static char *bulk(csas *cs, const int ws, const int selected, char **args, const
     fprintf(file,"#!%s\n\n",args[1]);
 
     if (filecopy[pos]) {
-        for (size_t i = 0; i < cs->size; i++) {
+        for (size_t i = 0; i < base->size; i++) {
             if (!(
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !cs->base[i]->enable &&
+            !vbase[i]->enable &&
             #endif
-            cs->base[i]->size > 0))
+            vbase[i]->size > 0))
                 continue;
 
             if (pathl) {
                 if (flag & 0x2) {
-                    if (!strstr(cs->base[i]->path,args[0]))
+                    if (!strstr(vbase[i]->path,args[0]))
                         continue;
                 }
-                else if ((strcmp(cs->base[i]->path,args[0]) != 0))
+                else if ((strcmp(vbase[i]->path,args[0]) != 0))
                     continue;
             }
 
-            for (size_t j = 0; j < cs->base[i]->size; j++) {
-                if (selected == -1 ? 1 : (cs->base[i]->xf[j].list[ws]&selected)) {
+            for (size_t j = 0; j < vbase[i]->size; j++) {
+                if (selected == -1 ? 1 : (vbase[i]->xf[j].list[ws]&selected)) {
                     while (filecopy[pos] == '\n') {
                         pos++;
                         j--;
@@ -393,14 +397,14 @@ static char *bulk(csas *cs, const int ws, const int selected, char **args, const
                         x = 0;
                         while (filecopy[pos] && filecopy[pos] != '\n') buffer[x++] = filecopy[pos++];
                         buffer[x] = '\0';
-                        temp = (flag & 0x1) ? mkpath(cs->base[i]->path,cs->base[i]->xf[j].name) : cs->base[i]->xf[j].name;
+                        temp = (flag & 0x1) ? mkpath(vbase[i]->path,vbase[i]->xf[j].name) : vbase[i]->xf[j].name;
                         if (x > 0 && strcmp(temp,buffer) != 0) {
                             fprintf(file,"%s ",args[3]);
                             if (!(flag & 0x1))
-                                temp = mkpath(cs->base[i]->path,temp);
+                                temp = mkpath(vbase[i]->path,temp);
                             atob(temp);
                             fprintf(file,"%s %s ",temp,args[4]);
-                            temp = mkpath(cs->base[i]->path,buffer);
+                            temp = mkpath(vbase[i]->path,buffer);
                             atob(temp);
                             fprintf(file,"%s %s\n",temp,args[5]);
                             writed = 1;
@@ -816,29 +820,31 @@ int cmd_getsize(char *src, csas *cs)
     }
 
     int temp;
+    flexarr *base = cs->base;
+    struct xdir **vbase = (struct xdir**)base->v;
 
-    for (size_t i = 0; i < cs->size; i++) {
+    for (size_t i = 0; i < base->size; i++) {
         if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        cs->base[i]->enable ||
+        vbase[i]->enable ||
         #endif
-        cs->base[i]->size < 1)
+        vbase[i]->size < 1)
             continue;
         if (path[0]) {
             if (flag&0x10) {
-                if (!strstr(cs->base[i]->path,path))
+                if (!strstr(vbase[i]->path,path))
                     continue;
             }
-            else if (strcmp(cs->base[i]->path,path) != 0)
+            else if (strcmp(vbase[i]->path,path) != 0)
                 continue;
         }
 
-        if ((temp = open(cs->base[i]->path,O_DIRECTORY)) == -1)
+        if ((temp = open(vbase[i]->path,O_DIRECTORY)) == -1)
             continue;
 
-        for (size_t j = 0; j < cs->base[i]->size; j++)
-            if (selected < 0 ? 1 : (cs->base[i]->xf[j].list[ws]&(1<<selected)))
-                GETSIZE(&cs->base[i]->xf[j],temp,flag);
+        for (size_t j = 0; j < vbase[i]->size; j++)
+            if (selected < 0 ? 1 : (vbase[i]->xf[j].list[ws]&(1<<selected)))
+                GETSIZE(&vbase[i]->xf[j],temp,flag);
         close(temp);
     }
 
@@ -1045,28 +1051,31 @@ int cmd_f_mod(char *src, csas *cs)
         free(path);
         path = stemp;
     }
+    
+    flexarr *base = cs->base;
+    struct xdir **vbase = (struct xdir**)base->v;
 
-    for (size_t i = 0; i < cs->size; i++) {
+    for (size_t i = 0; i < base->size; i++) {
         if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        cs->base[i]->enable ||
+        vbase[i]->enable ||
         #endif
-        cs->base[i]->size < 1)
+        vbase[i]->size < 1)
             continue;
-        if (path[0] && strcmp(cs->base[i]->path,path) != 0)
-            continue;
-
-        if ((fd2 = open(cs->base[i]->path,O_DIRECTORY)) == -1)
+        if (path[0] && strcmp(vbase[i]->path,path) != 0)
             continue;
 
-        for (size_t j = 0; j < cs->base[i]->size; j++) {
-            if (selected < 0 ? 1 : (cs->base[i]->xf[j].list[ws]&(1<<selected))) {
-                if (fstatat(fd2,cs->base[i]->xf[j].name,&ST,AT_SYMLINK_NOFOLLOW) == -1)
+        if ((fd2 = open(vbase[i]->path,O_DIRECTORY)) == -1)
+            continue;
+
+        for (size_t j = 0; j < vbase[i]->size; j++) {
+            if (selected < 0 ? 1 : (vbase[i]->xf[j].list[ws]&(1<<selected))) {
+                if (fstatat(fd2,vbase[i]->xf[j].name,&ST,AT_SYMLINK_NOFOLLOW) == -1)
                     continue;
                 count++;
                 size += ST.st_size;
                 if ((ST.st_mode&S_IFMT) == S_IFDIR) {
-					if ((fd3 = openat(fd2,cs->base[i]->xf[j].name,O_RDONLY)) != -1) {
+					if ((fd3 = openat(fd2,vbase[i]->xf[j].name,O_RDONLY)) != -1) {
 						get_dirsize(fd3,&count,&size,D_R|D_C|D_S);
 						close(fd3);
 					}
@@ -1091,25 +1100,25 @@ int cmd_f_mod(char *src, csas *cs)
         else if (si != -1) goto END;
     }
 
-    for (size_t i = 0; i < cs->size; i++) {
+    for (size_t i = 0; i < base->size; i++) {
         if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        cs->base[i]->enable ||
+        vbase[i]->enable ||
         #endif
-        cs->base[i]->size < 1)
+        vbase[i]->size < 1)
             continue;
-        if (path[0] && strcmp(cs->base[i]->path,path) != 0)
-            continue;
-
-        if ((fd2 = open(cs->base[i]->path,O_DIRECTORY)) == -1)
+        if (path[0] && strcmp(vbase[i]->path,path) != 0)
             continue;
 
-        for (size_t j = 0; j < cs->base[i]->size; j++) {
-            if (selected < 0 ? 1 : (cs->base[i]->xf[j].list[ws]&(1<<selected))) {
+        if ((fd2 = open(vbase[i]->path,O_DIRECTORY)) == -1)
+            continue;
+
+        for (size_t j = 0; j < vbase[i]->size; j++) {
+            if (selected < 0 ? 1 : (vbase[i]->xf[j].list[ws]&(1<<selected))) {
                 switch (Action) {
-                    case 1: file_rm(fd2,cs->base[i]->xf[j].name); break;
-                    case 2: file_cp(fd1,fd2,cs->base[i]->xf[j].name,buffer,arg); break;
-                    case 3: file_mv(fd1,fd2,cs->base[i]->xf[j].name,buffer,arg); break;
+                    case 1: file_rm(fd2,vbase[i]->xf[j].name); break;
+                    case 2: file_cp(fd1,fd2,vbase[i]->xf[j].name,buffer,arg); break;
+                    case 3: file_mv(fd1,fd2,vbase[i]->xf[j].name,buffer,arg); break;
                 }
             }
         }
@@ -1117,7 +1126,6 @@ int cmd_f_mod(char *src, csas *cs)
     }
     close(fd1);
 
-    update_size(cs);
     csas_cd(".",cs->current_ws,cs);
 
     END: ;
@@ -1334,29 +1342,32 @@ int cmd_select(char *src, csas *cs)
         path = stemp;
     }
 
-    for (size_t i = 0; i < cs->size; i++) {
+    flexarr *base = cs->base;
+    struct xdir **vbase = (struct xdir**)base->v;
+
+    for (size_t i = 0; i < base->size; i++) {
         if (
         #ifdef __THREADS_FOR_DIR_ENABLE__
-        cs->base[i]->enable ||
+        vbase[i]->enable ||
         #endif
-        cs->base[i]->size < 1)
+        vbase[i]->size < 1)
             continue;
         if (path[0]) {
             if (recursive) {
-                if (!strstr(cs->base[i]->path,path))
+                if (!strstr(vbase[i]->path,path))
                     continue;
             }
-            else if (strcmp(cs->base[i]->path,path) != 0)
+            else if (strcmp(vbase[i]->path,path) != 0)
                 continue;
         }
 
-        for (size_t j = 0; j < cs->base[i]->size; j++) {
-            if (selected < 0 ? 1 : (cs->base[i]->xf[j].list[workspace1]&(1<<selected))) {
+        for (size_t j = 0; j < vbase[i]->size; j++) {
+            if (selected < 0 ? 1 : (vbase[i]->xf[j].list[workspace1]&(1<<selected))) {
                 switch (mode)
                 {
-                    case -1: cs->base[i]->xf[j].list[workspace2] ^= 1<<toselected; break;
-                    case 0: cs->base[i]->xf[j].list[workspace2] &= ~(1<<toselected); break;
-                    case 1: cs->base[i]->xf[j].list[workspace2] |= 1<<toselected; break;
+                    case -1: vbase[i]->xf[j].list[workspace2] ^= 1<<toselected; break;
+                    case 0: vbase[i]->xf[j].list[workspace2] &= ~(1<<toselected); break;
+                    case 1: vbase[i]->xf[j].list[workspace2] |= 1<<toselected; break;
                 }
             }
         }
@@ -1600,25 +1611,19 @@ int cmd_console(char *src, csas *cs)
 
     args.cfg = flags;
 
+    flexarr *consoleh = cs->consoleh;
+
     while (n == -1 || n > 0) {
-        if (cs->consoleh.size == cs->consoleh.max_size) {
-            memset(cs->consoleh.history[0],0,cs->consoleh.alloc_r-1);
-            char *tmp = cs->consoleh.history[0];
-            for (size_t i = 0; i < cs->consoleh.size-1; i++)
-                cs->consoleh.history[i] = cs->consoleh.history[i+1];
-            cs->consoleh.history[cs->consoleh.size-1] = tmp;
-            cs->consoleh.size--;
-        }
+        if (consoleh->size == consoleh->max_size) {
+            char *tmp = memset(*((char**)consoleh->v),0,LINE_SIZE_MAX-1);
+            for (size_t i = 0; i < consoleh->size-1; i++)
+                ((char**)consoleh->v)[i] = ((char**)consoleh->v)[i+1];
+            ((char**)consoleh->v)[consoleh->size-1] = tmp;
+        } else
+            *((char**)flexarr_inc(consoleh)) = calloc(LINE_SIZE_MAX,1);
 
-        if (cs->consoleh.size == cs->consoleh.allocated) {
-            cs->consoleh.history = (char**)realloc(cs->consoleh.history,(cs->consoleh.allocated += cs->consoleh.inc_r)*sizeof(char*));
-            for (size_t i = cs->consoleh.allocated-cs->consoleh.inc_r; i < cs->consoleh.allocated; i++)
-                cs->consoleh.history[i] = (char*)calloc(sizeof(char),cs->consoleh.alloc_r);
-        }
-        cs->consoleh.size++;
-
-        console_getline(cs->win[5],cs,cs->consoleh.history,cs->consoleh.size,cs->consoleh.alloc_r-1,&args,first_text,add_text[0] ? add_text : NULL,expand_commands);
-        char *line = cs->consoleh.history[cs->consoleh.size-1];
+        console_getline(cs->win[5],cs,(char**)consoleh->v,consoleh->size,LINE_SIZE_MAX-1,&args,first_text,add_text[0] ? add_text : NULL,expand_commands);
+        char *line = ((char**)consoleh->v)[consoleh->size-1];
         if (strcmp(line,"exit") == 0) break;
         int r = command_run(line,cs);
         if (r != 0) {
@@ -1648,6 +1653,7 @@ int cmd_search(char *src, csas *cs)
     int selected = -1;
     int action = -1;
     char temp[1024];
+    flexarr *fl = cs->searchlist;
 
     while (src[pos]) {
         if (src[pos] && src[pos] == '-') {
@@ -1670,15 +1676,17 @@ int cmd_search(char *src, csas *cs)
                         action = (src[pos] == 'n' ? 2 : 1);
                         pos++;
                         pos += findfirst(src+pos,isspace,-1);
-                        if (src[pos]) {
+                        if (src[pos] && src[pos] != '-') {
                             mul = atoi(src+pos);
                             while (isdigit(src[pos])) pos++;
                         }
                         break;
+                    case 'l':
                     case 'N':
                     case 'E':
                     case 'e':
                         switch (src[pos]) {
+                            case 'l': action = 6; break;
                             case 'N': action = 3; break;
                             case 'e': action = 4; break;
                             case 'E': action = 5; break;
@@ -1697,38 +1705,39 @@ int cmd_search(char *src, csas *cs)
     switch (action) {
         case 1:
         case 2:
-            if (!cs->searchlist.size) break;
+            if (!fl->size) break;
             for (size_t i = 0; i < mul; i++) {
-                if (G_ES(cs->current_ws,1).name == cs->searchlist.list[cs->searchlist.pos]) {
+                if (G_ES(cs->current_ws,1).name == ((char**)fl->v)[cs->searchlist_pos]) {
                     if (action == 1) {
-                        if (cs->searchlist.pos == 0)
-                            cs->searchlist.pos = cs->searchlist.size-1;
+                        if (cs->searchlist_pos == 0)
+                            cs->searchlist_pos = fl->size-1;
                         else
-                            cs->searchlist.pos--;
+                            cs->searchlist_pos--;
                     } else {
-                        if (cs->searchlist.pos == cs->searchlist.size-1)
-                            cs->searchlist.pos = 0;
+                        if (cs->searchlist_pos == fl->size-1)
+                            cs->searchlist_pos = 0;
                         else
-                            cs->searchlist.pos++;
+                            cs->searchlist_pos++;
                     }
                 }
 
                 for (size_t j = 0; j < G_D(cs->current_ws,1)->size; j++) {
-                    if (G_D(cs->current_ws,1)->xf[j].name == cs->searchlist.list[cs->searchlist.pos]) {
+                    if (G_D(cs->current_ws,1)->xf[j].name == ((char**)fl->v)[cs->searchlist_pos]) {
                         move_d(j-G_S(cs->current_ws,1),cs,cs->current_ws,1);
                         break;
                     }
                 }
             }
+            if (s_Win3Enable)
+                    get_preview(cs);
             break;
         case 3:
         case 4:
         case 5:
-            free(cs->searchlist.list);
-            cs->searchlist.list = NULL;
-            cs->searchlist.allocated = 0;
-            cs->searchlist.size = 0;
-            cs->searchlist.pos = 0;
+            flexarr_free(fl);
+            cs->searchlist = flexarr_init(sizeof(char*),SEARCH_LIST_INC_RATE,-1);
+            fl = cs->searchlist;
+            cs->searchlist_pos = 0;
             int reti;
 
             for (size_t i = 0; i < G_D(cs->current_ws,1)->size; i++) {
@@ -1741,13 +1750,13 @@ int cmd_search(char *src, csas *cs)
                         reti = regexec(&regex,G_D(cs->current_ws,1)->xf[i].name,0,NULL,action == 5 ? REG_EXTENDED : 0);
                         if (reti) continue;
                         regfree(&regex);
-                    } else if (!strstr(G_D(cs->current_ws,1)->xf[i].name,temp))
+                    } else if (action == 6) {
+                        if (!strstr(G_D(cs->current_ws,1)->xf[i].name,temp))
+                            continue;
+                    } else if (!strcasestr(G_D(cs->current_ws,1)->xf[i].name,temp))
                         continue;
 
-                    if (cs->searchlist.size == cs->searchlist.allocated)
-                        cs->searchlist.list = (char**)realloc(cs->searchlist.list,(cs->searchlist.allocated+=cs->searchlist.inc_r)*(sizeof(char*)));
-                    cs->searchlist.size++;
-                    cs->searchlist.list[cs->searchlist.size-1] = G_D(cs->current_ws,1)->xf[i].name;
+                    *((char**)flexarr_inc(fl)) = G_D(cs->current_ws,1)->xf[i].name;
                 }
             }
             cmd_search("-n 1",cs);

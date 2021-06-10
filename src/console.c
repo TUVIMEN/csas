@@ -158,8 +158,7 @@ void console_getline(WINDOW *win, csas *cs, char **history, size_t size, size_t 
         wrefresh(win);
 
         switch (ev = getch()) {
-            case -1:
-                break;
+            case -1: break;
             case '\t':
                 if (expand != NULL)
                     expand(win,h,0,off,&tab_was_pressed,&ex,args,NULL);

@@ -100,9 +100,9 @@ typedef unsigned long long int ull;
 #define CSAS_ENOP   0x6 //there's no such option
 
 //at some point writing it started taking too much time
-#define G_D(x,y) cs->base[cs->ws[x].win[y]] // GET_DIR
-#define G_S(x,y) G_D(x,y)->selected[x]      // GET_SELECTED
-#define G_ES(x,y) G_D(x,y)->xf[G_S(x,y)]    // GET_ESELECTED
+#define G_D(x,y) ((struct xdir**)cs->base->v)[cs->ws[x].win[y]] // GET_DIR
+#define G_S(x,y) G_D(x,y)->selected[x]                          // GET_SELECTED
+#define G_ES(x,y) G_D(x,y)->xf[G_S(x,y)]                        // GET_ESELECTED
 
 //args for spawn()
 #define F_SILENT    0x1  //duplicate stdout and stderr with /dev/null
@@ -338,6 +338,15 @@ struct xdir {
 };
 
 typedef struct {
+    void *v;
+    size_t asize;
+    size_t size;
+    size_t nmemb;
+    size_t inc_r;
+    size_t max_size;
+} flexarr;
+
+typedef struct {
     char *path;
     int win[3];
     bool show_message;
@@ -356,9 +365,7 @@ struct set_option {
 typedef struct {
     int wx, wy, win_middle;
     WINDOW *win[6];
-    size_t size;
-    size_t asize;
-    struct xdir **base;
+    flexarr *base;
     int current_ws;
     workspace ws[WORKSPACE_N];
     #ifdef __USER_NAME_ENABLE__
@@ -371,21 +378,9 @@ typedef struct {
     #ifdef __FILESYSTEM_INFO_ENABLE__
     struct statfs fs;
     #endif
-    struct {
-        size_t allocated;
-        size_t size;
-        size_t max_size;
-        size_t inc_r;
-        size_t alloc_r;
-        char **history;
-    } consoleh;
-    struct {
-        size_t allocated;
-        size_t size;
-        size_t inc_r;
-        size_t pos;
-        char **list;
-    } searchlist;
+    flexarr *consoleh;
+    flexarr *searchlist;
+    size_t searchlist_pos;
     #ifndef __SAVE_PREVIEW__
     uchar *cpreview;
     ssize_t previewl;

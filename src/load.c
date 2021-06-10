@@ -378,11 +378,11 @@ int getdir(const char *path, csas *cs, const int ws, const int which, const char
         return -1;
 
     bool exists = false;
-
-    int found = -1;
+    flexarr *base = cs->base;
+    long int found = -1;
     
-    for (size_t i = 0; i < cs->size; i++) {
-        if (strcmp(cs->base[i]->path,temp) == 0) {
+    for (size_t i = 0; i < base->size; i++) {
+        if (strcmp(((struct xdir**)base->v)[i]->path,temp) == 0) {
             found = i;
             exists = true;
             break;
@@ -390,79 +390,61 @@ int getdir(const char *path, csas *cs, const int ws, const int which, const char
     }
 
     if (found == -1) {
-        if (cs->size == cs->asize) {
-            cs->base = (struct xdir**)realloc(cs->base,(cs->asize+=DIR_BASE_RATE)*sizeof(struct xdir*));
-            for (size_t i = cs->asize-DIR_BASE_RATE; i < cs->asize; i++) {
-                cs->base[i] = (struct xdir*)malloc(sizeof(struct xdir));
-                cs->base[i]->xf = NULL;
-                cs->base[i]->size = 0;
-                #ifdef __THREADS_FOR_DIR_ENABLE__
-                cs->base[i]->enable = false;
-                #endif
-                cs->base[i]->path = NULL;
-                cs->base[i]->ltop = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
-                cs->base[i]->selected = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
-                cs->base[i]->move_to = (char**)calloc(WORKSPACE_N,sizeof(char*));
-                cs->base[i]->changed = false;
-                cs->base[i]->oldsize = 0;
-                cs->base[i]->filter_set = false;
-                cs->base[i]->filter = NULL;
-            }
-        }
-        found = cs->size++;
+        found = base->size;
+        *(struct xdir**)flexarr_inc(base) = xdir_init();
     }
 
     cs->ws[ws].win[which] = found;
 
+    register struct xdir *fbase = ((struct xdir**)base->v)[found];
+
     if (!exists) {
-        cs->base[found]->permission_denied = 0;
-        cs->base[found]->inode = sfile1.st_ino;
-        cs->base[found]->ctime = sfile1.st_ctim;
-        cs->base[found]->path = strcpy(malloc(PATH_MAX),temp);
+        fbase->permission_denied = 0;
+        fbase->inode = sfile1.st_ino;
+        fbase->ctime = sfile1.st_ctim;
+        fbase->path = strcpy(malloc(PATH_MAX),temp);
     } else {
-        if (sfile1.st_ctim.tv_sec != cs->base[found]->ctime.tv_sec || sfile1.st_ctim.tv_nsec != cs->base[found]->ctime.tv_nsec) {
-            cs->base[found]->ctime = sfile1.st_ctim;
-            cs->base[found]->changed = true;
+        register struct timespec *sf_ctim = &sfile1.st_ctim, *fb_ctim = &fbase->ctime;
+        if (sf_ctim->tv_sec != fb_ctim->tv_sec || sf_ctim->tv_nsec != fb_ctim->tv_nsec) {
+            *fb_ctim = *sf_ctim;
+            fbase->changed = true;
         }
     }
 
-    if (cs->base[found]->permission_denied)
+    if (fbase->permission_denied)
         return -1;
 
     if (mode == 0 && exists) return -1;
 
-    if (mode == 1 && exists && !cs->base[found]->changed)
+    if (mode == 1 && exists && !fbase->changed)
         return -1;
 
     #ifdef __SORT_ELEMENTS_ENABLE__
-    cs->base[found]->sort_m = s_SortMethod;
+    fbase->sort_m = s_SortMethod;
     #endif
 
     struct loaddir_s *arg = malloc(sizeof(struct loaddir_s));
 
-    arg->d = cs->base[found];
+    arg->d = fbase;
     #ifdef __FOLLOW_PARENT_DIR__
     arg->b = cs;
     arg->ws = ws;
     arg->which = which;
-    if (searched_name)
-        arg->searched_name = strdup(searched_name);
-    else
-        arg->searched_name = NULL;
+    arg->searched_name = searched_name ? strdup(searched_name) : NULL;
     #endif
 
     #ifdef __THREADS_FOR_DIR_ENABLE__
-    if (cs->base[found]->enable)
-        pthread_join(cs->base[found]->thread,NULL);
-    cs->base[found]->enable = true;
+    if (fbase->enable)
+        pthread_join(fbase->thread,NULL);
+    fbase->enable = true;
 
-    pthread_create(&cs->base[found]->thread,NULL,dir_load,arg);
+    pthread_create(&fbase->thread,NULL,dir_load,arg);
     if (!threaded)
-        pthread_join(cs->base[found]->thread,NULL);
+        pthread_join(fbase->thread,NULL);
     #else
     dir_load(arg);
     #endif
-    cs->base[found]->changed = false;
+    fbase->changed = false;
 
     return 0;
 }
@@ -509,13 +491,15 @@ int csas_cd(const char *path, const int ws, csas *cs)
     #endif
     );
 
+    register struct xdir *xdr = G_D(ws,1);
+
     if (s_Win1Enable) {
         werase(cs->win[0]);
         if (s_Borders)
             setborders(cs,0);
         wrefresh(cs->win[0]);
 
-        if (G_D(ws,1)->path[0] == '/' && G_D(ws,1)->path[1] == '\0')
+        if (xdr->path[0] == '/' && xdr->path[1] == '\0')
             s_Win1Display = false;
         else
         {
@@ -551,7 +535,7 @@ int csas_cd(const char *path, const int ws, csas *cs)
     loaded == -1 &&
     #endif
         ws == cs->current_ws && s_Win3Enable) {
-        if (G_D(ws,1)->size == 0) {
+        if (xdr->size == 0) {
             werase(cs->win[2]);
             if (s_Borders)
                 setborders(cs,2);
@@ -559,11 +543,13 @@ int csas_cd(const char *path, const int ws, csas *cs)
         }
         if (
             #ifdef __THREADS_FOR_DIR_ENABLE__
-            !G_D(ws,1)->enable &&
+            !xdr->enable &&
             #endif
-            G_D(ws,1)->size > 0)
+            xdr->size > 0)
             get_preview(cs);
     }
     
+    update_size(cs);
+
     return 0;
 }

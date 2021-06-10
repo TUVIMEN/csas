@@ -21,10 +21,15 @@
 
 void addkey(char *c, char *v);
 void addcommand(const char *name, const uchar type, void *func, const size_t s, void *expand);
+
 int initcurses();
 csas *csas_init();
 void csas_run(csas *cs, const int argc, char **argv);
 void update_size(csas *cs);
+
+struct xdir *xdir_init();
+
+void xdir_free(struct xdir *xdr);
 void free_xfile(struct xfile **xf, size_t *size);
 void csas_free(csas *cs);
 
