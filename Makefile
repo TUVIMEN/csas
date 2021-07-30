@@ -1,20 +1,20 @@
-SHELL	=	/bin/bash
-CC	=	gcc -std=c11
+CC	=	gcc -std=c99
 LINK	=	-lpthread -lncursesw -ltinfow
-CFLAGS	=	-O2 -pipe -march=native -Wall -Wextra
+CFLAGS	=	-g -pipe -march=native -Wall -Wextra
 TARGET	=	csas
 
 MANDIR	=	/usr/local/man/man1
 BINDIR	=	/usr/bin
 
-OBJECTS = $(patsubst %.c, %.o, $(wildcard src/*.c))
+SRC=src/console.c  src/draw.c  src/expand.c  src/functions.c  src/inits.c  src/load.c  src/loading.c  src/main.c  src/preview.c  src/sort.c  src/useful.c
+OBJ = ${SRC:.c=.o}
 
-all: $(OBJECTS)
-	$(CC) $(LINK) $(CFLAGS) $^ -o $(TARGET)
-	strip --discard-all $(TARGET)
+all: ${OBJ}
+	${CC} ${LINK} ${CFLAGS} $^ -o ${TARGET}
+	#strip --discard-all ${TARGET}
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	${CC} ${CFLAGS} -c $< -o $@
 
 install: all
 	cp -f ${TARGET} ${BINDIR}

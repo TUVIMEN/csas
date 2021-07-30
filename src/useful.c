@@ -39,7 +39,8 @@ extern char *s_FileOpener;
 extern char *s_Values;
 extern char *s_editor;
 
-char *csas_strerror()
+char *
+csas_strerror()
 {
     if (csas_errno == 0)
         return strerror(errno);
@@ -56,7 +57,8 @@ char *csas_strerror()
     return err[csas_errno-1];
 }
 
-void die(const char *p, ...)
+void
+die(const char *p, ...)
 {
     va_list args;
     va_start(args,p);
@@ -66,7 +68,8 @@ void die(const char *p, ...)
     exit(-1);
 }
 
-static size_t parseargs(char *src, char **dest)
+static size_t
+parseargs(char *src, char **dest)
 {
     if (src == NULL) return 0;
     size_t x = 0;
@@ -127,7 +130,8 @@ static size_t parseargs(char *src, char **dest)
     return x;
 }
 
-int spawn(char *file, char *arg1, char *arg2, const uchar flag)
+int
+spawn(char *file, char *arg1, char *arg2, const uchar flag)
 {
     if (!file || !*file) return -1;
 
@@ -181,7 +185,8 @@ int spawn(char *file, char *arg1, char *arg2, const uchar flag)
     return 0;
 }
 
-char *stoa(ull value)
+char *
+stoa(ull value)
 {
     static char ret[8];
     if (value == 0) {
@@ -266,7 +271,8 @@ char *stoa(ull value)
     return ret;
 }
 
-int get_dirsize(const int fd, ull *count, ull *size, const uchar flag)
+int
+get_dirsize(const int fd, ull *count, ull *size, const uchar flag)
 {
     DIR *d = fdopendir(fd);
     if (d == NULL)
@@ -300,7 +306,8 @@ int get_dirsize(const int fd, ull *count, ull *size, const uchar flag)
 }
 
 #ifdef __COLOR_FILES_BY_EXTENSION__
-uchar check_extension(const char *name)
+uchar
+check_extension(const char *name)
 {
     register char *ret = memrchr(name,'.',strlen(name)-1);
 
@@ -315,7 +322,8 @@ uchar check_extension(const char *name)
 }
 #endif
 
-char *lsperms(const int mode)
+char *
+lsperms(const int mode)
 {
     const char *const rwx[] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
 	static char bits[11] = {0};
@@ -354,7 +362,8 @@ char *lsperms(const int mode)
 	return bits;
 }
 
-pid_t xfork(uchar flag)
+pid_t
+xfork(uchar flag)
 {
     int status;
     pid_t p = fork();
@@ -392,7 +401,8 @@ pid_t xfork(uchar flag)
     return p;
 }
 
-void file_run(char *path)
+void
+file_run(char *path)
 {
     if (strcmp(s_FileOpener,"NULL") != 0)
         spawn(s_FileOpener,path,NULL,F_NORMAL|F_WAIT);
@@ -456,7 +466,8 @@ void file_run(char *path)
     }
 }
 
-void file_rm(const int fd, const char *name)
+void
+file_rm(const int fd, const char *name)
 {
     struct stat sfile;
     fstatat(fd,name,&sfile,0);
@@ -482,7 +493,8 @@ void file_rm(const int fd, const char *name)
     }
 }
 
-void file_cp(const int fd1, const int fd2, const char *name, char *buffer, const mode_t arg)
+void
+file_cp(const int fd1, const int fd2, const char *name, char *buffer, const mode_t arg)
 {
     struct stat sfile;
     int fd3, fd4;
@@ -548,7 +560,8 @@ void file_cp(const int fd1, const int fd2, const char *name, char *buffer, const
     free(temp);
 }
 
-void file_mv(const int fd1, const int fd2, const char *name, char *buffer, const mode_t arg)
+void
+file_mv(const int fd1, const int fd2, const char *name, char *buffer, const mode_t arg)
 {
     struct stat sfile;
     int fd3, fd4;
@@ -613,13 +626,15 @@ void file_mv(const int fd1, const int fd2, const char *name, char *buffer, const
     free(temp);
 }
 
-size_t ttoa(const time_t *time, char *result)
+size_t
+ttoa(const time_t *time, char *result)
 {
     struct tm *tis = localtime(time);
     return sprintf(result,"%d-%02d-%.2d %02d:%02d ",tis->tm_year+1900,tis->tm_mon+1,tis->tm_mday,tis->tm_hour,tis->tm_min);
 }
 
-void path_shrink(char *path, const int max_size)
+void
+path_shrink(char *path, const int max_size)
 {
     int size = strlen(path), bottom;
     if (size > 2) bottom = 2;
@@ -637,7 +652,8 @@ void path_shrink(char *path, const int max_size)
     }
 }
 
-char *mkpath(const char *dir, const char *name)
+char *
+mkpath(const char *dir, const char *name)
 {
     static char path[PATH_MAX];
     strcpy(path,dir);
@@ -649,14 +665,16 @@ char *mkpath(const char *dir, const char *name)
 }
 
 
-size_t findfirst(const char *src, int (*func)(int), size_t n)
+size_t
+findfirst(const char *src, int (*func)(int), size_t n)
 {
     register size_t pos = 0;
     while (pos < n && src[pos] && func(src[pos])) pos++;
     return pos;
 }
 
-int get_word(char *dest, char *src, size_t n, size_t *dsize, size_t *ssize)
+int
+get_word(char *dest, char *src, size_t n, size_t *dsize, size_t *ssize)
 {
     if (n == 0 || dest == NULL || src == NULL) return -1;
     n--;
@@ -683,7 +701,8 @@ int get_word(char *dest, char *src, size_t n, size_t *dsize, size_t *ssize)
 
 extern struct set_alias aliases[];
 
-int atov(void *dest, const char *src, size_t *size, csas *cs, const uchar flag)
+int
+atov(void *dest, const char *src, size_t *size, csas *cs, const uchar flag)
 {
     size_t posb = 0, pose = 0;
     char line[LINE_SIZE_MAX];
@@ -791,7 +810,8 @@ int atov(void *dest, const char *src, size_t *size, csas *cs, const uchar flag)
  * The code for version compare is a modified version of the GLIBC
  * and uClibc implementation of strverscmp()
  */
-int strverscasecmp(const char *s1, const char *s2)
+int
+strverscasecmp(const char *s1, const char *s2)
 {
     #define  S_N    0x0
     #define  S_I    0x3
@@ -853,7 +873,8 @@ int strverscasecmp(const char *s1, const char *s2)
     }
 }
 
-wchar_t charconv(const char c)
+wchar_t
+charconv(const char c)
 {
     register char ret = c&127;
     static char chararray[128] = {
@@ -868,7 +889,8 @@ wchar_t charconv(const char c)
     return btowc(chararray[(int)ret]);
 }
 
-wchar_t *atok(char *src, wchar_t *dest)
+wchar_t *
+atok(char *src, wchar_t *dest)
 {
     size_t i, h;
     for (i = 0, h = 0; src[i]; i++) {
@@ -925,7 +947,8 @@ wchar_t *atok(char *src, wchar_t *dest)
     return dest;
 }
 
-size_t atop(char *dest, const char *src, const char delim, csas *cs)
+size_t
+atop(char *dest, const char *src, const char delim, csas *cs)
 {
     size_t pos = 0, x;
     src += findfirst(src,isspace,-1);
@@ -950,7 +973,8 @@ size_t atop(char *dest, const char *src, const char delim, csas *cs)
     return pos;
 }
 
-char *atob(char *s)
+char *
+atob(char *s)
 {
     for (size_t i = 0; i < strlen(s); i++) {
         if(s[i] == '\\' || s[i] == '\"' || s[i] == '\'' || s[i] == ' ' || s[i] == '(' || s[i] == ')' || s[i] == '[' || s[i] == ']' || s[i] == '{' || s[i] == '}') {

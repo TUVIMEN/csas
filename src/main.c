@@ -20,7 +20,8 @@
 #include "inits.h"
 #include <signal.h>
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     setlocale(LC_ALL, "");
     signal(SIGINT,SIG_IGN);

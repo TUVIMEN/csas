@@ -51,7 +51,8 @@ extern li s_Win1Enable;
 extern li s_Win1Display;
 
 #ifdef __UPDATE_FILES__
-void updatefile(struct xfile *xf, const char *path)
+void
+updatefile(struct xfile *xf, const char *path)
 {
     int fd = open(path,O_DIRECTORY);
     if (fd == -1) return;
@@ -117,7 +118,8 @@ void updatefile(struct xfile *xf, const char *path)
 #endif
 
 
-static uchar mode_to_type(const mode_t mode)
+static
+uchar mode_to_type(const mode_t mode)
 {
     switch (mode & S_IFMT) {
         case S_IFBLK:  return T_BDEV;
@@ -131,7 +133,8 @@ static uchar mode_to_type(const mode_t mode)
     return 0;
 }
 
-static void *dir_load(void *arg)
+static void
+*dir_load(void *arg)
 {
     struct xdir *nd = ((struct loaddir_s*)arg)->d;
     #ifdef __FOLLOW_PARENT_DIR__
@@ -351,7 +354,8 @@ static void *dir_load(void *arg)
     return NULL;
 }
 
-int getdir(const char *path, csas *cs, const int ws, const int which, const char mode
+int
+getdir(const char *path, csas *cs, const int ws, const int which, const char mode
 #ifdef __FOLLOW_PARENT_DIR__
 , char *searched_name
 #endif
@@ -449,7 +453,8 @@ int getdir(const char *path, csas *cs, const int ws, const int which, const char
     return 0;
 }
 
-int csas_cd(const char *path, const int ws, csas *cs)
+int
+csas_cd(const char *path, const int ws, csas *cs)
 {
     char npath[PATH_MAX]
     #ifdef __FOLLOW_PARENT_DIR__

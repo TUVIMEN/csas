@@ -26,7 +26,8 @@ extern struct set_option cfg_names[];
 extern struct command *commands;
 extern size_t commandsl;
 
-static void expand_arg_n_free(struct expand_arg *s)
+static void
+expand_arg_n_free(struct expand_arg *s)
 {
     for (register size_t i = 0; i < s->s; i++)
         free(s->a[i].p);
@@ -36,7 +37,8 @@ static void expand_arg_n_free(struct expand_arg *s)
     s->as = 0;
 }
 
-static void expand_arg_s_free(struct expand_arg *s)
+static void
+expand_arg_s_free(struct expand_arg *s)
 {
     free(s->a);
     s->a = NULL;
@@ -44,7 +46,8 @@ static void expand_arg_s_free(struct expand_arg *s)
     s->as = 0;
 }
 
-static int expand_dir_file(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, bool only_dir, char **end)
+static int
+expand_dir_file(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, bool only_dir, char **end)
 {
     if (arr->sfree == NULL)
         arr->sfree = expand_arg_n_free;
@@ -173,13 +176,16 @@ static int expand_dir_file(WINDOW *win, char *line, size_t pos, short int off, b
     return 0;
 }
 
-int expand_file(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end)
+int
+expand_file(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end)
     {return expand_dir_file(win,line,pos,off,tab_was_pressed,arr,args,0,end);}
 
-int expand_dir(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end)
+int
+expand_dir(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end)
     {return expand_dir_file(win,line,pos,off,tab_was_pressed,arr,args,1,end);}
 
-int expand_shell_commands(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end)
+int
+expand_shell_commands(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end)
 {
     if (arr->sfree == NULL)
         arr->sfree = expand_arg_n_free;
@@ -253,7 +259,8 @@ int expand_shell_commands(WINDOW *win, char *line, size_t pos, short int off, bo
     return 0;
 }
 
-int expand_shell(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end)
+int
+expand_shell(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end)
 {
     char *e;
     int ret = expand_shell_commands(win,line,pos,off,tab_was_pressed,arr,args,&e);
@@ -262,7 +269,8 @@ int expand_shell(WINDOW *win, char *line, size_t pos, short int off, bool *tab_w
     return ret;
 }
 
-int expand_options(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end)
+int
+expand_options(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end)
 {
     if (arr->sfree == NULL)
         arr->sfree = expand_arg_s_free;
@@ -316,7 +324,8 @@ int expand_options(WINDOW *win, char *line, size_t pos, short int off, bool *tab
     return 0;
 }
 
-int expand_commands(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end)
+int
+expand_commands(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end)
 {
     if (arr->sfree == NULL)
         arr->sfree = expand_arg_s_free;

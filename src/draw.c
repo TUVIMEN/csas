@@ -67,7 +67,8 @@ extern li s_C_Bar_Dir;
 extern li s_C_Bar_Name;
 extern li s_Bar2Enable;
 
-void set_message(csas *cs, const int attr, const char *fmt, ...)
+void
+set_message(csas *cs, const int attr, const char *fmt, ...)
 {
     struct winargs args = {stdscr,0,0,-1,1,1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,0};
     console_resize(cs->win[5],&args);
@@ -82,7 +83,8 @@ void set_message(csas *cs, const int attr, const char *fmt, ...)
     cs->ws[cs->current_ws].show_message = true;
 }
 
-void setborders(csas *cs, const int which) {
+void
+setborders(csas *cs, const int which) {
     if ((which == -1 || which == 0) && s_Win1Enable) {
         wattron(cs->win[0],s_C_Borders);
         wborder(cs->win[0],s_WindowBorder[0],s_WindowBorder[1],s_WindowBorder[2],s_WindowBorder[3],s_WindowBorder[4],s_WindowBorder[5],s_WindowBorder[6],s_WindowBorder[7]);
@@ -100,7 +102,8 @@ void setborders(csas *cs, const int which) {
     }
 }
 
-static int colorel(const struct xfile *src, const bool select)
+static int
+colorel(const struct xfile *src, const bool select)
 {
     register int set = 0, col = 0;
 
@@ -146,7 +149,8 @@ static int colorel(const struct xfile *src, const bool select)
 }
 
 #ifdef __FILESYSTEM_INFO_ENABLE__
-static char *fsname(const li ftype)
+static
+char *fsname(const li ftype)
 {
     switch (ftype) {
         case 0xadf5:      return " ADFS_SUPER_MAGIC";
@@ -231,7 +235,8 @@ static char *fsname(const li ftype)
 }
 #endif
 
-static void flagstoa(size_t *size, const int flags, char *result, struct xfile *cs)
+static void
+flagstoa(size_t *size, const int flags, char *result, struct xfile *cs)
 {
     #ifdef __FILE_GROUPS_ENABLE__
     struct group  *gr;
@@ -345,7 +350,8 @@ static void flagstoa(size_t *size, const int flags, char *result, struct xfile *
     }
 }
 
-void csas_draw(csas *cs, const int which)
+void
+csas_draw(csas *cs, const int which)
 {
     int color, line_off1, line_off2;;
     char NameTemp[PATH_MAX];

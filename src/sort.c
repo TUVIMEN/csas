@@ -25,7 +25,8 @@
 
 extern li *s_BetterFiles;
 
-static bool ismatching(const uchar src)
+static bool
+ismatching(const uchar src)
 {
     for (register int i = 0; s_BetterFiles[i] != 0; i++)
         if (src == s_BetterFiles[i])
@@ -33,47 +34,59 @@ static bool ismatching(const uchar src)
     return 0;
 }
 
-static int cmp_type(struct xfile *el1, struct xfile *el2)
+static int
+cmp_type(struct xfile *el1, struct xfile *el2)
     {return el1->type > el2->type;}
 #ifdef __FILE_SIZE_ENABLE__
-static int cmp_size(struct xfile *el1, struct xfile *el2)
+static int
+cmp_size(struct xfile *el1, struct xfile *el2)
     {return el1->size < el2->size;}
 #endif
-static int cmp_name(struct xfile *el1, struct xfile *el2)
+static int
+cmp_name(struct xfile *el1, struct xfile *el2)
     {return strcasecmp(el1->name,el2->name);}
-static int cmp_lname(struct xfile *el1, struct xfile *el2)
+static int
+cmp_lname(struct xfile *el1, struct xfile *el2)
     {return strcmp(el1->name,el2->name);}
 #ifdef __MTIME_ENABLE__
-static int cmp_mtime(struct xfile *el1, struct xfile *el2)
+static int
+cmp_mtime(struct xfile *el1, struct xfile *el2)
     {return el1->mtim > el2->mtim;}
 #endif
 #ifdef __ATIME_ENABLE__
-static int cmp_atime(struct xfile *el1, struct xfile *el2)
+static int
+cmp_atime(struct xfile *el1, struct xfile *el2)
     {return el1->atim > el2->atim;}
 #endif
 #ifdef __CTIME_ENABLE__
-static int cmp_ctime(struct xfile *el1, struct xfile *el2)
+static int
+cmp_ctime(struct xfile *el1, struct xfile *el2)
     {return el1->ctim > el2->ctim;}
 #endif
 #ifdef __FILE_GROUPS_ENABLE__
-static int cmp_gid(struct xfile *el1, struct xfile *el2)
+static int
+cmp_gid(struct xfile *el1, struct xfile *el2)
     {return el1->gr > el2->gr;}
 #endif
 #ifdef __FILE_GROUPS_ENABLE__
-static int cmp_uid(struct xfile *el1, struct xfile *el2)
+static int
+cmp_uid(struct xfile *el1, struct xfile *el2)
     {return el1->pw > el2->pw;}
 #endif
-static int cmp_zname(struct xfile *el1, struct xfile *el2)
+static int
+cmp_zname(struct xfile *el1, struct xfile *el2)
 {
     char *n1 = el1->name, *n2 = el2->name;
     while (*n1 == '0') n1++;
     while (*n2 == '0') n2++;
     return strverscasecmp(n1,n2);
 }
-static int cmp_lzname(struct xfile *el1, struct xfile *el2)
+static int
+cmp_lzname(struct xfile *el1, struct xfile *el2)
     { return strverscmp(el1->name,el2->name); }
 
-int (*mas[])(struct xfile*, struct xfile*) = {
+int
+(*mas[])(struct xfile*, struct xfile*) = {
     [0]=cmp_type,
     #ifdef __FILE_SIZE_ENABLE__
     [1]=cmp_size,
@@ -96,7 +109,8 @@ int (*mas[])(struct xfile*, struct xfile*) = {
     #endif
 };
 
-static int comp(const void *el1, const void *el2, void *flag)
+static int
+comp(const void *el1, const void *el2, void *flag)
 {
     if (*(ull*)flag & SORT_BETTER_FILES)
     {
@@ -114,7 +128,8 @@ static int comp(const void *el1, const void *el2, void *flag)
     return (*mas[(*(ull*)flag&SORT_IF)-1])((struct xfile*)el1,(struct xfile*)el2);
 }
 
-static size_t find_border(const struct xfile *xf, size_t size)
+static size_t
+find_border(const struct xfile *xf, size_t size)
 {
     register size_t ret = 0;
     for (register size_t i = 0; i < size && ret == 0; i++)
@@ -122,7 +137,8 @@ static size_t find_border(const struct xfile *xf, size_t size)
     return ret;
 }
 
-void sort_xfile(struct xfile *xf, const size_t size, ull flag)
+void
+sort_xfile(struct xfile *xf, const size_t size, ull flag)
 {
     if ((flag&SORT_IF) != SORT_NONE)
         qsort_r(xf,size,sizeof(struct xfile),comp,&flag);

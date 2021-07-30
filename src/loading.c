@@ -25,7 +25,8 @@
 #ifdef __LOAD_CONFIG_ENABLE__
 extern struct set_alias aliases[];
 
-void get_env(char *dest, const char *src, size_t *n, size_t *x)
+void
+get_env(char *dest, const char *src, size_t *n, size_t *x)
 {
     size_t end = strchr(src+*n,'}')-(src+*n);
     char temp[NAME_MAX], *temp2;
@@ -41,7 +42,8 @@ void get_env(char *dest, const char *src, size_t *n, size_t *x)
     (*x)++;
 }
 
-void get_clearline(char *dest, const char *src, size_t *n)
+void
+get_clearline(char *dest, const char *src, size_t *n)
 {
     *n += findfirst(src+(*n),isspace,-1);
     size_t x = 0;
@@ -151,7 +153,8 @@ void get_clearline(char *dest, const char *src, size_t *n)
     }
 }
 
-void config_load(const char *path, csas *cs)
+void
+config_load(const char *path, csas *cs)
 {
     int fd;
     if ((fd = open(path,O_RDONLY)) == -1)

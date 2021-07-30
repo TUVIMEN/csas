@@ -31,7 +31,8 @@ extern li s_DirLoadingMode;
 extern li s_ThreadsForFile;
 extern li s_ThreadsForDir;
 
-void run_preview(WINDOW *w, uchar *c, ssize_t size, uli flags)
+void
+run_preview(WINDOW *w, uchar *c, ssize_t size, uli flags)
 {
     register int posx = 1+s_Borders*2, posy = s_Borders;
 
@@ -53,7 +54,8 @@ void run_preview(WINDOW *w, uchar *c, ssize_t size, uli flags)
 static int threads_size = 0;
 #endif
 
-static void *getfromfile(void *arg)
+static void *
+getfromfile(void *arg)
 {
     #ifdef __THREADS_FOR_FILE_ENABLE__
     threads_size++;
@@ -176,7 +178,8 @@ static void *getfromfile(void *arg)
     return NULL;
 }
 
-void get_preview(csas *cs)
+void
+get_preview(csas *cs)
 {
     #ifdef __THREADS_FOR_FILE_ENABLE__
     if (threads_size >= s_PreviewMaxThreads)

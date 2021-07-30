@@ -31,7 +31,8 @@ extern struct set_alias aliases[];
 extern struct command *commands;
 extern size_t commandsl;
 
-int command_run(char *src, csas *cs)
+int
+command_run(char *src, csas *cs)
 {
     csas_errno = 0;
     char temp[16384];
@@ -81,7 +82,8 @@ int command_run(char *src, csas *cs)
     return 0;
 }
 
-void console_resize(WINDOW *win, const struct winargs *args)
+void
+console_resize(WINDOW *win, const struct winargs *args)
 {
     int sizex=0,sizey=0,posx=0,posy=0;
 
@@ -127,7 +129,8 @@ void console_resize(WINDOW *win, const struct winargs *args)
     wrefresh(win);
 }
 
-void console_getline(WINDOW *win, csas *cs, char **history, size_t size, size_t max, struct winargs *args, char *first, char *add,
+void
+console_getline(WINDOW *win, csas *cs, char **history, size_t size, size_t max, struct winargs *args, char *first, char *add,
     int (*expand)(WINDOW *win, char *line, size_t pos, short int off, bool *tab_was_pressed, struct expand_arg *arr, struct winargs *args, char **end))
 {
     curs_set(1);

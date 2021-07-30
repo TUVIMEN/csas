@@ -33,7 +33,8 @@
 #include "loading.h"
 #endif
 
-void addkey(char *c, char *v)
+void
+addkey(char *c, char *v)
 {
     if (keys_t == keys_a) {
         keys = (xkey*)realloc(keys,(keys_a+=32)*sizeof(xkey));
@@ -63,7 +64,8 @@ void addkey(char *c, char *v)
     strcpy(keys[found].value,v);
 }
 
-void addcommand(const char *name, const uchar type, void *func, const size_t s, void *expand)
+void
+addcommand(const char *name, const uchar type, void *func, const size_t s, void *expand)
 {
     if (commandsl == commandsa)
         commands = realloc(commands,(commandsa+=32)*sizeof(struct command));
@@ -88,7 +90,8 @@ void addcommand(const char *name, const uchar type, void *func, const size_t s, 
     commands[found].func = (type == 'f') ? func : memcpy(malloc(s),func,s);
 }
 
-static void commands_init()
+static void
+commands_init()
 {
     addcommand("move",'f',cmd_move,8,NULL);
     addcommand("fastselect",'f',cmd_fastselect,8,NULL);
@@ -120,7 +123,8 @@ static void commands_init()
     addcommand("filter",'f',cmd_filter,8,NULL);
 }
 
-static void keys_init()
+static void
+keys_init()
 {
     addkey("q","quit");
     addkey("Q","quit -f");
@@ -236,7 +240,8 @@ static void keys_init()
     addkey("U","undo -p");
 }
 
-static void settings_init()
+static void
+settings_init()
 {
     s_FileOpener                    = strcpy(malloc(PATH_MAX),"NULL");
     s_shell                         = strcpy(malloc(PATH_MAX),"sh");
@@ -272,7 +277,8 @@ static void settings_init()
     s_C_Group[7]		            = COLOR_PAIR(8);
 }
 
-int initcurses()
+int
+initcurses()
 {
     //newterm(NULL,stderr,stdin);
 	initscr();
@@ -298,7 +304,8 @@ int initcurses()
     return 0;
 }
 
-csas *csas_init()
+csas *
+csas_init()
 {
     csas *cs = (csas*)malloc(sizeof(csas));
 
@@ -374,7 +381,8 @@ csas *csas_init()
     return cs;
 }
 
-void csas_run(csas *cs, const int argc, char **argv)
+void
+csas_run(csas *cs, const int argc, char **argv)
 {
     time_t ActualTime, PastTime = 0;
     struct timespec MainTimer;
@@ -460,7 +468,8 @@ void csas_run(csas *cs, const int argc, char **argv)
     csas_free(cs);
 }
 
-void update_size(csas *cs)
+void
+update_size(csas *cs)
 {
     clear();
     getmaxyx(stdscr,cs->wy,cs->wx);
@@ -532,7 +541,8 @@ void update_size(csas *cs)
     }
 }
 
-struct xdir *xdir_init()
+struct
+xdir *xdir_init()
 {
     struct xdir *ret = calloc(sizeof(struct xdir),1);
     ret->ltop = (size_t*)calloc(WORKSPACE_N,sizeof(size_t));
@@ -541,7 +551,8 @@ struct xdir *xdir_init()
     return ret;
 }
 
-void xdir_free(struct xdir *xdr)
+void
+xdir_free(struct xdir *xdr)
 {
     free(xdr->path);
     free(xdr->selected);
@@ -554,7 +565,8 @@ void xdir_free(struct xdir *xdr)
     free(xdr);
 }
 
-void free_xfile(struct xfile **xf, size_t *size)
+void
+free_xfile(struct xfile **xf, size_t *size)
 {
     for (size_t i = 0; i < *size; i++) {
         free((*xf)[i].name);
@@ -567,7 +579,8 @@ void free_xfile(struct xfile **xf, size_t *size)
     *size = 0;
 }
 
-void csas_free(csas *cs)
+void
+csas_free(csas *cs)
 {
     register flexarr *tmp;
     tmp = cs->base;

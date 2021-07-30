@@ -46,7 +46,8 @@ extern li s_CopyBufferSize;
 extern li s_DirLoadingMode;
 extern li s_C_Error;
 
-void change_workspace(csas *cs, const int num)
+void
+change_workspace(csas *cs, const int num)
 {
     register int temp = cs->current_ws;
     cs->current_ws = num;
@@ -61,7 +62,8 @@ void change_workspace(csas *cs, const int num)
         csas_cd(G_D(num,1)->path,num,cs);
 }
 
-int update_event(csas *cs)
+int
+update_event(csas *cs)
 {
     int event = getch();
     if (event == -1) return -1;
@@ -154,7 +156,8 @@ int update_event(csas *cs)
     return (passedl == 0) ? -1 : passed[0];
 }
 
-static void godown(csas *cs, const int ws, const int which)
+static void
+godown(csas *cs, const int ws, const int which)
 {
     if (cs->ws[ws].visual) {
         for (size_t i = G_S(ws,which); i < G_D(ws,which)->size; i++)
@@ -167,7 +170,8 @@ static void godown(csas *cs, const int ws, const int which)
     G_S(ws,which) = G_D(ws,which)->size-1;
 }
 
-static void gotop(csas *cs, const int ws, const int which)
+static void
+gotop(csas *cs, const int ws, const int which)
 {
     if (cs->ws[ws].visual) {
         for (int i = G_S(ws,which); i > -1; i--)
@@ -176,7 +180,8 @@ static void gotop(csas *cs, const int ws, const int which)
     G_D(ws,which)->ltop[ws] = 0;
 }
 
-static void move_d(li n, csas *cs, const int ws, const int which)
+static void
+move_d(li n, csas *cs, const int ws, const int which)
 {
     li f = n;
     uchar ff = 0;
@@ -252,7 +257,8 @@ static void move_d(li n, csas *cs, const int ws, const int which)
     }
 }
 
-void csas_exit(csas *cs, const bool force)
+void
+csas_exit(csas *cs, const bool force)
 {
     if (force) goto END;
 
@@ -279,7 +285,8 @@ void csas_exit(csas *cs, const bool force)
     cs->exit_time = true;
 }
 
-void move_to(csas *cs, const int ws, const int which, const char *name)
+void
+move_to(csas *cs, const int ws, const int which, const char *name)
 {
     if (strcmp(G_ES(ws,which).name,name) == 0)
         return;
@@ -301,7 +308,8 @@ void move_to(csas *cs, const int ws, const int which, const char *name)
     move_d(n,cs,ws,which);
 }
 
-static char *bulk(csas *cs, const int ws, const int selected, char **args, const uchar flag)
+static char *
+bulk(csas *cs, const int ws, const int selected, char **args, const uchar flag)
 {
     char tmpfile[PATH_MAX];
     strcpy(tmpfile,TEMPTEMP);
@@ -431,7 +439,8 @@ static char *bulk(csas *cs, const int ws, const int selected, char **args, const
 }
 
 
-int cmd_alias(char *src, csas *cs)
+int
+cmd_alias(char *src, csas *cs)
 {
     csas_errno = 0;
     size_t pos = 0;
@@ -445,7 +454,8 @@ int cmd_alias(char *src, csas *cs)
     return 0;
 }
 
-int cmd_rename(char *src, csas *cs)
+int
+cmd_rename(char *src, csas *cs)
 {
     csas_errno = 0;
     struct winargs args = {stdscr,0,0,-1,1,1,-1,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,-1,-1,0};
@@ -456,7 +466,8 @@ int cmd_rename(char *src, csas *cs)
     return rename(G_ES(cs->current_ws,1).name,n);
 }
 
-int cmd_set(char *src, csas *cs)
+int
+cmd_set(char *src, csas *cs)
 {
     csas_errno = 0;
     size_t pos = 0;
@@ -480,7 +491,8 @@ int cmd_set(char *src, csas *cs)
 }
 
 #ifdef __LOAD_CONFIG_ENABLE__
-int cmd_source(char *src, csas *cs)
+int
+cmd_source(char *src, csas *cs)
 {
     csas_errno = 0;
     char temp[8192];
@@ -491,7 +503,8 @@ int cmd_source(char *src, csas *cs)
 }
 #endif
 
-int cmd_map(char *src, csas *cs)
+int
+cmd_map(char *src, csas *cs)
 {
     csas_errno = 0;
     size_t pos = 0;
@@ -506,7 +519,8 @@ int cmd_map(char *src, csas *cs)
     return 0;
 }
 
-int cmd_move(char *src, csas *cs)
+int
+cmd_move(char *src, csas *cs)
 {
     csas_errno = 0;
     size_t pos = 0;
@@ -580,7 +594,8 @@ int cmd_move(char *src, csas *cs)
     return 0;
 }
 
-int cmd_quit(char *src, csas *cs)
+int
+cmd_quit(char *src, csas *cs)
 {
     csas_errno = 0;
     bool force = false;
@@ -590,7 +605,8 @@ int cmd_quit(char *src, csas *cs)
     return 0;
 }
 
-int cmd_cd(char *src, csas *cs)
+int
+cmd_cd(char *src, csas *cs)
 {
     csas_errno = 0;
     size_t pos = 0;
@@ -617,7 +633,8 @@ int cmd_cd(char *src, csas *cs)
     return csas_cd(path,ws,cs);
 }
 
-int cmd_gotop(char *src, csas *cs)
+int
+cmd_gotop(char *src, csas *cs)
 {
     csas_errno = 0;
     size_t pos = 0, target = atol(cs->typed_keys);
@@ -665,7 +682,8 @@ int cmd_gotop(char *src, csas *cs)
     return 0;
 }
 
-int cmd_godown(char *src, csas *cs)
+int
+cmd_godown(char *src, csas *cs)
 {
     csas_errno = 0;
     size_t pos = 0, target = atol(cs->typed_keys);
@@ -712,7 +730,8 @@ int cmd_godown(char *src, csas *cs)
     return 0;
 }
 
-int cmd_change_workspace(char *src, csas *cs)
+int
+cmd_change_workspace(char *src, csas *cs)
 {
     csas_errno = 0;
     change_workspace(cs,atoi(src));
@@ -721,7 +740,8 @@ int cmd_change_workspace(char *src, csas *cs)
 
 #ifdef __FILE_SIZE_ENABLE__
 
-static void GETSIZE(struct xfile *xf, const int fd, const uchar flag)
+static void
+GETSIZE(struct xfile *xf, const int fd, const uchar flag)
 {
     if ((xf->type&T_GT) == T_DIR) {
         int tfd;
@@ -741,7 +761,8 @@ static void GETSIZE(struct xfile *xf, const int fd, const uchar flag)
     }
 }
 
-int cmd_getsize(char *src, csas *cs)
+int
+cmd_getsize(char *src, csas *cs)
 {
     csas_errno = 0;
     size_t pos = 0;
@@ -856,7 +877,8 @@ int cmd_getsize(char *src, csas *cs)
 
 #endif
 
-char *___SETGROUP(char *src, csas *cs)
+char *
+___SETGROUP(char *src, csas *cs)
 {
     csas_errno = 0;
     cs->ws[cs->current_ws].sel_group = atoi(src);
@@ -865,7 +887,8 @@ char *___SETGROUP(char *src, csas *cs)
     return 0;
 }
 
-int cmd_fastselect(char *src, csas *cs)
+int
+cmd_fastselect(char *src, csas *cs)
 {
     csas_errno = 0;
     if (
@@ -881,7 +904,8 @@ int cmd_fastselect(char *src, csas *cs)
     return 0;
 }
 
-int cmd_open_with(char *src, csas *cs)
+int
+cmd_open_with(char *src, csas *cs)
 {
     csas_errno = 0;
     if (G_D(cs->current_ws,1)->size == 0) return 0;
@@ -893,7 +917,8 @@ int cmd_open_with(char *src, csas *cs)
     return spawn(temp,G_ES(cs->current_ws,1).name,NULL,F_NORMAL|F_WAIT);
 }
 
-int cmd_togglevisual(char *src, csas *cs)
+int
+cmd_togglevisual(char *src, csas *cs)
 {
     csas_errno = 0;
     cs->ws[cs->current_ws].visual = !cs->ws[cs->current_ws].visual;
@@ -902,7 +927,8 @@ int cmd_togglevisual(char *src, csas *cs)
     return 0;;
 }
 
-int cmd_f_mod(char *src, csas *cs)
+int
+cmd_f_mod(char *src, csas *cs)
 {
     csas_errno = 0;
     uchar Action = 0;
@@ -1138,7 +1164,8 @@ int cmd_f_mod(char *src, csas *cs)
     return 0;
 }
 
-static void GETDIR(char *path, csas *cs, uchar mode
+static void
+GETDIR(char *path, csas *cs, uchar mode
 #ifdef __THREADS_FOR_DIR_ENABLE__
 , bool threads
 #endif
@@ -1174,7 +1201,8 @@ static void GETDIR(char *path, csas *cs, uchar mode
     return;
 }
 
-int cmd_load(char *src, csas *cs) {
+int
+cmd_load(char *src, csas *cs) {
     csas_errno = 0;
     size_t pos = 0;
     int mode = s_DirLoadingMode;
@@ -1229,7 +1257,8 @@ int cmd_load(char *src, csas *cs) {
     return r;
 }
 
-int cmd_select(char *src, csas *cs)
+int
+cmd_select(char *src, csas *cs)
 {
     csas_errno = 0;
     size_t pos = 0;
@@ -1379,7 +1408,8 @@ int cmd_select(char *src, csas *cs)
     return 0;
 }
 
-int cmd_exec(char *src, csas *cs)
+int
+cmd_exec(char *src, csas *cs)
 {
     csas_errno = 0;
     size_t pos = 0;
@@ -1411,7 +1441,8 @@ int cmd_exec(char *src, csas *cs)
     return spawn(temp,NULL,NULL,flag);
 }
 
-int cmd_bulk(char *src, csas *cs)
+int
+cmd_bulk(char *src, csas *cs)
 {
     csas_errno = 0;
     size_t pos = 0;
@@ -1496,7 +1527,8 @@ int cmd_bulk(char *src, csas *cs)
     return 0;
 }
 
-int cmd_console(char *src, csas *cs)
+int
+cmd_console(char *src, csas *cs)
 {
     csas_errno = 0;
     size_t pos = 0;
@@ -1639,7 +1671,8 @@ int cmd_console(char *src, csas *cs)
     return 0;
 }
 
-int cmd_search(char *src, csas *cs)
+int
+cmd_search(char *src, csas *cs)
 {
     csas_errno = 0;
     if (
@@ -1765,7 +1798,8 @@ int cmd_search(char *src, csas *cs)
     return 0;
 }
 
-int cmd_filter(char *src, csas *cs)
+int
+cmd_filter(char *src, csas *cs)
 {
     csas_errno = 0;
     if (G_D(cs->current_ws,1)->oldsize == 0)
