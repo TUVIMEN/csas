@@ -1,24 +1,19 @@
-/*
-    csas - console file manager
-    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
-
 #ifndef SORT_H
 #define SORT_H
 
-void sort_xfile(struct xfile *xf, const size_t size, ull flag);
+#define SORT_NONE 0x0
+#define SORT_NAME 0x1
+#define SORT_CNAME 0x2
+#define SORT_SIZE 0x3
+#define SORT_TYPE 0x4
+
+#define SORT_MT 0xf
+#define SORT_REVERSE 0x10
+#define SORT_MTR 0x1f
+#define SORT_DIR_DISTINCTION 0x20
+#define SORT_LDIR_DISTINCTION 0x40
+#define SORT_REVERSE_DIR_DISTINCTIONS 0x80
+
+void xfile_sort(xfile *f, const size_t size, uchar flags);
 
 #endif

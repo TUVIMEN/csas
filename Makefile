@@ -6,7 +6,7 @@ TARGET	=	csas
 MANDIR	=	/usr/local/man/man1
 BINDIR	=	/usr/bin
 
-SRC=src/console.c  src/draw.c  src/expand.c  src/functions.c  src/inits.c  src/load.c  src/loading.c  src/main.c  src/preview.c  src/sort.c  src/useful.c
+SRC=src/main.c src/load.c src/csas.c src/useful.c src/flexarr.c src/sort.c src/functions.c
 OBJ = ${SRC:.c=.o}
 
 all: ${OBJ}
