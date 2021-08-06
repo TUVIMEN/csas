@@ -3,6 +3,7 @@
 #include "load.h"
 #include "functions.h"
 #include "useful.h"
+#include "draw.h"
 #include "config.h"
 
 static void
@@ -88,7 +89,9 @@ add_bindings(flexarr *b)
     xbind_add("gM","cd /mnt",b);
     xbind_add("ge","cd /etc",b);
     xbind_add("gd","cd /dev",b);
+    xbind_add("gh","cd ${HOME}",b);
     xbind_add(" ","fastselect",b);
+    xbind_add("s","source gg",b);
 }
 
 static int
@@ -129,6 +132,7 @@ add_functions(flexarr *f)
     xfunc_add("move",0,cmd_move,f);
     xfunc_add("cd",0,cmd_cd,f);
     xfunc_add("file_run",0,cmd_file_run,f);
+    xfunc_add("source",0,cmd_source,f);
     xfunc_add("fastselect",0,cmd_fastselect,f);
 }
 
@@ -138,6 +142,7 @@ csas_init()
     csas *ret = malloc(sizeof(csas));
     memset(ret->tabs,0,sizeof(tab)*TABS);
     ret->ctab = 0;
+    ret->message = 0;
     ret->dirs = flexarr_init(sizeof(xdir),DIR_INCR);
     ret->functions = flexarr_init(sizeof(xfunc),FUNCTIONS_INCR);
     ret->bindings = flexarr_init(sizeof(xbind),BINDINGS_INCR);
@@ -229,15 +234,18 @@ csas_draw(csas *cs)
     for (; i < HEIGHT; i++)
         mvwhline(cs->win,i,0,' ',COLS);
 
-    mvhline(LINES-1,0,' ',COLS); //bar2
-    if (dir->size > 0) {
-        char t[16];
-        i = snprintf(t,16,"%lu/%lu",dir->sel+1,dir->size);
-        if (i)
-            mvaddnstr(LINES-1,COLS-i,t,i);
-    } else {
-        mvaddch(LINES-1,COLS-1,'0');
+    if (!cs->message) {
+        mvhline(LINES-1,0,' ',COLS); //bar2
+        if (dir->size > 0) {
+            char t[16];
+            i = snprintf(t,16,"%lu/%lu",dir->sel+1,dir->size);
+            if (i)
+                mvaddnstr(LINES-1,COLS-i,t,i);
+        } else {
+            mvaddch(LINES-1,COLS-1,'0');
+        }
     }
+    cs->message = 0;
 
     wrefresh(cs->win);
 }
@@ -268,7 +276,11 @@ csas_run(csas *cs, int argc, char **argv)
         csas_draw(cs);
 
         if ((b = update_event(cs)) != -1) {
-            command_run(BINDINGS[b].value,cs);
+            if (command_run(BINDINGS[b].value,cs) == -1) {
+                printmsg(A_BOLD|COLOR_PAIR(RED),"%s: %s",BINDINGS[b].value,strerror(errno));
+                refresh();
+                cs->message = 1;
+            }
         }
     }
 }

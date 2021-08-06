@@ -63,15 +63,9 @@ get_dir(const char *path, flexarr *dirs, size_t *num, const mode_t flags)
     size_t i;
     char rpath[PATH_MAX];
     size_t rpathl;
-    if (path[0] == '/') {
-        rpathl = strlen(path);
-        memcpy(rpath,path,rpathl+1);
-    } else {
-        if (realpath(path,rpath) == NULL)
-            return -1;
-        rpathl = strlen(rpath);
-    }
-
+    if (realpath(path,rpath) == NULL)
+        return -1;
+    rpathl = strlen(rpath);
 
     xdir *d = (xdir*)dirs->v;
     uchar found = 0;

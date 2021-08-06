@@ -1,6 +1,7 @@
 #include "main.h"
 #include "useful.h"
 #include "load.h"
+#include "draw.h"
 #include "functions.h"
 
 uint
@@ -48,16 +49,14 @@ int
 command_run(char *src, csas *cs)
 {
     size_t size=strlen(src),pos=0,t,s;
-
     if (size == 0)
-        return -1;
+        return 0;
 
     while_is(isspace,src,pos,size);
     t = pos;
     while_isnt(isspace,src,pos,size);
     s = pos-t;
-    if (s == 0)
-        return -1;
+    ret_errno(size==0,EINVAL,-1);
     while_is(isspace,src,pos,size);
     
     size = cs->functions->size;
@@ -68,10 +67,11 @@ command_run(char *src, csas *cs)
         }
     }
 
+    errno = EINVAL;
     return -1;
 }
 
-static int
+static void
 move_d(xdir *dir, const size_t value, const uchar flags)
 {
     size_t t = dir->sel;
@@ -82,9 +82,8 @@ move_d(xdir *dir, const size_t value, const uchar flags)
     }
 
     if (t > dir->size-1)
-        return -1;
+        return;
     dir->sel = t;
-    return 0;
 }
 
 int
@@ -96,7 +95,7 @@ cmd_move(char *src, csas *cs)
     xdir *dir = &CTAB;
 
     if (dir->size == 0)
-        return -1;
+        return 0;
 
     while (src[pos]) {
         if (src[pos] == '-') {
@@ -118,7 +117,8 @@ cmd_move(char *src, csas *cs)
         pos++;
     }
 
-    return move_d(dir,value,flags);
+    move_d(dir,value,flags);
+    return 0;
 }
 
 int
@@ -132,26 +132,48 @@ cmd_fastselect(char *src, csas *cs)
 }
 
 int
+cmd_source(char *src, csas *cs)
+{
+    char path[PATH_MAX];
+    xdir *dir = &CTAB;
+    size_t size=strlen(src),pos=0;
+    while_is(isspace,src,pos,size);
+    if (get_path(path,src+pos,size-pos,dir) == NULL) {
+        errno = ENOENT;
+        return -1;
+    }
+    
+    endwin();
+    int r = config_load(path,cs);
+    int e = errno;
+    refresh();
+    errno = e;
+    return r;
+}
+
+int
 cmd_cd(char *src, csas *cs)
 {
-    size_t pos = 0;
-    while (src[pos] && isspace(src[pos])) pos++;
-    src += pos;
-    char *search_name = NULL;
-    if (src[pos] == '.' && src[pos+1] == '.' && src[pos+2] == 0) {
-        xdir *dir = &CTAB;
-        search_name = memrchr(dir->path,'/',dir->plen);
+    size_t size=strlen(src),pos = 0;
+    char path[PATH_MAX], *search_name = NULL;
+    xdir *dir = &CTAB;
+    while_is(isspace,src,pos,size);
+    if (get_path(path,src+pos,size-pos,dir) == NULL) {
+        errno = ENOENT;
+        return -1;
     }
-    if (get_dir(src,cs->dirs,&cs->tabs[cs->ctab].t,D_CHDIR|D_MODE_ONCE) != 0)
+    if (path[0] == '.' && path[1] == '.' && path[2] == 0)
+        search_name = memrchr(dir->path,'/',dir->plen);
+    if (get_dir(path,cs->dirs,&cs->tabs[cs->ctab].t,D_CHDIR|D_MODE_ONCE) != 0)
         return -1;
 
     if (!search_name)
         return 0;
     search_name++;
-    xdir *dir = &CTAB;
     size_t nlen = strlen(search_name);
     if (nlen == 0)
         return 0;
+    dir = &CTAB;
     xfile *files = dir->files;
     for (size_t i = 0; i < dir->size; i++) {
         if (nlen == files[i].nlen 
@@ -168,36 +190,20 @@ int
 cmd_file_run(char *src, csas *cs)
 {
     char path[PATH_MAX];
-    size_t size,i;
     xdir *dir = &CTAB;
-    for (size = 0, i = 0; src[i]; i++, size++) {
-        if (src[i] == '%') {
-            i++;
-            switch (src[i]) {
-                case 'c':
-                    memcpy(path+size,dir->path,dir->plen+1);
-                    size += dir->plen;
-                    break;
-                case 's':
-                    if (dir->size == 0)
-                        break;
-                    memcpy(path+size,dir->files[dir->sel].name,dir->files[dir->sel].nlen+1);
-                    size += dir->files[dir->sel].nlen;
-                    break;
-                case '%':
-                    path[size] = '%';
-                    break;
-            }
-            i++;
-        } else
-            path[size] = src[i];
+    size_t size=strlen(src),pos=0;
+    while_is(isspace,src,pos,size);
+    if (get_path(path,src+pos,size-pos,dir) == NULL) {
+        errno = ENOENT;
+        return -1;
     }
-    path[size-1] = 0;
 
     struct stat statbuf;
     if (stat(path,&statbuf) != 0)
         return -1;
-    if ((statbuf.st_mode&S_IFMT) != S_IFDIR)
+    if ((statbuf.st_mode&S_IFMT) != S_IFDIR) {
+        errno = ENOTDIR;
         return -1;
+    }
     return get_dir(path,cs->dirs,&cs->tabs[cs->ctab].t,D_CHDIR|D_MODE_ONCE);
 }

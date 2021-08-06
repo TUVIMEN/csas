@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <wchar.h>
 #include <ctype.h>
+#include <sys/mman.h>
 #include <ncurses.h>
 
 #include "flexarr.h"
@@ -68,8 +69,6 @@
 #define while_is(w,x,y,z) while ((y) < (z) && (w)((x)[(y)])) {(y)++;}
 #define while_isnt(w,x,y,z) while ((y) < (z) && !(w)((x)[(y)])) {(y)++;}
 #define toggleflag(x,y,z) if (x) (y) |= (z); else (y) &= ~(z)
-#define MIN(A,B) ((A)<(B) ? (A) : (B))
-#define MAX(A,B) ((A)>(B) ? (A) : (B))
 
 typedef long int li;
 typedef long long int ll;
@@ -128,6 +127,7 @@ typedef struct {
     flexarr *functions;
     WINDOW *win;
     uchar ctab;
+    uchar message;
 } csas;
 
 #endif
