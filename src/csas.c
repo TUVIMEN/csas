@@ -89,9 +89,10 @@ add_bindings(flexarr *b)
     xbind_add("gM","cd /mnt",b);
     xbind_add("ge","cd /etc",b);
     xbind_add("gd","cd /dev",b);
-    xbind_add("gh","cd ${HOME}",b);
+    xbind_add("gh","cd ~",b);
     xbind_add(" ","fastselect",b);
     xbind_add("s","source gg",b);
+    xbind_add(":","console",b);
 }
 
 static int
@@ -134,6 +135,7 @@ add_functions(flexarr *f)
     xfunc_add("file_run",0,cmd_file_run,f);
     xfunc_add("source",0,cmd_source,f);
     xfunc_add("fastselect",0,cmd_fastselect,f);
+    xfunc_add("console",0,cmd_console,f);
 }
 
 csas *
@@ -144,6 +146,7 @@ csas_init()
     ret->ctab = 0;
     ret->message = 0;
     ret->dirs = flexarr_init(sizeof(xdir),DIR_INCR);
+    ret->consoleh = flexarr_init(sizeof(char**),HISTORY_INCR);
     ret->functions = flexarr_init(sizeof(xfunc),FUNCTIONS_INCR);
     ret->bindings = flexarr_init(sizeof(xbind),BINDINGS_INCR);
     initcurses();
@@ -277,7 +280,7 @@ csas_run(csas *cs, int argc, char **argv)
 
         if ((b = update_event(cs)) != -1) {
             if (command_run(BINDINGS[b].value,cs) == -1) {
-                printmsg(A_BOLD|COLOR_PAIR(RED),"%s: %s",BINDINGS[b].value,strerror(errno));
+                printmsg(ERROR_C,"%s: %s",BINDINGS[b].value,strerror(errno));
                 refresh();
                 cs->message = 1;
             }

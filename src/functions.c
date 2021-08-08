@@ -2,6 +2,7 @@
 #include "useful.h"
 #include "load.h"
 #include "draw.h"
+#include "console.h"
 #include "functions.h"
 
 uint
@@ -118,6 +119,53 @@ cmd_move(char *src, csas *cs)
     }
 
     move_d(dir,value,flags);
+    return 0;
+}
+
+int
+cmd_console(char *src, csas *cs)
+{
+    size_t pos = 0,s=strlen(src);
+    char add[PATH_MAX],first[PATH_MAX] = ":",*r;
+    add[0] = '\0';
+
+    while (src[pos]) {
+        while (src[pos] && isspace(src[pos]))
+            pos++;
+        if (src[pos] == '-' && src[pos+1] == 'f') {
+            pos += 2;
+            while (src[pos] && isspace(src[pos]))
+                pos++;
+            r = get_path(first,src+pos,s-pos,&CTAB);
+            if (r == NULL)
+                continue;
+            pos = r-src+1;
+            endwin();
+            printf("%s\n",src+pos);
+            refresh();
+        } else {
+            r = get_path(add,src+pos,s-pos,&CTAB);
+            if (r == NULL)
+                continue;
+            pos = r-src+1;
+        }
+    }
+
+    flexarr *history = cs->consoleh;
+
+    if (history->size == HISTORY_MAX) {
+        char *t = *(char**)history->v;
+        for (size_t i = 0; i < history->size-1; i++)
+            ((char**)history->v)[i] = ((char**)history->v)[i+1];
+        ((char**)history->v)[history->size-1] = t;
+    } else
+        *((char**)flexarr_inc(history)) = malloc(LLINE_MAX);
+    ((char**)history->v)[history->size-1][0] = 0;
+
+    console_getline((char**)history->v,history->size,first,add,cs);
+    char *line = ((char**)history->v)[history->size-1];
+    if (command_run(line,cs) != 0)
+        printmsg(ERROR_C,"%s: %s",line,strerror(errno));
     return 0;
 }
 

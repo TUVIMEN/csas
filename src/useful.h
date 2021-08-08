@@ -3,6 +3,7 @@
 
 void exiterr();
 int getinput(csas *cs);
+char *delchar(char *src, const size_t pos, const size_t size);
 const char *path_shrink(const char *path, const size_t size, const size_t max_size);
 char *size_shrink(size_t size);
 #define seek_end_of_squote(x,y) memchr(x,'\'',y)

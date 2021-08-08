@@ -20,6 +20,16 @@ getinput(csas *cs)
     return ret;
 }
 
+char *
+delchar(char *src, const size_t pos, const size_t size)
+{
+  size_t s = size-1;
+  for (size_t i = pos; i < s; i++)
+    src[i] = src[i+1];
+  src[s] = 0;
+  return src;
+}
+
 const char *
 path_shrink(const char *path, size_t size, const size_t max_size)
 {
@@ -200,8 +210,17 @@ get_path(char *dest, char *src, size_t size, xdir *dir)
         dest[x] = 0;
         pos += s+1;
     } else {
-        if (*src == '"')
+        if (*src == '"') {
             pos++;
+        } else if (*src == '~' && !isalnum(*(src+1))) {
+            pos++;
+            char *r = getenv("HOME");
+            size_t s = strlen(r);
+            memcpy(dest,r,s);
+            x += s;
+            dest[x++] = src[pos++];
+        }
+
         for (; x < PATH_MAX && pos < size && (*src == '"' ? src[pos] != '"' : !isspace(src[pos])); x++, pos++) {
             if (src[pos] == '\\') {
                 dest[x] = special_character(src[++pos]);
@@ -230,7 +249,7 @@ get_line(char *dest, char *src, size_t *pos, size_t size)
         (*pos)++;
     size_t x = 0;
 
-    while (*pos < size && x < LINE_MAX) {
+    while (*pos < size && x < LLINE_MAX) {
         if (src[*pos] == '\\')
             *pos += 2;
 
@@ -255,7 +274,7 @@ get_line(char *dest, char *src, size_t *pos, size_t size)
         if (src[*pos] == '/') {
             if (src[*pos+1] == '/') {
                 (*pos) += 2;
-                while (*pos < size && x < LINE_MAX) {
+                while (*pos < size && x < LLINE_MAX) {
                     if (src[*pos] == '\\') {
                         if (++(*pos) >= size)
                             break;
@@ -282,8 +301,8 @@ get_line(char *dest, char *src, size_t *pos, size_t size)
     }
     
     END: ;
-    if (x >= LINE_MAX)
-        x = LINE_MAX-1;
+    if (x >= LLINE_MAX)
+        x = LLINE_MAX-1;
     dest[x] = 0;
 }
 
@@ -307,7 +326,7 @@ config_load(const char *path, csas *cs)
     }
     close(fd);
 
-    char line[LINE_MAX];
+    char line[LLINE_MAX];
     int r;
 
     for (size_t pos = 0, i = 0; file[pos]; i++)

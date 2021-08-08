@@ -32,8 +32,11 @@
 #define DIR_INCR 32
 #define BINDINGS_INCR 8
 #define FUNCTIONS_INCR 8
+#define HISTORY_INCR 8
 #define BINDING_KEY_MAX 64
 #define FUNCTIONS_NAME_MAX 256
+#define LLINE_MAX (1<<12)
+#define HISTORY_MAX 32
 #define HEIGHT LINES-2
 #define TABS 10
 
@@ -53,6 +56,7 @@
 #define SOCK_C MAGENTA
 #define MISSING_C MAGENTA
 #define OTHER_C DEFAULT
+#define ERROR_C A_BOLD|COLOR_PAIR(RED)
 
 #define MOVE_SET 0x0
 #define MOVE_DOWN 0x1
@@ -125,6 +129,7 @@ typedef struct {
     flexarr *dirs;
     flexarr *bindings;
     flexarr *functions;
+    flexarr *consoleh;
     WINDOW *win;
     uchar ctab;
     uchar message;
