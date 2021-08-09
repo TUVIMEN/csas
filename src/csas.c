@@ -91,7 +91,6 @@ add_bindings(flexarr *b)
     xbind_add("gd","cd /dev",b);
     xbind_add("gh","cd ~",b);
     xbind_add(" ","fastselect",b);
-    xbind_add("s","source gg",b);
     xbind_add(":","console",b);
     xbind_add("z1","tab 0",b);
     xbind_add("z2","tab 1",b);
@@ -213,6 +212,8 @@ csas_run(csas *cs, int argc, char **argv)
     if (get_dir(path,cs->dirs,&cs->tabs[cs->ctab].t,D_CHDIR) != 0)
         exiterr();
     cs->tabs[cs->ctab].flags |= T_EXISTS;
+
+    config_load("/etc/csasrc",cs);
 
     int e;
     while (true) {

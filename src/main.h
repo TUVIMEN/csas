@@ -21,6 +21,7 @@
 #include <locale.h>
 #include <time.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <errno.h>
 #include <wchar.h>
 #include <ctype.h>
@@ -40,6 +41,8 @@
 #define HISTORY_MAX 32
 #define HEIGHT LINES-2
 #define TABS 10
+#define EXEC_ARGS_MAX (1<<7)
+#define SIG_MAX (1<<10)
 
 #define TAB(x) ((xdir*)cs->dirs->v)[cs->tabs[x].t]
 #define CTAB TAB(cs->ctab)
@@ -64,11 +67,19 @@
 #define MOVE_DOWN 0x1
 #define MOVE_UP 0x2
 
-#define D_CHDIR 0x1
-#define D_MODE_ONCE 0x2
-#define D_MODE_CHANGE 0x4
+#define D_CHDIR 0x1 //change directory
+#define D_MODE_ONCE 0x2 //load only once
+#define D_MODE_CHANGE 0x4 //load when ctime has changed
 
 #define T_EXISTS 0x1
+
+//flags for spawn()
+#define F_SILENT    0x1  //duplicate stdout and stderr with /dev/null
+#define F_NORMAL    0x2  //close ncurses screen before executing
+#define F_CONFIRM   0x4  //wait for the user confirmation after process is done
+#define F_WAIT      0x8  //wait for process
+#define F_MULTI     0x10 //split for arguments like system()
+#define F_BIN       0x20
 
 #define SLINK_TO_DIR 0x1
 #define SLINK_MISSING 0x2
@@ -92,6 +103,15 @@ enum {
     BLUE, CYAN, MAGENTA, WHITE,
     BLACK
 };
+
+typedef struct {
+    uchar flags;
+    off_t offset;
+    int whence;
+    char *sig;
+    ushort len;
+    char *path;
+} fsig;
 
 typedef struct {
     int *keys;

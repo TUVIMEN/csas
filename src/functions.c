@@ -215,7 +215,6 @@ cmd_console(char *src, csas *cs)
     }
 
     flexarr *history = cs->consoleh;
-
     if (history->size == HISTORY_MAX) {
         char *t = *(char**)history->v;
         for (size_t i = 0; i < history->size-1; i++)
@@ -457,9 +456,7 @@ cmd_file_run(char *src, csas *cs)
     struct stat statbuf;
     if (stat(path,&statbuf) != 0)
         return -1;
-    if ((statbuf.st_mode&S_IFMT) != S_IFDIR) {
-        errno = ENOTDIR;
-        return -1;
-    }
+    if ((statbuf.st_mode&S_IFMT) != S_IFDIR)
+        return file_run(path);
     return get_dir(path,cs->dirs,&cs->tabs[cs->ctab].t,D_CHDIR|D_MODE_ONCE);
 }

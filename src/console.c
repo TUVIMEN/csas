@@ -36,8 +36,8 @@ console_getline(char **history, size_t size, char *first, char *add, csas *cs)
             case KEY_UP:
             case ('p'&0x1f):
                 if (current_line > 0) {
-                    x = s = strlen(h);
-                    memcpy(h,history[--current_line],x+1);
+                    x = s = strlen(history[--current_line]);
+                    memcpy(h,history[current_line],s+1);
                 }
                 break;
             case KEY_DOWN:
@@ -51,8 +51,8 @@ console_getline(char **history, size_t size, char *first, char *add, csas *cs)
                         s = 0;
                         break;
                     }
-                    s = x = strlen(h);
-                    memcpy(h,history[current_line],x+1);
+                    s = x = strlen(history[current_line]);
+                    memcpy(h,history[current_line],s+1);
                 }
                 break;
             case ('a'&0x1f):
@@ -106,16 +106,6 @@ console_getline(char **history, size_t size, char *first, char *add, csas *cs)
                     break;
                 delchar(h,x,s--);
                 break;
-            /*case ('d'&0x1f):
-                while (h[args->x] && !isalnum(h[args->x])) args->x++;
-                while (isalnum(h[args->x])) args->x++;
-                while (h[args->x] && !isalnum(h[args->x])) args->x++;
-                break;
-            case ('s'&0x1f):
-                while (h[args->x-1] && !isalnum(h[args->x-1])) args->x--;
-                while (isalnum(h[args->x-1])) args->x--;
-                while (h[args->x-1] && !isalnum(h[args->x-1])) args->x--;
-                break;*/
             default:
                 h[++s] = 0;
                 for (size_t i = s-1; i > x; i--)

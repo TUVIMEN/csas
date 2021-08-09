@@ -3,6 +3,12 @@
 #include "functions.h"
 #include "csas.h"
 
+static struct sigaction oldsighup;
+static struct sigaction oldsigtstp;
+extern fsig signatures[];
+extern char *FileOpener;
+extern char *Editor;
+
 void
 exiterr()
 {
@@ -339,4 +345,228 @@ config_load(const char *path, csas *cs)
     }
 
     return munmap(file,statbuf.st_size);
+}
+
+static size_t
+parseargs(char *src, char **dest)
+{
+    if (src == NULL)
+        return 0;
+    size_t x = 0,s=strlen(src);
+    dest[x++] = src;
+
+    while (s) {
+        if (s == '\\') {
+            delchar(src,0,s);
+            src++;
+            s -= 2;
+            continue;
+        }
+        if (s == '\'') {
+            delchar(src,0,s);
+            src++;
+            s -= 2;
+            while (s && *src != '\'') {
+                src++;
+                s--;
+            }
+            if (!s)
+                return x;
+            delchar(src,0,s);
+            src++;
+            s -= 2;
+            continue;
+        }
+        if (*src == '"') {
+            delchar(src,0,s);
+            src++;
+            s -= 2;
+            while (s && *src != '"') {
+                if (*src == '\\') {
+                    delchar(src,0,s);
+                    src++;
+                    s -= 2;
+                    continue;
+                }
+                src++;
+                s--;
+            }
+            if (!s)
+                return x;
+            delchar(src,0,s);
+            src++;
+            s -= 2;
+        }
+        if (isspace(*src)) {
+            while (s && !isspace(*src)) {
+                src++;
+                s--;
+            }
+            while (s && !isspace(*src)) {
+                src++;
+                s--;
+            }
+            *src++ = '\0';
+            s--;
+            if (!s)
+                return x;
+            uchar last = 0;
+            if (*src == '$' && *(src+1) == '$') {
+                *src++ = '\0';
+                *src++ = '\0';
+                s -= 2;
+                last = 1;
+            }
+            dest[x++] = src;
+            if (x == EXEC_ARGS_MAX)
+                return 0;
+            if (last)
+                return x;
+            continue;
+        }
+        src++;
+        s--;
+    }
+    return x;
+}
+
+pid_t
+xfork(uchar flag)
+{
+    int status;
+    pid_t p = fork();
+    struct sigaction act = {.sa_handler=SIG_DFL};
+
+    if (p > 0) {
+        sigaction(SIGHUP,&(struct sigaction){.sa_handler=SIG_IGN},&oldsighup);
+	sigaction(SIGTSTP,&act,&oldsigtstp);
+    }
+    else if (p == 0) {
+        if (flag&F_WAIT) {
+            sigaction(SIGHUP,&act,NULL);
+            sigaction(SIGINT,&act,NULL);
+            sigaction(SIGQUIT,&act,NULL);
+            sigaction(SIGTSTP,&act,NULL);
+	} else {
+            p = fork();
+	    if (p > 0) {
+		_exit(EXIT_SUCCESS);
+            } else if (p == 0) {
+                sigaction(SIGHUP,&act,NULL);
+                sigaction(SIGINT,&act,NULL);
+                sigaction(SIGQUIT,&act,NULL);
+                sigaction(SIGTSTP,&act,NULL);
+                setsid();
+                return p;
+	    }
+	    _exit(EXIT_FAILURE);
+        }
+    }
+
+    if (!(flag&F_WAIT))
+	waitpid(p,&status,0);
+    return p;
+}
+
+int
+spawn(char *file, char *arg1, char *arg2, const uchar flags)
+{
+    if (!file || !*file)
+        return -1;
+
+    char *argv[EXEC_ARGS_MAX] = {0};
+
+    if (!arg1 && arg2) {
+        arg1 = arg2;
+        arg2 = NULL;
+    }
+
+    size_t x = 0;
+    if (flags&F_MULTI) {
+        x = parseargs(file,argv);
+        if (x == 0) return -1;
+    }
+    else
+        argv[x++] = file;
+    argv[x++] = arg1;
+    argv[x++] = arg2;
+
+    if (flags&F_NORMAL)
+        endwin();
+
+    pid_t pid = xfork(flags);
+
+    if (pid == 0) {
+        if (flags&F_SILENT) {
+            int fd = open("/dev/null",O_WRONLY);
+            dup2(fd,1);
+            dup2(fd,2);
+            close(fd);
+        }
+        execvp(file,argv);
+        _exit(1);
+    } else {
+        if (flags&F_WAIT)
+            while (waitpid(pid,NULL,0) == -1);
+
+    	sigaction(SIGHUP, &oldsighup, NULL);
+    	sigaction(SIGTSTP, &oldsigtstp, NULL);
+
+        if (flags&F_NORMAL) {
+            if (flags&F_CONFIRM) {
+                printf("\nPress ENTER to continue");
+                fflush(stdout);
+                while (getch() != '\n');
+            }
+            refresh();
+        }
+    }
+
+    return 0;
+}
+
+static uchar
+isbinfile(char *src, size_t size)
+{
+    for (register size_t i = 0; i < size; i++)
+        if ((src[i] < 0x07 || src[i] > 0xd) && (src[i] < 0x20 || src[i] > 0x7e))
+            return 1;
+    return 0;
+}
+
+int
+file_run(char *path)
+{
+    if (*FileOpener)
+        return spawn(FileOpener,path,NULL,F_NORMAL|F_WAIT);
+    struct stat sfile;
+    if (stat(path,&sfile) == -1)
+        return -1;
+    ret_errno(!(sfile.st_mode&S_IRUSR),EACCES,-1);
+    if (sfile.st_size == 0)
+        return spawn(Editor,path,NULL,F_NORMAL|F_WAIT);
+
+    int fd;
+    if ((fd = open(path,O_RDONLY)) == -1)
+        return -1;
+    size_t sigl;
+    char sig[SIG_MAX];
+    sigl = read(fd,sig,SIG_MAX);
+    uchar bin = isbinfile(sig,sigl);
+
+    for (register int i = 0; signatures[i].sig != NULL; i++) {
+        if ((signatures[i].flags&F_BIN) ? bin : !bin) {
+            lseek(fd,signatures[i].offset,signatures[i].whence);
+            sigl = read(fd,sig,signatures[i].len);
+            if (sigl == signatures[i].len && memcmp(sig,signatures[i].sig,sigl) == 0) {
+                close(fd);
+                return spawn(signatures[i].path,path,NULL,signatures[i].flags);
+            }
+        }
+    }
+
+    close(fd);
+    if (!bin)
+        return spawn(Editor,path,NULL,F_NORMAL|F_WAIT);
+    return 0;
 }
