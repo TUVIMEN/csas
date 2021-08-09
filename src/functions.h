@@ -12,5 +12,7 @@ int cmd_fastselect(char *src, csas *cs);
 int cmd_source(char *src, csas *cs);
 int cmd_cd(char *src, csas *cs);
 int cmd_file_run(char *src, csas *cs);
+int cmd_exec(char *src, csas *cs);
+int cmd_alias(char *src, csas *cs);
 
 #endif

@@ -120,7 +120,7 @@ add_bindings(flexarr *b)
     xbind_add("veh","select -es - -o . .",b);
 }
 
-static int
+int
 xfunc_add(const char *name, const uchar type, void *func, flexarr *f)
 {
     ret_errno(name==NULL||f==NULL,EINVAL,-1);
@@ -145,6 +145,9 @@ xfunc_add(const char *name, const uchar type, void *func, flexarr *f)
         funcs = &funcs[i];
     }
 
+    if (funcs->type == 'a')
+        free(funcs->func);
+
     funcs->type = type;
     funcs->func = func;
 
@@ -155,14 +158,16 @@ xfunc_add(const char *name, const uchar type, void *func, flexarr *f)
 static void
 add_functions(flexarr *f)
 {
-    xfunc_add("move",0,cmd_move,f);
-    xfunc_add("cd",0,cmd_cd,f);
-    xfunc_add("file_run",0,cmd_file_run,f);
-    xfunc_add("source",0,cmd_source,f);
-    xfunc_add("fastselect",0,cmd_fastselect,f);
-    xfunc_add("console",0,cmd_console,f);
-    xfunc_add("tab",0,cmd_tab,f);
-    xfunc_add("select",0,cmd_select,f);
+    xfunc_add("move",'f',cmd_move,f);
+    xfunc_add("cd",'f',cmd_cd,f);
+    xfunc_add("file_run",'f',cmd_file_run,f);
+    xfunc_add("source",'f',cmd_source,f);
+    xfunc_add("fastselect",'f',cmd_fastselect,f);
+    xfunc_add("console",'f',cmd_console,f);
+    xfunc_add("tab",'f',cmd_tab,f);
+    xfunc_add("select",'f',cmd_select,f);
+    xfunc_add("exec",'f',cmd_exec,f);
+    xfunc_add("alias",'f',cmd_alias,f);
 }
 
 csas *

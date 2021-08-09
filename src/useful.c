@@ -125,7 +125,7 @@ seek_end_of_dquote(char *src, size_t size)
 }
 
 int
-addenv(char *dest, char *src, size_t *x, size_t *y, size_t size)
+addenv(char *dest, char *src, size_t *x, size_t *y, const size_t max, size_t size)
 {
     if (src[*y] != '$' || src[*y+1] != '{')
         return -1;
@@ -145,6 +145,8 @@ addenv(char *dest, char *src, size_t *x, size_t *y, size_t size)
 
     *y += s;
     s = strlen(t1);
+    if (s+*x > max)
+        return 0;
     memcpy(dest+*x,t1,s);
     *x += s-1;
     return 0;
@@ -155,7 +157,7 @@ addenv(char *dest, char *src, size_t *x, size_t *y, size_t size)
 }
 
 int
-handle_percent(char *dest, char *src, size_t *x, size_t *y, xdir *dir)
+handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xdir *dir)
 {
     if (src[*y] != '%')
         return -1;
@@ -163,14 +165,14 @@ handle_percent(char *dest, char *src, size_t *x, size_t *y, xdir *dir)
     switch (src[++(*y)]) {
         case 'c':
            (*y)++;
-           if (*x+dir->plen > PATH_MAX)
+           if (*x+dir->plen > max)
                return 0;
            memcpy(dest+*x,dir->path,dir->plen);
            *x += dir->plen-1;
            break;
         case 's':
            (*y)++;
-           if (dir->size == 0 || *x+dir->files[dir->sel].nlen > PATH_MAX)
+           if (dir->size == 0 || *x+dir->files[dir->sel].nlen > max)
                return 0;
            memcpy(dest+*x,dir->files[dir->sel].name,dir->files[dir->sel].nlen);
            *x += dir->files[dir->sel].nlen-1;
@@ -200,7 +202,7 @@ special_character(const char c)
 }
 
 char *
-get_path(char *dest, char *src, size_t size, xdir *dir)
+get_path(char *dest, char *src, const char delim, size_t size, const size_t max, xdir *dir)
 {
     size_t pos=0,x=0;
     if (*src == '\'') {
@@ -209,7 +211,7 @@ get_path(char *dest, char *src, size_t size, xdir *dir)
         if (n == NULL)
             return NULL;
         size_t s = n-(src+pos);
-        if (x+s > PATH_MAX || pos+s+1 > size)
+        if (x+s > max || pos+s+1 > size)
             return NULL;
         memcpy(dest+x,src+pos,s);
         x += s;
@@ -227,14 +229,14 @@ get_path(char *dest, char *src, size_t size, xdir *dir)
             dest[x++] = src[pos++];
         }
 
-        for (; x < PATH_MAX && pos < size && (*src == '"' ? src[pos] != '"' : !isspace(src[pos])); x++, pos++) {
+        for (; x < max && pos < size && (*src == '"' ? src[pos] != '"' : src[pos] != delim); x++, pos++) {
             if (src[pos] == '\\') {
                 dest[x] = special_character(src[++pos]);
                 continue;
             }
-            if (addenv(dest,src,&x,&pos,size) == 0)
+            if (addenv(dest,src,&x,&pos,max,size) == 0)
                 continue;
-            if (handle_percent(dest,src,&x,&pos,dir) == 0)
+            if (handle_percent(dest,src,&x,&pos,max,dir) == 0)
                 continue;
             dest[x] = src[pos];
         }
@@ -242,7 +244,7 @@ get_path(char *dest, char *src, size_t size, xdir *dir)
         pos--;
         if (src[pos] == '"')
             pos++;
-        if (x > PATH_MAX || pos > size)
+        if (x > max || pos > size)
             return NULL;
     }
     return src+pos;
@@ -340,7 +342,7 @@ config_load(const char *path, csas *cs)
         get_line(line,file,&pos,statbuf.st_size);
         r = command_run(line,cs);
         if (r != 0)
-            fprintf(stderr,"%s: %s\n%lu:\t%s\n",path,strerror(errno),i,line);
+            fprintf(stderr,"%s: %s\n%lu:\t%s\n",path,strerror(errno),i+1,line);
         pos++;
     }
 
@@ -484,7 +486,8 @@ spawn(char *file, char *arg1, char *arg2, const uchar flags)
     size_t x = 0;
     if (flags&F_MULTI) {
         x = parseargs(file,argv);
-        if (x == 0) return -1;
+        if (x == 0)
+            return -1;
     }
     else
         argv[x++] = file;

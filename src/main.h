@@ -81,6 +81,11 @@
 #define F_MULTI     0x10 //split for arguments like system()
 #define F_BIN       0x20
 
+#define M_REPLACE 0x1 //replace file
+#define M_MERGE   0x2 //merge directory
+#define M_DCPY    0x4 //don't copy if file exists
+#define M_CHNAME  0x8 //if file exists change name
+
 #define SLINK_TO_DIR 0x1
 #define SLINK_MISSING 0x2
 

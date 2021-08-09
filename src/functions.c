@@ -2,6 +2,7 @@
 #include "useful.h"
 #include "load.h"
 #include "draw.h"
+#include "csas.h"
 #include "console.h"
 #include "functions.h"
 
@@ -70,9 +71,25 @@ command_run(char *src, csas *cs)
     xfunc *functions = FUNCTIONS;
     for (size_t i = 0; i < size; i++) {
         if (s == strlen(functions[i].name) && memcmp(src+t,functions[i].name,s) == 0) {
-            int r = ((int (*)(char*,csas*))functions[i].func)(src+pos,cs);
-            cs->typed[0] = 0;
-            return r;
+            if (functions[i].type == 'f') {
+                int r = ((int (*)(char*,csas*))functions[i].func)(src+pos,cs);
+                cs->typed[0] = 0;
+                return r;
+            } else if (functions[i].type == 'a') {
+                char line[LLINE_MAX];
+                s = strlen(functions[i].func);
+                if (s > LLINE_MAX)
+                    return 0;
+                memcpy(line,functions[i].func,s);
+                line[s++] = ' ';
+                size_t c = strlen(src+pos);
+                if (s+c > LLINE_MAX)
+                    return 0;
+                memcpy(line+s,src+pos,c);
+                s += c;
+                line[s] = 0;
+                command_run(line,cs);
+            }
         }
     }
 
@@ -192,7 +209,7 @@ int
 cmd_console(char *src, csas *cs)
 {
     size_t pos = 0,s=strlen(src);
-    char add[PATH_MAX],first[PATH_MAX] = ":",*r;
+    char add[PATH_MAX],first[NAME_MAX] = ":",*r;
     add[0] = '\0';
 
     while (src[pos]) {
@@ -202,12 +219,12 @@ cmd_console(char *src, csas *cs)
             pos += 2;
             while (isspace(src[pos]))
                 pos++;
-            r = get_path(first,src+pos,s-pos,&CTAB);
+            r = get_path(first,src+pos,' ',s-pos,NAME_MAX,&CTAB);
             if (r == NULL)
                 continue;
             pos = r-src+1;
         } else {
-            r = get_path(add,src+pos,s-pos,&CTAB);
+            r = get_path(add,src+pos,' ',s-pos,PATH_MAX,&CTAB);
             if (r == NULL)
                 continue;
             pos = r-src+1;
@@ -311,7 +328,7 @@ cmd_select(char *src, csas *cs)
             } while (src[pos] && !isspace(src[pos]));
         }
         else {
-            char *r = get_path(path,src+pos,strlen(src+pos),&TAB(tab1));
+            char *r = get_path(path,src+pos,' ',strlen(src+pos),PATH_MAX,&TAB(tab1));
             if (r == NULL)
                 continue;
             pos = r-src+1;
@@ -393,7 +410,7 @@ cmd_source(char *src, csas *cs)
     xdir *dir = &CTAB;
     size_t size=strlen(src),pos=0;
     while_is(isspace,src,pos,size);
-    if (get_path(path,src+pos,size-pos,dir) == NULL) {
+    if (get_path(path,src+pos,' ',size-pos,PATH_MAX,dir) == NULL) {
         errno = ENOENT;
         return -1;
     }
@@ -413,7 +430,7 @@ cmd_cd(char *src, csas *cs)
     char path[PATH_MAX], *search_name = NULL;
     xdir *dir = &CTAB;
     while_is(isspace,src,pos,size);
-    if (get_path(path,src+pos,size-pos,dir) == NULL) {
+    if (get_path(path,src+pos,' ',size-pos,PATH_MAX,dir) == NULL) {
         errno = ENOENT;
         return -1;
     }
@@ -448,7 +465,7 @@ cmd_file_run(char *src, csas *cs)
     xdir *dir = &CTAB;
     size_t size=strlen(src),pos=0;
     while_is(isspace,src,pos,size);
-    if (get_path(path,src+pos,size-pos,dir) == NULL) {
+    if (get_path(path,src+pos,' ',size-pos,PATH_MAX,dir) == NULL) {
         errno = ENOENT;
         return -1;
     }
@@ -459,4 +476,66 @@ cmd_file_run(char *src, csas *cs)
     if ((statbuf.st_mode&S_IFMT) != S_IFDIR)
         return file_run(path);
     return get_dir(path,cs->dirs,&cs->tabs[cs->ctab].t,D_CHDIR|D_MODE_ONCE);
+}
+
+int
+cmd_exec(char *src, csas *cs)
+{
+    size_t pos = 0;
+    uchar flags = F_MULTI;
+    char line[LLINE_MAX];
+
+    while (src[pos]) {
+        if (src[pos] == '-') {
+            do {
+                pos++;
+                switch (src[pos]) {
+                    case 's': flags |= F_SILENT; break;
+                    case 'n': flags |= F_NORMAL; break;
+                    case 'c': flags |= F_CONFIRM; break;
+                    case 'w': flags |= F_WAIT; break;
+                }
+            } while (src[pos] && !isspace(src[pos]));
+        } else if (!isspace(src[pos])) {
+            char *r = get_path(line,src+pos,'\0',strlen(src+pos),LLINE_MAX,&CTAB);
+            if (r == NULL) {
+                pos++;
+                continue;
+            }
+            pos = r-src+1;
+            break;
+        }
+        while (src[pos] && isspace(src[pos]))
+            pos++;
+    }
+    return spawn(line,NULL,NULL,flags);
+}
+
+int
+cmd_alias(char *src, csas *cs)
+{
+    size_t pos = 0,s;
+    char name[NAME_MAX],*line,*r;
+
+    while (src[pos] && isspace(src[pos]))
+        pos++;
+    r = strchr(src+pos,'=');
+    s = r-(src+pos);
+    errno = EINVAL;
+    if (r == NULL || s > NAME_MAX)
+        return -1;
+    memcpy(name,src+pos,s);
+    name[s] = 0;
+    pos += s+1;
+
+    line = malloc(LLINE_MAX);
+    r = get_path(line,src+pos,' ',strlen(src+pos),LLINE_MAX,&CTAB);
+    errno = EINVAL;
+    if (r == NULL) {
+        free(line);
+        return -1;
+    }
+    pos = r-src+1;
+    xfunc_add(name,'a',line,cs->functions);
+    return 0;
 }
