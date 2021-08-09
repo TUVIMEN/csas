@@ -69,6 +69,8 @@ command_run(char *src, csas *cs)
     
     size = cs->functions->size;
     xfunc *functions = FUNCTIONS;
+
+
     for (size_t i = 0; i < size; i++) {
         if (s == strlen(functions[i].name) && memcmp(src+t,functions[i].name,s) == 0) {
             if (functions[i].type == 'f') {
@@ -538,4 +540,27 @@ cmd_alias(char *src, csas *cs)
     pos = r-src+1;
     xfunc_add(name,'a',line,cs->functions);
     return 0;
+}
+
+int
+cmd_map(char *src, csas *cs)
+{
+    size_t pos = 0;
+    char keys[BINDING_KEY_MAX],line[PATH_MAX],*r;
+
+    while (isspace(src[pos]))
+        pos++;
+
+    r = get_path(keys,src+pos,' ',strlen(src+pos),BINDING_KEY_MAX,&CTAB);
+    ret_errno(r==NULL,EINVAL,-1);
+    pos = r-src+1;
+
+    while (isspace(src[pos]))
+        pos++;
+
+    r = get_path(line,src+pos,' ',strlen(src+pos),PATH_MAX,&CTAB);
+    ret_errno(r==NULL,EINVAL,-1);
+    pos = r-src+1;
+
+    return xbind_add(keys,line,cs->bindings);
 }

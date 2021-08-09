@@ -36,6 +36,44 @@ delchar(char *src, const size_t pos, const size_t size)
   return src;
 }
 
+void
+change_keys(wchar_t *dest, const char *src)
+{
+    size_t i, h;
+    for (i = 0, h = 0; h < BINDING_KEY_MAX && src[i]; i++, h++) {
+        if (src[i] == '<' && src[i+1] == 'C' && src[i+2] == '-' && src[i+3] && src[i+4] == '>') {
+            i += 3;
+            dest[h] = src[i]&0x1f;
+            i += 1;
+        } else if (memcmp(src+i,"<space>",7) == 0) {
+            i += 6;
+            dest[h] = btowc(' ');
+        } else if (strncasecmp(src+i,"<esc>",5) == 0) {
+            i += 4;
+            dest[h] = KEY_EXIT;
+        } else if (strncasecmp(src+i,"<left>",6) == 0) {
+            i += 5;
+            dest[h] = KEY_LEFT;
+        } else if (strncasecmp(src+i,"<right>",7) == 0) {
+            i += 6;
+            dest[h] = KEY_RIGHT;
+        } else if (strncasecmp(src+i,"<up>",4) == 0) {
+            i += 3;
+            dest[h] = KEY_UP;
+        } else if (strncasecmp(src+i,"<down>",6) == 0) {
+            i += 5;
+            dest[h] = KEY_DOWN;
+        } else if (strncasecmp(src+i,"<br>",4) == 0) {
+            i += 3;
+            dest[h] = KEY_ENTER;
+        } else if (src[i] == '\\' && src[i+1]) {
+            dest[h] = special_character(src[i++]);
+        } else
+            dest[h++] = wctob(src[i]);
+    }
+    dest[h] = 0;
+}
+
 const char *
 path_shrink(const char *path, size_t size, const size_t max_size)
 {
@@ -241,7 +279,6 @@ get_path(char *dest, char *src, const char delim, size_t size, const size_t max,
             dest[x] = src[pos];
         }
         dest[x] = 0;
-        pos--;
         if (src[pos] == '"')
             pos++;
         if (x > max || pos > size)
@@ -261,7 +298,7 @@ get_line(char *dest, char *src, size_t *pos, size_t size)
         if (src[*pos] == '\\')
             *pos += 2;
 
-        if (src[*pos] == '\n' || src[*pos] == ';') {
+        if (src[*pos] == '\n' || src[*pos] == '\r' || src[*pos] == ';') {
             dest[x] = '\0';
             break;
         }
@@ -275,7 +312,7 @@ get_line(char *dest, char *src, size_t *pos, size_t size)
             size_t s = t-(src+*pos);
             memcpy(dest+x,src+*pos,s);
             x += s;
-            *pos += s+1;
+            *pos += s;
             continue;
         }
 

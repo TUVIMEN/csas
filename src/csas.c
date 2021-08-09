@@ -35,7 +35,7 @@ initcurses()
     atexit((void (*)(void)) endwin);
 }
 
-static int
+int
 xbind_add(const char *keys, const char *value, flexarr *b)
 {
     size_t i,size;
@@ -43,9 +43,7 @@ xbind_add(const char *keys, const char *value, flexarr *b)
     ret_errno((size=strlen(keys))>BINDING_KEY_MAX||strlen(value)>PATH_MAX,EOVERFLOW,-1);
 
     wchar_t k[BINDING_KEY_MAX];
-    for (i = 0; i < size; i++)
-        k[i] = btowc(keys[i]);
-    k[i] = 0;
+    change_keys(k,keys);
     
     xbind *bind = (xbind*)b->v;
 
@@ -167,6 +165,7 @@ add_functions(flexarr *f)
     xfunc_add("tab",'f',cmd_tab,f);
     xfunc_add("select",'f',cmd_select,f);
     xfunc_add("exec",'f',cmd_exec,f);
+    xfunc_add("map",'f',cmd_map,f);
     xfunc_add("alias",'f',cmd_alias,f);
 }
 

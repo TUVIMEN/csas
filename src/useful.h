@@ -14,6 +14,7 @@ char special_character(const char c);
 char *get_path(char *dest, char *src, const char delim, size_t size, const size_t max, xdir *dir);
 void get_line(char *dest, char *src, size_t *pos, size_t size);
 int config_load(const char *path, csas *cs);
+void change_keys(wchar_t *dest, const char *src);
 int file_run(char *path);
 pid_t xfork(uchar flag);
 int spawn(char *file, char *arg1, char *arg2, const uchar flags);
