@@ -76,7 +76,7 @@ add_bindings(flexarr *b)
 {
     xbind_add("k","move -d",b);
     xbind_add("j","move -u",b);
-    xbind_add("gg","move -s 0",b);
+    xbind_add("gg","move -s",b);
     xbind_add("G","move -s $",b);
     xbind_add("h","cd ..",b);
     xbind_add("l","file_run %s",b);
@@ -93,6 +93,32 @@ add_bindings(flexarr *b)
     xbind_add(" ","fastselect",b);
     xbind_add("s","source gg",b);
     xbind_add(":","console",b);
+    xbind_add("z1","tab 0",b);
+    xbind_add("z2","tab 1",b);
+    xbind_add("z3","tab 2",b);
+    xbind_add("z4","tab 3",b);
+    xbind_add("z5","tab 4",b);
+    xbind_add("z6","tab 5",b);
+    xbind_add("z7","tab 6",b);
+    xbind_add("z8","tab 7",b);
+    xbind_add("z9","tab 8",b);
+    xbind_add("z0","tab 9",b);
+    xbind_add("x1","tab -g0",b);
+    xbind_add("x2","tab -g1",b);
+    xbind_add("x3","tab -g2",b);
+    xbind_add("x4","tab -g3",b);
+    xbind_add("x5","tab -g4",b);
+    xbind_add("x6","tab -g5",b);
+    xbind_add("x7","tab -g6",b);
+    xbind_add("x8","tab -g7",b);
+    xbind_add("x9","tab -g8",b);
+    xbind_add("x0","tab -g9",b);
+    xbind_add("vta","select -ts - -o .",b);
+    xbind_add("vth","select -ts - -o . .",b);
+    xbind_add("vda","select -ds - -o .",b);
+    xbind_add("vdh","select -ds - -o . .",b);
+    xbind_add("vea","select -es - -o .",b);
+    xbind_add("veh","select -es - -o . .",b);
 }
 
 static int
@@ -136,6 +162,8 @@ add_functions(flexarr *f)
     xfunc_add("source",0,cmd_source,f);
     xfunc_add("fastselect",0,cmd_fastselect,f);
     xfunc_add("console",0,cmd_console,f);
+    xfunc_add("tab",0,cmd_tab,f);
+    xfunc_add("select",0,cmd_select,f);
 }
 
 csas *
@@ -144,7 +172,6 @@ csas_init()
     csas *ret = malloc(sizeof(csas));
     memset(ret->tabs,0,sizeof(tab)*TABS);
     ret->ctab = 0;
-    ret->message = 0;
     ret->dirs = flexarr_init(sizeof(xdir),DIR_INCR);
     ret->consoleh = flexarr_init(sizeof(char**),HISTORY_INCR);
     ret->functions = flexarr_init(sizeof(xfunc),FUNCTIONS_INCR);
@@ -158,99 +185,12 @@ csas_init()
     return ret;
 }
 
-static int
-color_by_mode(const mode_t m, const uchar f)
-{
-    switch (m&S_IFMT) {
-        case S_IFREG:
-            if (m&(S_IXUSR|S_IXGRP|S_IXOTH))
-                return EXEC_C;
-            else
-                return REG_C;
-        case S_IFDIR: return DIR_C;
-        case S_IFLNK:
-            if (f&SLINK_MISSING)
-                return MISSING_C;
-            return LINK_C;
-        case S_IFCHR: return CHR_C;
-        case S_IFBLK: return BLK_C;
-        case S_IFIFO: return FIFO_C;
-        case S_IFSOCK: return SOCK_C;
-        default: return OTHER_C;
-    }
-}
-
 static void
 csas_draw(csas *cs)
 {
-    xdir *dir = &CTAB;
-    xfile *file = dir->files;
-    size_t j;
-    int i,color;
-    
-    if (dir->sel < dir->scroll)
-        dir->scroll = dir->sel;
-    else if (dir->sel > dir->scroll+HEIGHT-1)
-        dir->scroll = dir->sel-HEIGHT+5;
-
-    mvhline(0,0,' ',COLS); //bar1
-    attr_set(A_BOLD,DIR_C,NULL);
-
-    i = 0;
-    if (dir->size > 0) {
-        if (dir->path[0] == '/' && dir->path[1])
-            i++;
-        i = file[dir->sel].nlen;
-    }
-    mvaddnstr(0,0,path_shrink(dir->path,dir->plen,COLS-i),dir->plen);
-    if (dir->size > 0) {
-        if (dir->path[0] == '/' && dir->path[1])
-            addch('/');
-        attr_set(A_BOLD,REG_C,NULL);
-        addnstr(file[dir->sel].name,file[dir->sel].nlen);
-    }
-    attr_set(0,0,NULL);
-
-    for (i = 0, j = dir->scroll; i < HEIGHT && j < dir->size; i++, j++) { //files
-        if (file[j].sel[cs->ctab]&(1<<cs->tabs[cs->ctab].sel))
-            wattr_set(cs->win,A_REVERSE,sel_colors[cs->tabs[cs->ctab].sel],NULL);
-        mvwaddch(cs->win,i,0,' ');
-        wattr_set(cs->win,0,0, NULL);
-
-        color =  color_by_mode(file[j].mode,file[j].flags);
-        if (j == dir->sel)
-            wattr_on(cs->win,SEL_C,NULL);
-        wcolor_set(cs->win,color,NULL);
-        mvwhline(cs->win,i,1,' ',COLS);
-
-        char *size = size_shrink(file[j].size);
-        size_t sizel = strlen(size);
-
-        if (file[j].nlen >= COLS-sizel-5) {
-            mvwaddnstr(cs->win,i,2,file[j].name,COLS-sizel-5);
-            waddch(cs->win,'~');
-        } else
-            mvwaddnstr(cs->win,i,2,file[j].name,file[j].nlen);
-        mvwaddnstr(cs->win,i,COLS-sizel-1,size,sizel);
-        wattroff(cs->win,-1);
-    }
-    for (; i < HEIGHT; i++)
-        mvwhline(cs->win,i,0,' ',COLS);
-
-    if (!cs->message) {
-        mvhline(LINES-1,0,' ',COLS); //bar2
-        if (dir->size > 0) {
-            char t[16];
-            i = snprintf(t,16,"%lu/%lu",dir->sel+1,dir->size);
-            if (i)
-                mvaddnstr(LINES-1,COLS-i,t,i);
-        } else {
-            mvaddch(LINES-1,COLS-1,'0');
-        }
-    }
-    cs->message = 0;
-
-    wrefresh(cs->win);
+    draw_tbar(0,cs);
+    draw_bbar(LINES-1,cs);
+    draw_dir(cs->win,&CTAB,cs);
 }
 
 void
@@ -272,17 +212,18 @@ csas_run(csas *cs, int argc, char **argv)
         path = argv[1];
     if (get_dir(path,cs->dirs,&cs->tabs[cs->ctab].t,D_CHDIR) != 0)
         exiterr();
+    cs->tabs[cs->ctab].flags |= T_EXISTS;
 
-    int b;
-
+    int e;
     while (true) {
         csas_draw(cs);
 
-        if ((b = update_event(cs)) != -1) {
-            if (command_run(BINDINGS[b].value,cs) == -1) {
-                printmsg(ERROR_C,"%s: %s",BINDINGS[b].value,strerror(errno));
+        REPEAT: ;
+        if ((e = update_event(cs)) != -1) {
+            if (command_run(BINDINGS[e].value,cs) == -1) {
+                printmsg(ERROR_C,"%s: %s",BINDINGS[e].value,strerror(errno));
                 refresh();
-                cs->message = 1;
+                goto REPEAT;
             }
         }
     }

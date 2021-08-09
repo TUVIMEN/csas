@@ -64,7 +64,7 @@ path_shrink(const char *path, size_t size, const size_t max_size)
 char *
 size_shrink(size_t size)
 {
-    static char ret[16];
+    static char ret[23];
     const char suffixes[] = "BKMGTPEZY";
 
     if (size == 0) {
@@ -82,7 +82,7 @@ size_shrink(size_t size)
     }
 
     if (t == 0 || size >= 100) {
-        snprintf(ret,16,"%lu %c",size,suffixes[t]);
+        snprintf(ret,23,"%lu %c",size,suffixes[t]);
         return ret;
     }
 
@@ -91,9 +91,9 @@ size_shrink(size_t size)
         r /= 10;
 
     if (r != 0)
-        snprintf(ret,16,"%lu.%lu %c",size,r,suffixes[t]);
+        snprintf(ret,23,"%lu.%lu %c",size,r,suffixes[t]);
     else
-        snprintf(ret,16,"%lu %c",size,suffixes[t]);
+        snprintf(ret,23,"%lu %c",size,suffixes[t]);
     return ret;
 }
 

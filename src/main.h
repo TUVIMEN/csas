@@ -36,12 +36,13 @@
 #define BINDING_KEY_MAX 64
 #define FUNCTIONS_NAME_MAX 256
 #define LLINE_MAX (1<<12)
+#define NUM_MAX 32
 #define HISTORY_MAX 32
 #define HEIGHT LINES-2
 #define TABS 10
 
 #define TAB(x) ((xdir*)cs->dirs->v)[cs->tabs[x].t]
-#define CTAB ((xdir*)cs->dirs->v)[cs->tabs[cs->ctab].t]
+#define CTAB TAB(cs->ctab)
 #define BINDINGS ((xbind*)cs->bindings->v)
 #define FUNCTIONS ((xfunc*)cs->functions->v)
 
@@ -57,6 +58,7 @@
 #define MISSING_C MAGENTA
 #define OTHER_C DEFAULT
 #define ERROR_C A_BOLD|COLOR_PAIR(RED)
+#define BAR_C GREEN
 
 #define MOVE_SET 0x0
 #define MOVE_DOWN 0x1
@@ -65,6 +67,8 @@
 #define D_CHDIR 0x1
 #define D_MODE_ONCE 0x2
 #define D_MODE_CHANGE 0x4
+
+#define T_EXISTS 0x1
 
 #define SLINK_TO_DIR 0x1
 #define SLINK_MISSING 0x2
@@ -122,6 +126,7 @@ typedef struct {
 typedef struct {
     size_t t;
     uchar sel;
+    uchar flags;
 } tab;
 
 typedef struct {
@@ -131,8 +136,8 @@ typedef struct {
     flexarr *functions;
     flexarr *consoleh;
     WINDOW *win;
+    char typed[NUM_MAX];
     uchar ctab;
-    uchar message;
 } csas;
 
 #endif
