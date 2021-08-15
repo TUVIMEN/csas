@@ -6,6 +6,8 @@
 #include "console.h"
 #include "functions.h"
 
+extern uchar Exit;
+
 uint
 update_event(csas *cs)
 {
@@ -166,6 +168,26 @@ cmd_move(char *src, csas *cs)
     return 0;
 }
 
+static int
+tab_d(size_t t, int sel, csas *cs)
+{
+    ret_errno(t>=TABS,ERANGE,-1);
+    if (cs->tabs[t].flags&T_EXISTS) {
+        if (t != cs->ctab)
+            if (chdir(TAB(t).path) != 0)
+                return -1;
+        goto END;
+    }
+
+    cs->tabs[t].t = cs->tabs[cs->ctab].t;
+    cs->tabs[t].flags |= T_EXISTS;
+    END: ;
+    cs->ctab = t;
+    if (sel >= 0 && sel < 8)
+        cs->tabs[t].sel = sel;
+    return 0;
+}
+
 int
 cmd_tab(char *src, csas *cs)
 {
@@ -191,20 +213,7 @@ cmd_tab(char *src, csas *cs)
         }
     }
 
-    if (cs->tabs[tabc].flags&T_EXISTS) {
-        if (tabc != cs->ctab)
-            if (chdir(TAB(tabc).path) != 0)
-                return -1;
-        goto END;
-    }
-
-    cs->tabs[tabc].t = cs->tabs[cs->ctab].t;
-    cs->tabs[tabc].flags |= T_EXISTS;
-    END: ;
-    cs->ctab = tabc;
-    if (sel >= 0 && sel < 8)
-        cs->tabs[tabc].sel = sel;
-    return 0;
+    return tab_d(tabc,sel,cs);
 }
 
 int
@@ -253,11 +262,10 @@ cmd_console(char *src, csas *cs)
 int
 cmd_select(char *src, csas *cs)
 {
-    size_t pos=0,plen,i,j;
+    size_t pos=0,plen=0,i,j;
     uchar flags=1;
     int selected=-1,tab1=cs->ctab,tab2=cs->ctab,toselected=-1;
     char path[PATH_MAX];
-    path[0] = 0;
 
     while (src[pos]) {
         while (isspace(src[pos]))
@@ -316,7 +324,7 @@ cmd_select(char *src, csas *cs)
                                 pos++;
                                 break;
                             default:
-                                selected = 1<<atoi(src+pos);
+                                selected = atoi(src+pos);
                                 while (isdigit(src[pos]))
                                     pos++;
                                 break;
@@ -330,10 +338,12 @@ cmd_select(char *src, csas *cs)
             } while (src[pos] && !isspace(src[pos]));
         }
         else {
+            size_t t = pos;
             char *r = get_path(path,src+pos,' ',strlen(src+pos),PATH_MAX,&TAB(tab1));
             if (r == NULL)
                 continue;
             pos = r-src+1;
+            plen = pos-t;
         }
         if (!src[pos+1])
             break;
@@ -359,24 +369,22 @@ cmd_select(char *src, csas *cs)
         }
     }
 
-    if (path[0]) {
-        char t[PATH_MAX];
+    if (plen) {
+        char *t = path;
         if (realpath(path,t) == NULL)
             return -1;
-        strcpy(path,t);
+        plen = strlen(path);
     }
-    plen = strlen(path);
 
     for (i = 0; i < dirs->size; i++) {
         xdir *d = &dir[i];
         if (d->size == 0)
             continue;
-        if (path[0]) {
+        if (plen) {
             if (flags&0x4) {
                 if (plen > d->plen || memcmp(d->path,path,plen) != 0)
                     continue;
-            }
-            else if (plen != d->plen || memcmp(path,d->path,plen) != 0)
+            } else if (plen != d->plen || memcmp(path,d->path,plen) != 0)
                 continue;
         }
 
@@ -563,4 +571,346 @@ cmd_map(char *src, csas *cs)
     pos = r-src+1;
 
     return xbind_add(keys,line,cs->bindings);
+}
+
+int
+cmd_quit(char *src, csas *cs)
+{
+    int n=0;
+    size_t i,pos=0;
+    while (isspace(src[pos]))
+        pos++;
+    if (src[0] == '-' && src[1] == 'f')
+        goto END;
+
+    for (i = 0; i < TABS; i++)
+        n += cs->tabs[i].flags&T_EXISTS;
+
+    cs->tabs[cs->ctab].flags &= ~T_EXISTS;
+
+    if (n > 1) {
+        for (i = cs->ctab+1; i < TABS; i++)
+            if (cs->tabs[i].flags&T_EXISTS)
+                return tab_d(i,-1,cs);
+        for (i = 0; i < cs->ctab; i++)
+            if (cs->tabs[i].flags&T_EXISTS)
+                return tab_d(i,-1,cs);
+    }
+
+    END: ;
+    Exit = 1;
+    return 0;
+}
+
+int
+cmd_ds(char *src, csas *cs)
+{
+    size_t pos=0,plen=0,s=strlen(src);
+    uchar flags=D_S;
+    int selected=-1,ws=cs->ctab;
+    char path[PATH_MAX];
+
+    while (src[pos] && src[pos+1]) {
+        while (isspace(src[pos]))
+            pos++;
+        if (src[pos] == '-') {
+            do {
+                pos++;
+                switch (src[pos]) {
+                    case 'w':
+                    case 's': {
+                            char c = src[pos];
+                            pos++;
+                            while (isspace(src[pos]))
+                                pos++;
+                            if (c == 'w') {
+                                ws = atoi(src+pos);
+                                if (!(cs->tabs[ws].flags&T_EXISTS))
+                                    return 0;
+                            } else {
+                                switch (src[pos]) {
+                                    case '-': selected = -1; pos++; break;
+                                    case '.': selected = -2; pos++; break;
+                                    case 's': selected = -3; pos++; break;
+                                    default: selected = atoi(src+pos);
+                                }
+                            }
+                            while (isdigit(src[pos]))
+                                pos++;
+                        }
+                        break;
+                    case 'R': flags |= 0x80; break;
+                    case 'r': flags |= D_R; break;
+                    case 'c': flags |= D_C; flags &= ~D_S; break;
+                    case 'f': flags |= D_F; break;
+                }
+            } while (src[pos] && !isspace(src[pos]));
+        } else {
+            size_t t = pos;
+            char *r = get_path(path,src+pos,' ',s-pos,PATH_MAX,&TAB(ws));
+            if (r == NULL)
+                continue;
+            pos = r-src+1;
+            plen = pos-t;
+        }
+    }
+
+    if (selected == -2) {
+        selected = cs->tabs[ws].sel;
+    } else if (selected == -3) {
+        xdir *dir = &TAB(ws);
+        int dfd,fd;
+        dfd = open(dir->path,O_DIRECTORY);
+        if (dfd == -1)
+            return -1;
+        if (dir->size == 0)
+            return 0;
+        xfile *file = &dir->files[dir->sel];
+        fd = openat(dfd,file->name,O_DIRECTORY);
+        if (fd == -1)
+            return -1;
+        close(dfd);
+        int e,t;
+        file->size = 0;
+        t = get_dirsize(fd,&file->size,&file->size,flags);
+        e = errno;
+        close(fd);
+        errno = e;
+        return t;
+    }
+    if (plen) {
+        char *t = path;
+        if (realpath(path,t) == NULL)
+            return -1;
+        plen = strlen(path);
+    }
+
+    int dfd,fd;
+    flexarr *dirs = cs->dirs;
+    xdir *dir = (xdir*)dirs->v;
+
+    for (size_t i = 0; i < dirs->size; i++) {
+        xdir *d = &dir[i];
+        if (d->size == 0)
+            continue;
+
+        if (plen) {
+            if (flags&0x80) {
+                if (plen > d->plen || memcmp(d->path,path,plen) != 0)
+                    continue;
+            } else if (plen != d->plen || memcmp(path,d->path,plen) != 0)
+                continue;
+        }
+
+        if ((dfd = open(d->path,O_DIRECTORY)) == -1)
+            continue;
+
+        for (size_t j = 0; j < d->size; j++) {
+            if (selected < 0 ? 1 : (d->files[j].sel[ws]&(1<<selected))) {
+                if ((fd = openat(dfd,d->files[j].name,O_DIRECTORY)) == -1)
+                    continue;
+                d->files[j].size = 0;
+                get_dirsize(fd,&d->files[j].size,&d->files[j].size,flags);
+            }
+        }
+        close(dfd);
+    }
+
+    return 0;
+}
+
+int
+cmd_fmod(char *src, csas *cs)
+{
+    uchar act = 2;
+    mode_t flags = 0;
+    size_t pos = 0,s=strlen(src),plen=0;
+    int selected=-1,ws=cs->ctab;
+    char path[PATH_MAX],target[PATH_MAX]=".";
+    static char *name[]={"delete","move","copy"};
+    int fd1=-1,fd2=-1,fd3=-1;
+    struct stat statbuf;
+
+    while (src[pos] && src[pos+1]) {
+        while (isspace(src[pos]))
+            pos++;
+
+        if (src[pos] == '-') {
+            do {
+                pos++;
+                switch (src[pos]) {
+                    case 'o':
+                        pos++;
+                        while (isspace(src[pos]))
+                            pos++;
+                        char *r = get_path(target,src+pos,' ',s-pos,PATH_MAX,&TAB(ws));
+                        if (r == NULL)
+                            continue;
+                        pos = r-src+1;
+                        break;
+                    case 'w':
+                    case 's': {
+                            char c = src[pos];
+                            pos++;
+                            while (isspace(src[pos]))
+                                pos++;
+                            if (c == 'w') {
+                                ws = atoi(src+pos);
+                                if (!(cs->tabs[ws].flags&T_EXISTS))
+                                    return 0;
+                            } else {
+                                switch (src[pos]) {
+                                    case '-': selected = -1; pos++; break;
+                                    case '.': selected = -2; pos++; break;
+                                    case 's': selected = -3; pos++; break;
+                                    default: selected = atoi(src+pos);
+                                }
+                            }
+                            while (isdigit(src[pos]))
+                                pos++;
+                        }
+                        break;
+                    case 'c': flags |= M_CHNAME; break;
+                    case 'r': flags |= M_REPLACE; break;
+                    case 'd': flags |= M_DCPY; break;
+                    case 'm': flags |= M_MERGE; break;
+                    case 'D': act = 0; break;
+                    case 'M': act = 1; break;
+                    case 'C': act = 2; break;
+                }
+            } while (src[pos] && !isspace(src[pos]));
+        } else {
+            size_t t = pos;
+            char *r = get_path(path,src+pos,' ',s-pos,PATH_MAX,&TAB(ws));
+            if (r == NULL)
+                continue;
+            pos = r-src+1;
+            plen = pos-t;
+        }
+    }
+
+    if (selected == -2)
+        selected = cs->tabs[ws].sel;
+    endwin();
+    printf("%s\n",target);
+    refresh();
+    if ((fd1 = open(target,O_DIRECTORY)) == -1)
+        return -1;
+
+    char *buffer = (act == 0 ? NULL : (char*)malloc(1<<16));
+    off_t count=0,size=0;
+    int ev=-1;
+
+    if (selected == -3) {
+        xdir *dir = &TAB(ws);
+        if (dir->size == 0) {
+            close(fd1);
+            return 0;
+        }
+        if ((fd2 = open(dir->path,O_DIRECTORY)) == -1)
+            goto END;
+
+        xfile *file = &dir->files[dir->sel];
+        if ((file->mode&S_IFMT) == S_IFDIR) {
+	    if ((fd3 = openat(fd2,file->name,O_RDONLY)) == -1)
+	        goto END;
+            get_dirsize(fd3,&count,&size,D_R|D_C|D_S);
+	    close(fd3);
+        }
+
+        do {
+            if ((file->mode&S_IFMT) == S_IFDIR)
+                printmsg(0,"Do you want to %s %ld files(%s)? (Y/n)",name[act],count,size_shrink(size));
+            else
+                printmsg(0,"Do you want to %s \"%s\" (%s)? (Y/n)",name[act],file->name,size_shrink(file->size));
+            refresh();
+            if (ev == 'y' || ev == 'Y')
+                break;
+            if (ev != -1)
+                goto END;
+            ev = getinput(cs);
+        } while (1);
+
+        switch (act) {
+            case 0: file_rm(fd2,file->name); break;
+            case 1: file_mv(fd1,fd2,file->name,buffer,flags); break;
+            case 2: file_cp(fd1,fd2,file->name,buffer,flags); break;
+        }
+        goto END;
+    }
+
+    if (plen) {
+        char *t = path;
+        if (realpath(path,t) == NULL)
+            goto END;
+        plen = strlen(path);
+    }
+    
+    flexarr *dirs = cs->dirs;
+    xdir *dir = (xdir*)dirs->v;
+    for (size_t i = 0; i < dirs->size; i++) {
+        xdir *d = &dir[i];
+        if (d->size == 0)
+            continue;
+        if (plen)
+            if (plen != d->plen || memcmp(path,d->path,plen) != 0)
+                continue;
+        if ((fd2 = open(d->path,O_DIRECTORY)) == -1)
+            continue;
+        for (size_t j = 0; j < d->size; j++) {
+            if (selected < 0 ? 1 : (d->files[j].sel[ws]&(1<<selected))) {
+                if ((fd3 = openat(fd2,d->files[j].name,O_DIRECTORY)) == -1) {
+                    count++;
+                    fstatat(fd2,d->files[j].name,&statbuf,AT_SYMLINK_NOFOLLOW);
+                    size += statbuf.st_size;
+                } else {
+                    get_dirsize(fd3,&count,&size,D_R|D_C|D_S);
+                    close(fd3);
+                }
+            }
+        }
+        close(fd2);
+    }
+    fd2 = -1;
+
+    ev = -1;
+    do {
+        printmsg(0,"Do you want to %s %ld files(%s)? (Y/n)",name[act],count,size_shrink(size));
+        refresh();
+        if (ev == 'y' || ev == 'Y')
+            break;
+        if (ev != -1)
+            goto END;
+        ev = getinput(cs);
+    } while (1);
+
+    for (size_t i = 0; i < dirs->size; i++) {
+        xdir *d = &dir[i];
+        if (d->size == 0)
+            continue;
+        if (plen)
+            if (plen != d->plen || memcmp(path,d->path,plen) != 0)
+                continue;
+        if ((fd2 = open(d->path,O_DIRECTORY)) == -1)
+            continue;
+        for (size_t j = 0; j < d->size; j++) {
+            if (selected < 0 ? 1 : (d->files[j].sel[ws]&(1<<selected))) {
+                switch (act) {
+                    case 0: file_rm(fd2,d->files[j].name); break;
+                    case 1: file_mv(fd1,fd2,d->files[j].name,buffer,flags); break;
+                    case 2: file_cp(fd1,fd2,d->files[j].name,buffer,flags); break;
+                }
+            }
+        }
+        close(fd2);
+    }
+    close(fd1);
+    fd1 = -1;
+    fd2 = -1;
+
+    END:
+    close(fd1);
+    close(fd2);
+    free(buffer);
+    return 0;
 }

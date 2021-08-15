@@ -3,6 +3,7 @@
 
 char *FileOpener = "";
 char *Editor = "vim";
+uchar Exit = 0;
 
 int sel_colors[] = {
     YELLOW,GREEN,RED,BLUE,

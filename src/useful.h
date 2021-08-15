@@ -18,5 +18,9 @@ void change_keys(wchar_t *dest, const char *src);
 int file_run(char *path);
 pid_t xfork(uchar flag);
 int spawn(char *file, char *arg1, char *arg2, const uchar flags);
+int file_rm(const int fd, const char *name);
+int file_cp(const int fd1, const int fd2, const char *name, char *buffer, const mode_t flags);
+int file_mv(const int fd1, const int fd2, const char *name, char *buffer, const mode_t flags);
+int get_dirsize(const int fd, off_t *count, off_t *size, const uchar flags);
 
 #endif

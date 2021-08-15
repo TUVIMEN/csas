@@ -42,6 +42,7 @@
 #define HEIGHT LINES-2
 #define TABS 10
 #define EXEC_ARGS_MAX (1<<7)
+#define BUFFER_MAX (1<<16)
 #define SIG_MAX (1<<10)
 
 #define TAB(x) ((xdir*)cs->dirs->v)[cs->tabs[x].t]
@@ -85,6 +86,12 @@
 #define M_MERGE   0x2 //merge directory
 #define M_DCPY    0x4 //don't copy if file exists
 #define M_CHNAME  0x8 //if file exists change name
+
+//flags for getting directory size
+#define D_F 0x1 //as file
+#define D_R 0x2 //recursive
+#define D_C 0x4 //count files
+#define D_S 0x8 //size
 
 #define SLINK_TO_DIR 0x1
 #define SLINK_MISSING 0x2

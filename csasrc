@@ -1,3 +1,5 @@
 alias shell='exec -ncw ${SHELL} -c $$'
+map s 'console "shell "'
+map S 'exec -nw ${SHELL}'
 
 source ~/.config/csasrc

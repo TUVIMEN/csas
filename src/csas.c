@@ -72,6 +72,8 @@ xbind_add(const char *keys, const char *value, flexarr *b)
 static void
 add_bindings(flexarr *b)
 {
+    xbind_add("q","quit",b);
+    xbind_add("Q","quit -f",b);
     xbind_add("k","move -d",b);
     xbind_add("j","move -u",b);
     xbind_add("gg","move -s",b);
@@ -116,6 +118,31 @@ add_bindings(flexarr *b)
     xbind_add("vdh","select -ds - -o . .",b);
     xbind_add("vea","select -es - -o .",b);
     xbind_add("veh","select -es - -o . .",b);
+    xbind_add("dct","ds -cs s",b);
+    xbind_add("dCt","ds -crs s",b);
+    xbind_add("dst","ds -s s",b);
+    xbind_add("dSt","ds -rs s",b);
+    xbind_add("dft","ds -fs s",b);
+    xbind_add("dch","ds -cs .",b);
+    xbind_add("dCh","ds -crs .",b);
+    xbind_add("dsh","ds -s .",b);
+    xbind_add("dSh","ds -rs .",b);
+    xbind_add("dfh","ds -fs .",b);
+    xbind_add("mm","fmod -Ms . -c -o .",b);
+    xbind_add("mr","fmod -Ms . -r -o .",b);
+    xbind_add("md","fmod -Ms . -d -o .",b);
+    xbind_add("mM","fmod -Ms . -cm -o .",b);
+    xbind_add("mR","fmod -Ms . -rm -o .",b);
+    xbind_add("mD","fmod -Ms . -dm -o .",b);
+    xbind_add("pp","fmod -Cs . -c -o .",b);
+    xbind_add("pr","fmod -Cs . -r -o .",b);
+    xbind_add("pd","fmod -Cs . -d -o .",b);
+    xbind_add("pP","fmod -Cs . -cm -o .",b);
+    xbind_add("pR","fmod -Cs . -rm -o .",b);
+    xbind_add("pD","fmod -Cs . -dm -o .",b);
+    xbind_add("Dd","fmod -Ds . .",b);
+    xbind_add("DD","fmod -Ds .",b);
+    xbind_add("Dt","fmod -Ds s",b);
 }
 
 int
@@ -165,8 +192,11 @@ add_functions(flexarr *f)
     xfunc_add("tab",'f',cmd_tab,f);
     xfunc_add("select",'f',cmd_select,f);
     xfunc_add("exec",'f',cmd_exec,f);
+    xfunc_add("ds",'f',cmd_ds,f);
+    xfunc_add("fmod",'f',cmd_fmod,f);
     xfunc_add("map",'f',cmd_map,f);
     xfunc_add("alias",'f',cmd_alias,f);
+    xfunc_add("quit",'f',cmd_quit,f);
 }
 
 csas *
@@ -220,7 +250,7 @@ csas_run(csas *cs, int argc, char **argv)
     config_load("/etc/csasrc",cs);
 
     int e;
-    while (true) {
+    while (!Exit) {
         csas_draw(cs);
 
         REPEAT: ;
