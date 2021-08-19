@@ -2,6 +2,6 @@
 #define LOAD_H
 
 int load_dir(xdir *dir, const mode_t flags);
-int get_dir(const char *path, flexarr *dir, size_t *num, const mode_t flags);
+li getdir(const char *path, flexarr *dir, const uchar flags);
 
 #endif

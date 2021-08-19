@@ -4,6 +4,7 @@
 char *FileOpener = "";
 char *Editor = "vim";
 uchar Exit = 0;
+const char *TTEMPLATE = "/tmp/CSAS-XXXXXX";
 
 int sel_colors[] = {
     YELLOW,GREEN,RED,BLUE,

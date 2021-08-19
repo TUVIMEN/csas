@@ -92,7 +92,7 @@ command_run(char *src, csas *cs)
                 memcpy(line+s,src+pos,c);
                 s += c;
                 line[s] = 0;
-                command_run(line,cs);
+                return command_run(line,cs);
             }
         }
     }
@@ -140,10 +140,10 @@ cmd_move(char *src, csas *cs)
             do {
                 pos++;
                 switch (src[pos]) {
-                    case 'u': flags = MOVE_UP; break;
-                    case 'd': flags = MOVE_DOWN; break;
-                    case 's': flags = MOVE_SET; value--; break;
-                    case 'w':
+                    case 'u': flags = MOVE_UP; break; //up
+                    case 'd': flags = MOVE_DOWN; break; //down
+                    case 's': flags = MOVE_SET; value--; break; //set
+                    case 'w': //tab
                         pos++;
                         while (isspace(src[pos]))
                             pos++;
@@ -275,10 +275,10 @@ cmd_select(char *src, csas *cs)
             do {
                 pos++;
                 switch (src[pos]) {
-                    case 'r': flags |= 0x4; break;
-                    case 'o':
+                    case 'r': flags |= 0x4; break; //recursive
+                    case 'o': //dest sel
                         pos++;
-                        while (src[pos] && !isspace(src[pos]))
+                        while (isspace(src[pos]))
                             pos++;
                         switch(src[pos]) {
                             case '.':
@@ -292,8 +292,8 @@ cmd_select(char *src, csas *cs)
                                 break;
                         }
                         break;
-                    case 'w':
-                    case 'W': {
+                    case 'w': //src tab
+                    case 'W': { //dest tab
                             char c = src[pos];
                             pos++;
                             while (src[pos] && !isspace(src[pos]))
@@ -306,7 +306,7 @@ cmd_select(char *src, csas *cs)
                                 pos++;
                         }
                         break;
-                    case 's':
+                    case 's': //src sel
                         pos++;
                         while (isspace(src[pos]))
                             pos++;
@@ -330,14 +330,13 @@ cmd_select(char *src, csas *cs)
                                 break;
                         }
                         break;
-                    case 'e': flags |= 1; break;
-                    case 'd': flags &= ~3; break;
-                    case 't': flags |= 2; break;
+                    case 'e': flags |= 1; break; //enable
+                    case 'd': flags &= ~3; break; //disable
+                    case 't': flags |= 2; break; //toggle
                 }
 
             } while (src[pos] && !isspace(src[pos]));
-        }
-        else {
+        } else {
             size_t t = pos;
             char *r = get_path(path,src+pos,' ',strlen(src+pos),PATH_MAX,&TAB(tab1));
             if (r == NULL)
@@ -378,20 +377,12 @@ cmd_select(char *src, csas *cs)
 
     for (i = 0; i < dirs->size; i++) {
         xdir *d = &dir[i];
-        if (d->size == 0)
+        if (d->size == 0 || (plen && (flags&0x4 ? plen > d->plen : plen != d->plen || memcmp(path,d->path,plen) != 0)))
             continue;
-        if (plen) {
-            if (flags&0x4) {
-                if (plen > d->plen || memcmp(d->path,path,plen) != 0)
-                    continue;
-            } else if (plen != d->plen || memcmp(path,d->path,plen) != 0)
-                continue;
-        }
 
         for (j = 0; j < d->size; j++) {
             if (selected < 0 ? 1 : (d->files[j].sel[tab1]&(1<<selected))) {
-                switch (flags&0x3)
-                {
+                switch (flags&0x3) {
                     case 0: d->files[j].sel[tab2] &= ~(1<<toselected); break;
                     case 1: d->files[j].sel[tab2] |= 1<<toselected; break;
                     default: d->files[j].sel[tab2] ^= 1<<toselected;
@@ -446,8 +437,11 @@ cmd_cd(char *src, csas *cs)
     }
     if (path[0] == '.' && path[1] == '.' && path[2] == 0)
         search_name = memrchr(dir->path,'/',dir->plen);
-    if (get_dir(path,cs->dirs,&cs->tabs[cs->ctab].t,D_CHDIR|D_MODE_ONCE) != 0)
+
+    li n = getdir(path,cs->dirs,D_MODE_ONCE|D_CHDIR);
+    if (n == -1)
         return -1;
+    cs->tabs[cs->ctab].t = (size_t)n;
 
     if (!search_name)
         return 0;
@@ -485,7 +479,12 @@ cmd_file_run(char *src, csas *cs)
         return -1;
     if ((statbuf.st_mode&S_IFMT) != S_IFDIR)
         return file_run(path);
-    return get_dir(path,cs->dirs,&cs->tabs[cs->ctab].t,D_CHDIR|D_MODE_ONCE);
+
+    li n = getdir(path,cs->dirs,D_CHDIR|D_MODE_ONCE);
+    if (n == -1)
+        return -1;
+    cs->tabs[cs->ctab].t = n;
+    return 0;
 }
 
 int
@@ -617,8 +616,8 @@ cmd_ds(char *src, csas *cs)
             do {
                 pos++;
                 switch (src[pos]) {
-                    case 'w':
-                    case 's': {
+                    case 'w': //tab
+                    case 's': { //sel
                             char c = src[pos];
                             pos++;
                             while (isspace(src[pos]))
@@ -691,16 +690,8 @@ cmd_ds(char *src, csas *cs)
 
     for (size_t i = 0; i < dirs->size; i++) {
         xdir *d = &dir[i];
-        if (d->size == 0)
+        if (d->size == 0 || (plen && (flags&0x80 ? plen > d->plen : plen != d->plen || memcmp(path,d->path,plen) != 0)))
             continue;
-
-        if (plen) {
-            if (flags&0x80) {
-                if (plen > d->plen || memcmp(d->path,path,plen) != 0)
-                    continue;
-            } else if (plen != d->plen || memcmp(path,d->path,plen) != 0)
-                continue;
-        }
 
         if ((dfd = open(d->path,O_DIRECTORY)) == -1)
             continue;
@@ -739,7 +730,7 @@ cmd_fmod(char *src, csas *cs)
             do {
                 pos++;
                 switch (src[pos]) {
-                    case 'o':
+                    case 'o': //dest
                         pos++;
                         while (isspace(src[pos]))
                             pos++;
@@ -748,8 +739,8 @@ cmd_fmod(char *src, csas *cs)
                             continue;
                         pos = r-src+1;
                         break;
-                    case 'w':
-                    case 's': {
+                    case 'w': //tab
+                    case 's': { //sel
                             char c = src[pos];
                             pos++;
                             while (isspace(src[pos]))
@@ -774,9 +765,9 @@ cmd_fmod(char *src, csas *cs)
                     case 'r': flags |= M_REPLACE; break;
                     case 'd': flags |= M_DCPY; break;
                     case 'm': flags |= M_MERGE; break;
-                    case 'D': act = 0; break;
-                    case 'M': act = 1; break;
-                    case 'C': act = 2; break;
+                    case 'D': act = 0; break; //delete
+                    case 'M': act = 1; break; //move
+                    case 'C': act = 2; break; //copy
                 }
             } while (src[pos] && !isspace(src[pos]));
         } else {
@@ -791,9 +782,6 @@ cmd_fmod(char *src, csas *cs)
 
     if (selected == -2)
         selected = cs->tabs[ws].sel;
-    endwin();
-    printf("%s\n",target);
-    refresh();
     if ((fd1 = open(target,O_DIRECTORY)) == -1)
         return -1;
 
@@ -850,11 +838,8 @@ cmd_fmod(char *src, csas *cs)
     xdir *dir = (xdir*)dirs->v;
     for (size_t i = 0; i < dirs->size; i++) {
         xdir *d = &dir[i];
-        if (d->size == 0)
+        if (d->size == 0 || (plen && (plen != d->plen || memcmp(path,d->path,plen) != 0)))
             continue;
-        if (plen)
-            if (plen != d->plen || memcmp(path,d->path,plen) != 0)
-                continue;
         if ((fd2 = open(d->path,O_DIRECTORY)) == -1)
             continue;
         for (size_t j = 0; j < d->size; j++) {
@@ -872,7 +857,6 @@ cmd_fmod(char *src, csas *cs)
         close(fd2);
     }
     fd2 = -1;
-
     ev = -1;
     do {
         printmsg(0,"Do you want to %s %ld files(%s)? (Y/n)",name[act],count,size_shrink(size));
@@ -886,11 +870,8 @@ cmd_fmod(char *src, csas *cs)
 
     for (size_t i = 0; i < dirs->size; i++) {
         xdir *d = &dir[i];
-        if (d->size == 0)
+        if (d->size == 0 || (plen && (plen != d->plen || memcmp(path,d->path,plen) != 0)))
             continue;
-        if (plen)
-            if (plen != d->plen || memcmp(path,d->path,plen) != 0)
-                continue;
         if ((fd2 = open(d->path,O_DIRECTORY)) == -1)
             continue;
         for (size_t j = 0; j < d->size; j++) {
@@ -913,4 +894,166 @@ cmd_fmod(char *src, csas *cs)
     close(fd2);
     free(buffer);
     return 0;
+}
+
+int
+cmd_load(char *src, csas *cs)
+{
+    size_t pos=0,s=strlen(src);
+    char path[PATH_MAX],*r;
+    uchar flags=0;
+
+    while (src[pos]) {
+        if (src[pos] == '-') {
+            do {
+                pos++;
+                switch (src[pos]) {
+                    case 'm': //mode
+                        pos++;
+                        while (isspace(src[pos]))
+                            pos++;
+                        switch (atoi(src+pos)) {
+                            case 0: flags |= D_MODE_ONCE; break;
+                            case 1: flags |= D_MODE_CHANGE; break;
+                            case 2: flags &= ~(D_MODE_ONCE|D_MODE_CHANGE); break;
+                        }
+                        while (isdigit(src[pos]))
+                            pos++;
+                        break;
+                    case 'R': flags |= D_RECURSIVE; break;
+                }
+            } while (src[pos] && !isspace(src[pos]));
+        } else {
+            r = get_path(path,src+pos,' ',s-pos,PATH_MAX,&CTAB);
+            if (r == NULL)
+                continue;
+            pos = r-src+1;
+            if (getdir(path,cs->dirs,flags) == -1)
+                return -1;
+        }
+        while (isspace(src[pos]))
+            pos++;
+    }
+    return 0;
+}
+
+int
+cmd_rename(char *src, csas *cs)
+{
+    char name[2][NAME_MAX],*n;
+    size_t pos=0;
+
+    while (isspace(src[pos]))
+        pos++;
+    if (get_path(name[0],src+pos,'\0',strlen(src)-pos,NAME_MAX,&CTAB) == NULL)
+        return -1;
+
+    n = name[1];
+    console_getline(&n,1,"rename ",(char*)name[0],cs);
+    return rename((char*)name[0],(char*)name[1]);
+}
+
+int
+cmd_open_with(char *src, csas *cs)
+{
+    char file[PATH_MAX],path[PATH_MAX],*n;
+    size_t pos=0;
+
+    while (isspace(src[pos]))
+        pos++;
+    if (get_path(file,src+pos,'\0',strlen(src)-pos,PATH_MAX,&CTAB) == NULL)
+        return -1;
+    if (access(file,R_OK) != 0)
+        return -1;
+
+    n = path;
+    console_getline(&n,1,"open_with ",NULL,cs);
+    return spawn(n,file,NULL,F_NORMAL|F_WAIT);
+}
+
+int
+cmd_bulk(char *src, csas *cs)
+{
+    size_t pos=0,s=strlen(src);
+    int tab=cs->ctab,selected=-1;
+    uchar flags=0;
+    char *args[6],*r,a[6][PATH_MAX],path[PATH_MAX]=".";
+    for (int i = 0; i < 6; i++)
+        args[i] = a[i];
+
+    while (src[pos]) {
+        if (src[pos] == '-') {
+            do {
+                pos++;
+                switch (src[pos]) {
+                    case 'n': flags |= 0x4; break; //no path in comment
+                    case 'N': flags &= ~0x4; break;
+                    case 'f': flags |= 0x1; break; //full path
+                    case 'w': //tab
+                    case 's': { //sel
+                            char c = src[pos];
+                            pos++;
+                            while (isspace(src[pos]))
+                                pos++;
+                            if (c == 'w') {
+                                tab = atoi(src+pos);
+                                if (tab >= TABS || !(cs->tabs[tab].flags&T_EXISTS))
+                                    return 0;
+                            } else switch (src[pos]) {
+                                case '-': selected = -1; pos++; break;
+                                case '.': selected = -2; pos++; break;
+                                default: selected = atoi(src+pos);
+                            }
+                            while (isdigit(src[pos]))
+                                pos++;
+                        }
+                        break;
+                    case 'R': flags |= 0x2; break; //recursive
+                    case 'S': //shell
+                    case 'E': //editor
+                    case 'b': //first
+                    case 'm': //middle
+                    case 'e': { //end
+                            while (isspace(src[pos]))
+                                pos++;
+                            int n;
+                            switch (src[pos]) {
+                                case 'S': n = 1; break;
+                                case 'E': n = 2; break;
+                                case 'b': n = 3; break;
+                                case 'm': n = 4; break;
+                                default: n = 5;
+                            }
+                            pos++;
+                            while (isspace(src[pos]))
+                                pos++;
+                            r = get_path(args[n],src+pos,' ',s-pos,PATH_MAX,&CTAB);
+                            if (r == NULL)
+                                continue;
+                            pos = r-src+1;
+                        }
+                        break;
+                }
+
+            } while (src[pos] && !isspace(src[pos]));
+        } else {
+            while (isspace(src[pos]))
+                pos++;
+            r = get_path(path,src+pos,' ',s-pos,PATH_MAX,&CTAB);
+            if (r == NULL)
+                continue;
+            pos = r-src+1;
+        }
+        pos++;
+        while (isspace(src[pos]))
+            pos++;
+    }
+    
+
+    if (selected == -2)
+        selected = cs->tabs[tab].sel;
+    if (realpath(path,args[0]) == NULL)
+        return -1;
+
+    return bulk(cs,tab,selected,(char**)args,flags);
 }

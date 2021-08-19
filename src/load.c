@@ -35,7 +35,7 @@ load_dir(xdir *dir, const mode_t flags)
             continue;
         xfile *f = &files[s];
         nlen = strlen(dname);
-        f->nlen = nlen;
+        f->nlen = nlen++;
         f->name = memcpy(malloc(nlen),dname,nlen);
         fstatat(fd,dname,&statbuf,AT_SYMLINK_NOFOLLOW);
         memset(f->sel,0,TABS);
@@ -53,14 +53,15 @@ load_dir(xdir *dir, const mode_t flags)
     return 0;
 }
 
-int
-get_dir(const char *path, flexarr *dirs, size_t *num, const mode_t flags)
+li
+getdir(const char *path, flexarr *dirs, const uchar flags)
 {
     ret_errno(dirs==NULL,EINVAL,-1);
     if (access(path,R_OK) != 0)
         return -1;
 
     size_t i;
+    li ret=0;
     char rpath[PATH_MAX];
     size_t rpathl;
     if (realpath(path,rpath) == NULL)
@@ -77,16 +78,18 @@ get_dir(const char *path, flexarr *dirs, size_t *num, const mode_t flags)
     }
 
     if (found) {
-        *num = i;
         if (flags&D_MODE_ONCE) {
             if (flags&D_CHDIR)
-                return chdir(path);
-            return 0;
+                if (chdir(path) != 0)
+                    return -1;
+            ret = i;
+            goto END;
         }
+        ret = i;
         d = &d[i];
     } else {
         d = flexarr_inc(dirs);
-        *num = dirs->size-1;
+        ret = dirs->size-1;
         d->path = malloc(PATH_MAX);
         memcpy(d->path,rpath,rpathl+1);
         d->plen = rpathl;
@@ -96,6 +99,17 @@ get_dir(const char *path, flexarr *dirs, size_t *num, const mode_t flags)
         memset(&d->ctime,0,sizeof(struct timespec));
     }
 
+    struct stat statbuf;
+    if (lstat(path,&statbuf) != 0)
+        return -1;
+    if (flags&D_CHDIR)
+        if (chdir(path) != 0)
+            return -1;
+    if (flags&D_MODE_CHANGE)
+        if (memcmp(&d->ctime,&statbuf.st_ctim,sizeof(struct timespec)) == 0)
+            goto END;
+    d->ctime = statbuf.st_ctim;
+    
     if (d->files != NULL) {
         for (i = 0; i < d->size; i++)
             free(d->files[i].name);
@@ -103,21 +117,28 @@ get_dir(const char *path, flexarr *dirs, size_t *num, const mode_t flags)
         d->files = NULL;
         d->size = 0;
     }
-
-    struct stat statbuf;
-    if (lstat(path,&statbuf) != 0)
-        return -1;
-    if (flags&D_MODE_CHANGE)
-        if (memcmp(&d->ctime,&statbuf.st_ctim,sizeof(struct timespec)) == 0)
-            return 0;
-    d->ctime = statbuf.st_ctim;
-    
     if (load_dir(d,flags) != 0)
         return -1;
-    if (flags&D_CHDIR)
-        if (chdir(path) != 0)
-            return -1;
     xfile_sort(d->files,d->size,SORT_CNAME|SORT_DIR_DISTINCTION|SORT_LDIR_DISTINCTION);
+    
+    END:
+    if (!(flags&D_RECURSIVE))
+        return ret;
+    
+    struct dirent *dir;
+    DIR *dirp = opendir(rpath);
+    if (dirp == NULL)
+        return -1;
+    rpath[rpathl++] = '/';
+    while ((dir = readdir(dirp))) {
+        if (dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
+            continue;
+        if (dir->d_type != DT_DIR)
+            continue;
+        memcpy(rpath+rpathl,dir->d_name,strlen(dir->d_name)+1);
+        getdir(rpath,dirs,flags);
+    }
+    closedir(dirp);
     return 0;
 }
 

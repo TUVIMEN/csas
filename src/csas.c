@@ -110,8 +110,6 @@ add_bindings(flexarr *b)
     xbind_add("x6","tab -g5",b);
     xbind_add("x7","tab -g6",b);
     xbind_add("x8","tab -g7",b);
-    xbind_add("x9","tab -g8",b);
-    xbind_add("x0","tab -g9",b);
     xbind_add("vta","select -ts - -o .",b);
     xbind_add("vth","select -ts - -o . .",b);
     xbind_add("vda","select -ds - -o .",b);
@@ -143,6 +141,9 @@ add_bindings(flexarr *b)
     xbind_add("Dd","fmod -Ds . .",b);
     xbind_add("DD","fmod -Ds .",b);
     xbind_add("Dt","fmod -Ds s",b);
+    xbind_add("R","load -m1 .",b);
+    xbind_add("a","rename %s",b);
+    xbind_add("r","open_with %s",b);
 }
 
 int
@@ -187,13 +188,17 @@ add_functions(flexarr *f)
     xfunc_add("cd",'f',cmd_cd,f);
     xfunc_add("file_run",'f',cmd_file_run,f);
     xfunc_add("source",'f',cmd_source,f);
+    xfunc_add("load",'f',cmd_load,f);
     xfunc_add("fastselect",'f',cmd_fastselect,f);
     xfunc_add("console",'f',cmd_console,f);
     xfunc_add("tab",'f',cmd_tab,f);
     xfunc_add("select",'f',cmd_select,f);
     xfunc_add("exec",'f',cmd_exec,f);
+    xfunc_add("open_with",'f',cmd_open_with,f);
     xfunc_add("ds",'f',cmd_ds,f);
+    xfunc_add("bulk",'f',cmd_bulk,f);
     xfunc_add("fmod",'f',cmd_fmod,f);
+    xfunc_add("rename",'f',cmd_rename,f);
     xfunc_add("map",'f',cmd_map,f);
     xfunc_add("alias",'f',cmd_alias,f);
     xfunc_add("quit",'f',cmd_quit,f);
@@ -243,8 +248,10 @@ csas_run(csas *cs, int argc, char **argv)
     char *path = ".";
     if (argc > 1)
         path = argv[1];
-    if (get_dir(path,cs->dirs,&cs->tabs[cs->ctab].t,D_CHDIR) != 0)
+    li n = getdir(path,cs->dirs,D_CHDIR);
+    if (n == -1)
         exiterr();
+    cs->tabs[cs->ctab].t = (size_t)n;
     cs->tabs[cs->ctab].flags |= T_EXISTS;
 
     config_load("/etc/csasrc",cs);

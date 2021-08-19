@@ -8,6 +8,7 @@ static struct sigaction oldsigtstp;
 extern fsig signatures[];
 extern char *FileOpener;
 extern char *Editor;
+extern const char *TTEMPLATE;
 
 void
 exiterr()
@@ -851,3 +852,152 @@ get_dirsize(const int fd, off_t *count, off_t *size, const uchar flags)
     return closedir(d);
 }
 
+char *
+mkpath(const char *dir, const char *name)
+{
+    static char path[PATH_MAX];
+    strcpy(path,dir);
+    size_t dlen = strlen(dir);
+    if (path[0] == '/' && path[1] != '\0')
+        path[dlen++] = '/';
+    strcpy(path+dlen,name);
+    return path;
+}
+
+static char *
+strtoshellpath(char *src)
+{
+    size_t i,size=strlen(src);
+    for (i = 0; i < size && size < PATH_MAX; i++) {
+        if(src[i] == '\\' || src[i] == '\"' || src[i] == '\'' || src[i] == ' ' || src[i] == '(' || src[i] == ')' || src[i] == '[' || src[i] == ']' || src[i] == '{' || src[i] == '}') {
+            for (size_t j = size++; j > i; j--)
+                src[j] = src[j-1];
+            src[i] = '\\';
+            i++;
+        }
+    }
+    return src;
+}
+
+int
+bulk(csas *cs, const size_t tab, const int selected, char **args, const uchar flags)
+{
+    char tfile[PATH_MAX],*t;
+    strcpy(tfile,TTEMPLATE);
+    int fd = mkstemp(tfile);
+    FILE *file = fdopen(fd,"w+");
+    if (!file)
+        return -1;
+
+    size_t plen = strlen(args[0]);
+    uchar comment_write;
+
+    flexarr *dirs = cs->dirs;
+    xdir *dir = (xdir*)dirs->v;
+    for (size_t i = 0; i < dirs->size; i++) {
+        xdir *d = &dir[i];
+        if (d->size == 0 || (plen && (flags&0x2 ? plen > d->plen : plen != d->plen || memcmp(args[0],d->path,plen) != 0)))
+            continue;
+
+        comment_write = flags&0x4;
+        for (size_t j = 0; j < d->size; j++) {
+            if (selected < 0 ? 1 : (d->files[j].sel[tab]&(1<<selected))) {
+                if (!comment_write) {
+                    fprintf(file,"//\t%s\n",d->path);
+                    comment_write = 1;
+                }
+                t = (flags&0x1) ? mkpath(d->path,d->files[j].name) : d->files[j].name;
+                fprintf(file,"%s\n",t);
+            }
+        }
+    }
+
+    fflush(file);
+    size_t pos=0,x;
+    rewind(file);
+    struct stat statbuf;
+
+    if (fstat(fd,&statbuf) != 0)
+        goto ERROR;
+    if (statbuf.st_size == 0)
+        goto END;
+    if (spawn(args[2],tfile,NULL,F_NORMAL|F_WAIT) != 0)
+        goto ERROR;
+    if (fstat(fd,&statbuf) != 0)
+        goto ERROR;
+    if (statbuf.st_size == 0)
+        goto END;
+
+    char *filecopy = (char*)malloc(statbuf.st_size+1);
+    if (read(fd,filecopy,statbuf.st_size) == -1)
+        goto ERROR;
+    if (freopen(tfile,"w+",file) == NULL)
+        goto ERROR;
+
+    char path[PATH_MAX];
+    uchar writed = 0;
+
+    fprintf(file,"#!%s\n\n",args[1]);
+
+    for (size_t i = 0; i < dirs->size; i++) {
+        xdir *d = &dir[i];
+        if (d->size == 0 || (plen && (flags&0x2 ? plen > d->plen : plen != d->plen || memcmp(args[0],d->path,plen) != 0)))
+            continue;
+
+        for (size_t j = 0; j < d->size && filecopy[pos]; j++) {
+            if (selected < 0 ? 0 : !(d->files[j].sel[tab]&(1<<selected)))
+                continue;
+
+            while (filecopy[pos] == '\n') {
+                pos++;
+                j--;
+            }
+            if (!(flags&0x4) && filecopy[pos] == '/' && filecopy[pos+1] == '/') {
+                while (filecopy[pos] && filecopy[pos] != '\n')
+                    pos++;
+                j--;
+            } else {
+                x = 0;
+                while (x < PATH_MAX && filecopy[pos] && filecopy[pos] != '\n')
+                    path[x++] = filecopy[pos++];
+                path[x] = '\0';
+
+                t = (flags&0x1) ? mkpath(d->path,d->files[j].name) : d->files[j].name;
+                if (x > 0 && strcmp(t,path) != 0) {
+                    fprintf(file,"%s ",args[3]);
+                    if (!(flags&0x1))
+                        t = mkpath(d->path,t);
+                    strtoshellpath(t);
+                    fprintf(file,"%s %s ",t,args[4]);
+                    t = mkpath(d->path,path);
+                    strtoshellpath(t);
+                    fprintf(file,"%s %s\n",t,args[5]);
+                    writed = 1;
+                }
+            }
+            pos++;
+        }
+    }
+
+    fflush(file);
+    free(filecopy);
+
+    if (writed == 0)
+        goto END;
+
+    if (spawn(args[2],tfile,NULL,F_NORMAL|F_WAIT) != 0 ||
+        spawn(args[1],tfile,NULL,F_NORMAL|F_WAIT|F_CONFIRM) != 0)
+        goto ERROR;
+
+    END: ;
+    fclose(file);
+    unlink(tfile);
+    return 0;
+
+    ERROR: ;
+    int e = errno;
+    fclose(file);
+    unlink(tfile);
+    errno = e;
+    return -1;
+}

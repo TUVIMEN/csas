@@ -22,5 +22,7 @@ int file_rm(const int fd, const char *name);
 int file_cp(const int fd1, const int fd2, const char *name, char *buffer, const mode_t flags);
 int file_mv(const int fd1, const int fd2, const char *name, char *buffer, const mode_t flags);
 int get_dirsize(const int fd, off_t *count, off_t *size, const uchar flags);
+char *mkpath(const char *dir, const char *name);
+int bulk(csas *cs, const size_t tab, const int selected, char **args, const uchar flags);
 
 #endif
