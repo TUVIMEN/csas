@@ -7,6 +7,7 @@
 #include "functions.h"
 
 extern uchar Exit;
+extern size_t BufferSize;
 
 uint
 update_event(csas *cs)
@@ -230,12 +231,12 @@ cmd_console(char *src, csas *cs)
             pos += 2;
             while (isspace(src[pos]))
                 pos++;
-            r = get_path(first,src+pos,' ',s-pos,NAME_MAX,&CTAB);
+            r = get_path(first,src+pos,' ',s-pos,NAME_MAX,cs);
             if (r == NULL)
                 continue;
             pos = r-src+1;
         } else {
-            r = get_path(add,src+pos,' ',s-pos,PATH_MAX,&CTAB);
+            r = get_path(add,src+pos,' ',s-pos,PATH_MAX,cs);
             if (r == NULL)
                 continue;
             pos = r-src+1;
@@ -338,7 +339,7 @@ cmd_select(char *src, csas *cs)
             } while (src[pos] && !isspace(src[pos]));
         } else {
             size_t t = pos;
-            char *r = get_path(path,src+pos,' ',strlen(src+pos),PATH_MAX,&TAB(tab1));
+            char *r = get_path(path,src+pos,' ',strlen(src+pos),PATH_MAX,cs);
             if (r == NULL)
                 continue;
             pos = r-src+1;
@@ -408,10 +409,9 @@ int
 cmd_source(char *src, csas *cs)
 {
     char path[PATH_MAX];
-    xdir *dir = &CTAB;
     size_t size=strlen(src),pos=0;
     while_is(isspace,src,pos,size);
-    if (get_path(path,src+pos,' ',size-pos,PATH_MAX,dir) == NULL) {
+    if (get_path(path,src+pos,' ',size-pos,PATH_MAX,cs) == NULL) {
         errno = ENOENT;
         return -1;
     }
@@ -431,7 +431,7 @@ cmd_cd(char *src, csas *cs)
     char path[PATH_MAX], *search_name = NULL;
     xdir *dir = &CTAB;
     while_is(isspace,src,pos,size);
-    if (get_path(path,src+pos,' ',size-pos,PATH_MAX,dir) == NULL) {
+    if (get_path(path,src+pos,' ',size-pos,PATH_MAX,cs) == NULL) {
         errno = ENOENT;
         return -1;
     }
@@ -466,10 +466,9 @@ int
 cmd_file_run(char *src, csas *cs)
 {
     char path[PATH_MAX];
-    xdir *dir = &CTAB;
     size_t size=strlen(src),pos=0;
     while_is(isspace,src,pos,size);
-    if (get_path(path,src+pos,' ',size-pos,PATH_MAX,dir) == NULL) {
+    if (get_path(path,src+pos,' ',size-pos,PATH_MAX,cs) == NULL) {
         errno = ENOENT;
         return -1;
     }
@@ -506,7 +505,7 @@ cmd_exec(char *src, csas *cs)
                 }
             } while (src[pos] && !isspace(src[pos]));
         } else if (!isspace(src[pos])) {
-            char *r = get_path(line,src+pos,'\0',strlen(src+pos),LLINE_MAX,&CTAB);
+            char *r = get_path(line,src+pos,'\0',strlen(src+pos),LLINE_MAX,cs);
             if (r == NULL) {
                 pos++;
                 continue;
@@ -523,30 +522,27 @@ cmd_exec(char *src, csas *cs)
 int
 cmd_alias(char *src, csas *cs)
 {
-    size_t pos = 0,s;
+    size_t pos=0,s=strlen(src);
     char name[NAME_MAX],*line,*r;
 
-    while (src[pos] && isspace(src[pos]))
+    while (isspace(src[pos]))
         pos++;
-    r = strchr(src+pos,'=');
-    s = r-(src+pos);
-    errno = EINVAL;
-    if (r == NULL || s > NAME_MAX)
-        return -1;
-    memcpy(name,src+pos,s);
-    name[s] = 0;
-    pos += s+1;
+
+    r = get_path(name,src+pos,' ',s-pos,FUNCTIONS_NAME_MAX,cs);
+    ret_errno(r==NULL,EINVAL,-1);
+    pos = r-src+1;
+
+    while (isspace(src[pos]))
+        pos++;
 
     line = malloc(LLINE_MAX);
-    r = get_path(line,src+pos,' ',strlen(src+pos),LLINE_MAX,&CTAB);
+    r = get_path(line,src+pos,' ',s-pos,LLINE_MAX,cs);
     errno = EINVAL;
     if (r == NULL) {
         free(line);
         return -1;
     }
-    pos = r-src+1;
-    xfunc_add(name,'a',line,cs->functions);
-    return 0;
+    return xfunc_add(name,'a',line,cs->functions);
 }
 
 int
@@ -558,14 +554,14 @@ cmd_map(char *src, csas *cs)
     while (isspace(src[pos]))
         pos++;
 
-    r = get_path(keys,src+pos,' ',strlen(src+pos),BINDING_KEY_MAX,&CTAB);
+    r = get_path(keys,src+pos,' ',strlen(src+pos),BINDING_KEY_MAX,cs);
     ret_errno(r==NULL,EINVAL,-1);
     pos = r-src+1;
 
     while (isspace(src[pos]))
         pos++;
 
-    r = get_path(line,src+pos,' ',strlen(src+pos),PATH_MAX,&CTAB);
+    r = get_path(line,src+pos,' ',strlen(src+pos),PATH_MAX,cs);
     ret_errno(r==NULL,EINVAL,-1);
     pos = r-src+1;
 
@@ -606,7 +602,7 @@ cmd_ds(char *src, csas *cs)
 {
     size_t pos=0,plen=0,s=strlen(src);
     uchar flags=D_S;
-    int selected=-1,ws=cs->ctab;
+    int selected=-1,tab=cs->ctab;
     char path[PATH_MAX];
 
     while (src[pos] && src[pos+1]) {
@@ -623,8 +619,8 @@ cmd_ds(char *src, csas *cs)
                             while (isspace(src[pos]))
                                 pos++;
                             if (c == 'w') {
-                                ws = atoi(src+pos);
-                                if (!(cs->tabs[ws].flags&T_EXISTS))
+                                tab = atoi(src+pos);
+                                if (!(cs->tabs[tab].flags&T_EXISTS))
                                     return 0;
                             } else {
                                 switch (src[pos]) {
@@ -646,7 +642,7 @@ cmd_ds(char *src, csas *cs)
             } while (src[pos] && !isspace(src[pos]));
         } else {
             size_t t = pos;
-            char *r = get_path(path,src+pos,' ',s-pos,PATH_MAX,&TAB(ws));
+            char *r = get_path(path,src+pos,' ',s-pos,PATH_MAX,cs);
             if (r == NULL)
                 continue;
             pos = r-src+1;
@@ -655,9 +651,9 @@ cmd_ds(char *src, csas *cs)
     }
 
     if (selected == -2) {
-        selected = cs->tabs[ws].sel;
+        selected = cs->tabs[tab].sel;
     } else if (selected == -3) {
-        xdir *dir = &TAB(ws);
+        xdir *dir = &TAB(tab);
         int dfd,fd;
         dfd = open(dir->path,O_DIRECTORY);
         if (dfd == -1)
@@ -697,7 +693,7 @@ cmd_ds(char *src, csas *cs)
             continue;
 
         for (size_t j = 0; j < d->size; j++) {
-            if (selected < 0 ? 1 : (d->files[j].sel[ws]&(1<<selected))) {
+            if (selected < 0 ? 1 : (d->files[j].sel[tab]&(1<<selected))) {
                 if ((fd = openat(dfd,d->files[j].name,O_DIRECTORY)) == -1)
                     continue;
                 d->files[j].size = 0;
@@ -716,7 +712,7 @@ cmd_fmod(char *src, csas *cs)
     uchar act = 2;
     mode_t flags = 0;
     size_t pos = 0,s=strlen(src),plen=0;
-    int selected=-1,ws=cs->ctab;
+    int selected=-1,tab=cs->ctab;
     char path[PATH_MAX],target[PATH_MAX]=".";
     static char *name[]={"delete","move","copy"};
     int fd1=-1,fd2=-1,fd3=-1;
@@ -734,7 +730,7 @@ cmd_fmod(char *src, csas *cs)
                         pos++;
                         while (isspace(src[pos]))
                             pos++;
-                        char *r = get_path(target,src+pos,' ',s-pos,PATH_MAX,&TAB(ws));
+                        char *r = get_path(target,src+pos,' ',s-pos,PATH_MAX,cs);
                         if (r == NULL)
                             continue;
                         pos = r-src+1;
@@ -746,8 +742,8 @@ cmd_fmod(char *src, csas *cs)
                             while (isspace(src[pos]))
                                 pos++;
                             if (c == 'w') {
-                                ws = atoi(src+pos);
-                                if (!(cs->tabs[ws].flags&T_EXISTS))
+                                tab = atoi(src+pos);
+                                if (!(cs->tabs[tab].flags&T_EXISTS))
                                     return 0;
                             } else {
                                 switch (src[pos]) {
@@ -772,7 +768,7 @@ cmd_fmod(char *src, csas *cs)
             } while (src[pos] && !isspace(src[pos]));
         } else {
             size_t t = pos;
-            char *r = get_path(path,src+pos,' ',s-pos,PATH_MAX,&TAB(ws));
+            char *r = get_path(path,src+pos,' ',s-pos,PATH_MAX,cs);
             if (r == NULL)
                 continue;
             pos = r-src+1;
@@ -781,16 +777,16 @@ cmd_fmod(char *src, csas *cs)
     }
 
     if (selected == -2)
-        selected = cs->tabs[ws].sel;
+        selected = cs->tabs[tab].sel;
     if ((fd1 = open(target,O_DIRECTORY)) == -1)
         return -1;
 
-    char *buffer = (act == 0 ? NULL : (char*)malloc(1<<16));
+    char *buffer = (act == 0 ? NULL : (char*)malloc(BufferSize));
     off_t count=0,size=0;
     int ev=-1;
 
     if (selected == -3) {
-        xdir *dir = &TAB(ws);
+        xdir *dir = &TAB(tab);
         if (dir->size == 0) {
             close(fd1);
             return 0;
@@ -843,7 +839,7 @@ cmd_fmod(char *src, csas *cs)
         if ((fd2 = open(d->path,O_DIRECTORY)) == -1)
             continue;
         for (size_t j = 0; j < d->size; j++) {
-            if (selected < 0 ? 1 : (d->files[j].sel[ws]&(1<<selected))) {
+            if (selected < 0 ? 1 : (d->files[j].sel[tab]&(1<<selected))) {
                 if ((fd3 = openat(fd2,d->files[j].name,O_DIRECTORY)) == -1) {
                     count++;
                     fstatat(fd2,d->files[j].name,&statbuf,AT_SYMLINK_NOFOLLOW);
@@ -875,7 +871,7 @@ cmd_fmod(char *src, csas *cs)
         if ((fd2 = open(d->path,O_DIRECTORY)) == -1)
             continue;
         for (size_t j = 0; j < d->size; j++) {
-            if (selected < 0 ? 1 : (d->files[j].sel[ws]&(1<<selected))) {
+            if (selected < 0 ? 1 : (d->files[j].sel[tab]&(1<<selected))) {
                 switch (act) {
                     case 0: file_rm(fd2,d->files[j].name); break;
                     case 1: file_mv(fd1,fd2,d->files[j].name,buffer,flags); break;
@@ -924,7 +920,7 @@ cmd_load(char *src, csas *cs)
                 }
             } while (src[pos] && !isspace(src[pos]));
         } else {
-            r = get_path(path,src+pos,' ',s-pos,PATH_MAX,&CTAB);
+            r = get_path(path,src+pos,' ',s-pos,PATH_MAX,cs);
             if (r == NULL)
                 continue;
             pos = r-src+1;
@@ -938,6 +934,37 @@ cmd_load(char *src, csas *cs)
 }
 
 int
+cmd_set(char *src, csas *cs)
+{
+    size_t pos=0,s=strlen(src);
+    char name[NAME_MAX],val[PATH_MAX],*r;
+    name[0] = 0;
+    val[0] = 0;
+    uchar string=0;
+
+    while (src[pos]) {
+        if (src[pos] == '-' && src[pos+1] == 's') {
+            string = 1;
+            pos += 2;
+        } else {
+            if (name[0] == 0)
+                r = get_path(name,src+pos,' ',s-pos,VARS_NAME_MAX,cs);
+            else
+                r = get_path(val,src+pos,' ',s-pos,PATH_MAX,cs);
+            if (r == NULL)
+                continue;
+            pos = r-src+1;
+        }
+        pos++;
+        while (isspace(src[pos]))
+            pos++;
+    }
+
+    ret_errno(!name[0]||!val[0],EINVAL,-1);
+    return xvar_add(NULL,name,string == 0 ? 'i' : 's',val,cs->vars);
+}
+
+int
 cmd_rename(char *src, csas *cs)
 {
     char name[2][NAME_MAX],*n;
@@ -945,7 +972,7 @@ cmd_rename(char *src, csas *cs)
 
     while (isspace(src[pos]))
         pos++;
-    if (get_path(name[0],src+pos,'\0',strlen(src)-pos,NAME_MAX,&CTAB) == NULL)
+    if (get_path(name[0],src+pos,'\0',strlen(src)-pos,NAME_MAX,cs) == NULL)
         return -1;
 
     n = name[1];
@@ -961,7 +988,7 @@ cmd_open_with(char *src, csas *cs)
 
     while (isspace(src[pos]))
         pos++;
-    if (get_path(file,src+pos,'\0',strlen(src)-pos,PATH_MAX,&CTAB) == NULL)
+    if (get_path(file,src+pos,'\0',strlen(src)-pos,PATH_MAX,cs) == NULL)
         return -1;
     if (access(file,R_OK) != 0)
         return -1;
@@ -1027,7 +1054,7 @@ cmd_bulk(char *src, csas *cs)
                             pos++;
                             while (isspace(src[pos]))
                                 pos++;
-                            r = get_path(args[n],src+pos,' ',s-pos,PATH_MAX,&CTAB);
+                            r = get_path(args[n],src+pos,' ',s-pos,PATH_MAX,cs);
                             if (r == NULL)
                                 continue;
                             pos = r-src+1;
@@ -1039,7 +1066,7 @@ cmd_bulk(char *src, csas *cs)
         } else {
             while (isspace(src[pos]))
                 pos++;
-            r = get_path(path,src+pos,' ',s-pos,PATH_MAX,&CTAB);
+            r = get_path(path,src+pos,' ',s-pos,PATH_MAX,cs);
             if (r == NULL)
                 continue;
             pos = r-src+1;

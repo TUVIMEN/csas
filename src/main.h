@@ -33,9 +33,11 @@
 #define DIR_INCR 32
 #define BINDINGS_INCR 8
 #define FUNCTIONS_INCR 8
+#define VARS_INCR 8
 #define HISTORY_INCR 8
 #define BINDING_KEY_MAX 64
 #define FUNCTIONS_NAME_MAX 256
+#define VARS_NAME_MAX 256
 #define LLINE_MAX (1<<12)
 #define NUM_MAX 32
 #define HISTORY_MAX 32
@@ -138,6 +140,12 @@ typedef struct {
 } xfunc;
 
 typedef struct {
+    char *name;
+    uchar type;
+    void *v;
+} xvar;
+
+typedef struct {
     uchar sel[TABS];
     char *name;
     off_t size;
@@ -167,6 +175,7 @@ typedef struct {
     flexarr *dirs;
     flexarr *bindings;
     flexarr *functions;
+    flexarr *vars;
     flexarr *consoleh;
     WINDOW *win;
     char typed[NUM_MAX];

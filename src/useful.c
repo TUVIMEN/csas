@@ -1,6 +1,7 @@
 #include "main.h"
 #include "useful.h"
 #include "functions.h"
+#include "calc.h"
 #include "csas.h"
 
 static struct sigaction oldsighup;
@@ -199,6 +200,124 @@ addenv(char *dest, char *src, size_t *x, size_t *y, const size_t max, size_t siz
     return -1;
 }
 
+static void
+strrev(char *str, size_t s)
+{
+    register uchar c;
+    for (size_t i=0,j=s-1; i < j; i++, j--) {
+        c = str[i];
+        str[i] = str[j];
+        str[j] = c;
+    }
+}
+
+static void
+ltoa(li num, char *result)
+{
+    size_t n = 0;
+    if (num < 0) {
+        result[n++] = '-';
+        num *= -1;
+    }
+
+    do {
+        result[n++] = (num%10)+48;
+        num /= 10;
+    } while (num != 0);
+
+    if (n > 1) {
+        if (*result == '-')
+            strrev(result+1,n-1);
+        else
+            strrev(result,n);
+    }
+    result[n] = 0;
+}
+
+static int
+addvar(char *dest, char *src, size_t *x, size_t *y, const size_t max, size_t size, flexarr *vars)
+{
+    if (src[*y] != '$' || src[*y+1] != '(')
+        return -1;
+
+    *y += 2;
+    char *t=memchr(src+*y,')',size-*y);
+    size_t s=t-(src+*y),i;
+    if (t == NULL || s > VARS_NAME_MAX)
+        goto END;
+
+    char name[VARS_NAME_MAX];
+    memcpy(name,src+*y,s);
+    name[s] = 0;
+
+    xvar *v = (xvar*)vars->v;
+    uchar found=0;
+    for (i = 0; i < vars->size; i++) {
+        if (s == strlen(v[i].name) && memcmp(name,v[i].name,s) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        errno = EFAULT;
+        goto END;
+    }
+
+    v = &v[i];
+    *y += s;
+
+    if (v->type == 'i' || v->type == 'I') {
+        ltoa(*(li*)v->v,name);
+        t = name;
+    } else {
+        t = v->v;
+    }
+
+    s = strlen(t);
+    if (s+*x > max)
+        return 0;
+    memcpy(dest+*x,t,s);
+    *x += s-1;
+    return 0;
+
+    END: ;
+    *y -= 2;
+    return -1;
+}
+
+static int
+addcalc(char *dest, char *src, size_t *x, size_t *y, const size_t max, size_t size, flexarr *vars)
+{
+    if (src[*y] != '$' || src[*y+1] != '[')
+        return -1;
+
+    *y += 2;
+    char *t=memchr(src+*y,']',size-*y);
+    size_t s=t-(src+*y);
+    if (t == NULL || s > NAME_MAX)
+        goto END;
+
+    char name[NAME_MAX];
+    memcpy(name,src+*y,s);
+    name[s] = 0;
+    *y += s;
+
+    li num;
+    calc(name,&num,vars);
+    ltoa(num,name);
+
+    s = strlen(name);
+    if (s+*x > max)
+        return 0;
+    memcpy(dest+*x,name,s);
+    *x += s-1;
+    return 0;
+
+    END: ;
+    *y -= 2;
+    return -1;
+}
+
 int
 handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xdir *dir)
 {
@@ -245,7 +364,7 @@ special_character(const char c)
 }
 
 char *
-get_path(char *dest, char *src, const char delim, size_t size, const size_t max, xdir *dir)
+get_path(char *dest, char *src, const char delim, size_t size, const size_t max, csas *cs)
 {
     size_t pos=0,x=0;
     if (*src == '\'') {
@@ -277,9 +396,14 @@ get_path(char *dest, char *src, const char delim, size_t size, const size_t max,
                 dest[x] = special_character(src[++pos]);
                 continue;
             }
-            if (addenv(dest,src,&x,&pos,max,size) == 0)
-                continue;
-            if (handle_percent(dest,src,&x,&pos,max,dir) == 0)
+            if (src[pos] == '$') {
+                if (addenv(dest,src,&x,&pos,max,size) == 0)
+                    continue;
+                if (addvar(dest,src,&x,&pos,max,size,cs->vars) == 0)
+                    continue;
+                if (addcalc(dest,src,&x,&pos,max,size,cs->vars) == 0)
+                    continue;
+            } else if (handle_percent(dest,src,&x,&pos,max,&CTAB) == 0)
                 continue;
             dest[x] = src[pos];
         }

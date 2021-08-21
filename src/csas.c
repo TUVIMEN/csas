@@ -3,6 +3,7 @@
 #include "load.h"
 #include "functions.h"
 #include "useful.h"
+#include "calc.h"
 #include "draw.h"
 #include "config.h"
 
@@ -200,8 +201,72 @@ add_functions(flexarr *f)
     xfunc_add("fmod",'f',cmd_fmod,f);
     xfunc_add("rename",'f',cmd_rename,f);
     xfunc_add("map",'f',cmd_map,f);
+    xfunc_add("set",'f',cmd_set,f);
     xfunc_add("alias",'f',cmd_alias,f);
     xfunc_add("quit",'f',cmd_quit,f);
+}
+
+int
+xvar_add(void *addr, const char *name, const uchar type, const void *val, flexarr *v)
+{
+    ret_errno(name==NULL||v==NULL,EINVAL,-1);
+    ret_errno(strlen(name)>FUNCTIONS_NAME_MAX,EOVERFLOW,-1);
+
+    xvar *vars = (xvar*)v->v;
+    size_t i;
+    uchar found = 0;
+    for (i = 0; i < v->size; i++) {
+        if (strcmp(name,vars[i].name) == 0) {
+            found = 1;
+            break;
+        }
+    }
+
+    if (found == 0) {
+        vars = (xvar*)flexarr_inc(v);
+        vars->name = malloc(VARS_NAME_MAX);
+        strcpy(vars->name,name);
+        vars->v = NULL;
+    } else {
+        vars = &vars[i];
+        if ((vars->type == 's' || vars->type == 'i') && vars->type != type) {
+            free(vars->v);
+            vars->v = NULL;
+        }
+    }
+
+    switch (type) {
+        case 's':
+            addr = vars->v;
+            if (!vars->v)
+                addr = malloc(PATH_MAX);
+            // fall through
+        case 'S':
+            vars->v = addr;
+            if (val)
+                strcpy(vars->v,val);
+            break;
+        case 'i':
+            if (!vars->v)
+                addr = malloc(sizeof(li));
+            else
+                addr = vars->v;
+            // fall through
+        case 'I':
+            vars->v = addr;
+            if (val)
+                calc(val,vars->v,v);
+            break;
+    }
+
+    vars->type = type;
+    return 0;
+}
+
+static void
+add_vars(flexarr *v)
+{
+    xvar_add(&BufferSize,"BufferSize",'I',NULL,v);
 }
 
 csas *
@@ -212,6 +277,7 @@ csas_init()
     ret->ctab = 0;
     ret->dirs = flexarr_init(sizeof(xdir),DIR_INCR);
     ret->consoleh = flexarr_init(sizeof(char**),HISTORY_INCR);
+    ret->vars = flexarr_init(sizeof(xvar),VARS_INCR);
     ret->functions = flexarr_init(sizeof(xfunc),FUNCTIONS_INCR);
     ret->bindings = flexarr_init(sizeof(xbind),BINDINGS_INCR);
     initcurses();
@@ -219,6 +285,7 @@ csas_init()
 
     add_functions(ret->functions);
     add_bindings(ret->bindings);
+    add_vars(ret->vars);
 
     return ret;
 }

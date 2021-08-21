@@ -1,5 +1,9 @@
 alias shell='exec -ncw ${SHELL} -c $$'
+alias bulkrename='bulk -n -S sh -E ${EDITOR} -b mv -s.'
+
 map s 'console "shell "'
 map S 'exec -nw ${SHELL}'
+map b "bulkrename"
+map B "bulkrename -NR"
 
 source ~/.config/csasrc
