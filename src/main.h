@@ -159,8 +159,8 @@ typedef struct {
     char *path;
     xfile *files;
     size_t size;
-    size_t scroll;
-    size_t sel;
+    size_t scroll[TABS];
+    size_t sel[TABS];
     ushort plen;
 } xdir;
 
@@ -168,10 +168,10 @@ typedef struct {
     size_t t;
     uchar sel;
     uchar flags;
-} tab;
+} xtab;
 
 typedef struct {
-    tab tabs[TABS];
+    xtab tabs[TABS];
     flexarr *dirs;
     flexarr *bindings;
     flexarr *functions;

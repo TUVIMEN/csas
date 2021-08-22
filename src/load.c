@@ -94,8 +94,8 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         memcpy(d->path,rpath,rpathl+1);
         d->plen = rpathl;
         d->files = NULL;
-        d->scroll = 0;
-        d->sel = 0;
+        memset(d->sel,0,TABS*sizeof(size_t));
+        memset(d->scroll,0,TABS*sizeof(size_t));
         memset(&d->ctime,0,sizeof(struct timespec));
     }
 

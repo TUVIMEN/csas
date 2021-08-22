@@ -273,7 +273,7 @@ csas *
 csas_init()
 {
     csas *ret = malloc(sizeof(csas));
-    memset(ret->tabs,0,sizeof(tab)*TABS);
+    memset(ret->tabs,0,sizeof(xtab)*TABS);
     ret->ctab = 0;
     ret->dirs = flexarr_init(sizeof(xdir),DIR_INCR);
     ret->consoleh = flexarr_init(sizeof(char**),HISTORY_INCR);

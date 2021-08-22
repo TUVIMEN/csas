@@ -104,9 +104,9 @@ command_run(char *src, csas *cs)
 }
 
 static void
-move_d(xdir *dir, const size_t value, const uchar flags)
+move_d(xdir *dir, const size_t value, const uchar flags, const size_t tab)
 {
-    size_t t = dir->sel;
+    size_t t = dir->sel[tab];
     switch (flags&3) {
         case MOVE_SET: t = value; break;
         case MOVE_UP: t += value; break;
@@ -120,7 +120,7 @@ move_d(xdir *dir, const size_t value, const uchar flags)
 
     if (t > dir->size-1)
         t = dir->size-1;
-    dir->sel = t;
+    dir->sel[tab] = t;
 }
 
 int
@@ -165,7 +165,7 @@ cmd_move(char *src, csas *cs)
         pos++;
     }
 
-    move_d(dir,value,flags);
+    move_d(dir,value,flags,cs->ctab);
     return 0;
 }
 
@@ -351,7 +351,7 @@ cmd_select(char *src, csas *cs)
 
     ret_errno((!(cs->tabs[tab1].flags&T_EXISTS))||(!(cs->tabs[tab2].flags&T_EXISTS)),EINVAL,-1);
 
-    tab *tabs = cs->tabs;
+    xtab *tabs = cs->tabs;
     flexarr *dirs = cs->dirs;
     xdir *dir = (xdir*)dirs->v;
 
@@ -362,10 +362,11 @@ cmd_select(char *src, csas *cs)
     if (selected == -3) {
         if (!(flags&0x4))
             return 0;
+        uchar *s = dir[tabs[tab1].t].files[dir[tabs[tab1].t].sel[tab1]].sel;
         switch (flags&0x3) {
-            case 0: dir[tabs[tab1].t].files[dir[tabs[tab1].t].sel].sel[tab2] &= ~(1<<toselected); break;
-            case 1: dir[tabs[tab1].t].files[dir[tabs[tab1].t].sel].sel[tab2] |= 1<<toselected; break;
-            default: dir[tabs[tab1].t].files[dir[tabs[tab1].t].sel].sel[tab2] ^= 1<<toselected;
+            case 0: s[tab2] &= ~(1<<toselected); break;
+            case 1: s[tab2] |= 1<<toselected; break;
+            default: s[tab2] ^= 1<<toselected;
         }
     }
 
@@ -400,8 +401,8 @@ cmd_fastselect(char *src, csas *cs)
 {
     xdir *dir = &CTAB;
     ret_errno(dir->size==0,EINVAL,-1);
-    dir->files[dir->sel].sel[cs->ctab] ^= (1<<cs->tabs[cs->ctab].sel);
-    move_d(dir,1,MOVE_UP);
+    dir->files[dir->sel[cs->ctab]].sel[cs->ctab] ^= (1<<cs->tabs[cs->ctab].sel);
+    move_d(dir,1,MOVE_UP,cs->ctab);
     return 0;
 }
 
@@ -454,7 +455,7 @@ cmd_cd(char *src, csas *cs)
     for (size_t i = 0; i < dir->size; i++) {
         if (nlen == files[i].nlen 
                 && memcmp(search_name,files[i].name,nlen) == 0) {
-            dir->sel = i;
+            dir->sel[cs->ctab] = i;
             break;
         }
     }
@@ -660,7 +661,7 @@ cmd_ds(char *src, csas *cs)
             return -1;
         if (dir->size == 0)
             return 0;
-        xfile *file = &dir->files[dir->sel];
+        xfile *file = &dir->files[dir->sel[tab]];
         fd = openat(dfd,file->name,O_DIRECTORY);
         if (fd == -1)
             return -1;
@@ -794,7 +795,7 @@ cmd_fmod(char *src, csas *cs)
         if ((fd2 = open(dir->path,O_DIRECTORY)) == -1)
             goto END;
 
-        xfile *file = &dir->files[dir->sel];
+        xfile *file = &dir->files[dir->sel[tab]];
         if ((file->mode&S_IFMT) == S_IFDIR) {
 	    if ((fd3 = openat(fd2,file->name,O_RDONLY)) == -1)
 	        goto END;

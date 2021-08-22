@@ -319,7 +319,7 @@ addcalc(char *dest, char *src, size_t *x, size_t *y, const size_t max, size_t si
 }
 
 int
-handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xdir *dir)
+handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xdir *dir, const size_t tab)
 {
     if (src[*y] != '%')
         return -1;
@@ -334,10 +334,10 @@ handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xd
            break;
         case 's':
            (*y)++;
-           if (dir->size == 0 || *x+dir->files[dir->sel].nlen > max)
+           if (dir->size == 0 || *x+dir->files[dir->sel[tab]].nlen > max)
                return 0;
-           memcpy(dest+*x,dir->files[dir->sel].name,dir->files[dir->sel].nlen);
-           *x += dir->files[dir->sel].nlen-1;
+           memcpy(dest+*x,dir->files[dir->sel[tab]].name,dir->files[dir->sel[tab]].nlen);
+           *x += dir->files[dir->sel[tab]].nlen-1;
            break;
        default:
            dest[*x] = src[*y];
@@ -403,7 +403,7 @@ get_path(char *dest, char *src, const char delim, size_t size, const size_t max,
                     continue;
                 if (addcalc(dest,src,&x,&pos,max,size,cs->vars) == 0)
                     continue;
-            } else if (handle_percent(dest,src,&x,&pos,max,&CTAB) == 0)
+            } else if (handle_percent(dest,src,&x,&pos,max,&CTAB,cs->ctab) == 0)
                 continue;
             dest[x] = src[pos];
         }
