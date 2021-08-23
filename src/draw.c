@@ -44,19 +44,19 @@ draw_path(int y, csas *cs)
 {
     xdir *dir = &CTAB;
     xfile *file = dir->files;
-    size_t i=0,ctab=cs->ctab;
+    size_t i=0,ctab=cs->ctab,sel=dir->sel[ctab];
     attr_set(A_BOLD,DIR_C,NULL);
     if (dir->size > 0) {
         if (dir->path[0] == '/' && dir->path[1])
             i++;
-        i = file[dir->sel[ctab]].nlen;
+        i = file[sel].nlen;
     }
     mvaddnstr(y,0,path_shrink(dir->path,dir->plen,COLS-i),dir->plen);
     if (dir->size > 0) {
         if (dir->path[0] == '/' && dir->path[1])
             addch('/');
         attr_set(A_BOLD,REG_C,NULL);
-        addnstr(file[dir->sel[ctab]].name,file[dir->sel[ctab]].nlen);
+        addnstr(file[sel].name,file[sel].nlen);
     }
 }
 
@@ -127,13 +127,14 @@ void
 draw_dir(WINDOW *win, xdir *dir, csas *cs)
 {
     size_t i,j;
-    size_t ctab=cs->ctab;
+    size_t ctab=cs->ctab,scroll=dir->scroll[ctab],sel=dir->sel[ctab];
     xfile *file = dir->files;
     int color,maxx=win->_maxx+1,maxy=win->_maxy+1;
-    if (dir->sel[ctab] < dir->scroll[ctab])
-        dir->scroll[ctab] = dir->sel[ctab];
-    else if (dir->sel[ctab] > dir->scroll[ctab]+maxy-1)
-        dir->scroll[ctab] = dir->sel[ctab]-maxy+1;
+    if (sel < scroll)
+        dir->scroll[ctab] = sel;
+    else if (sel > scroll+maxy-1)
+        dir->scroll[ctab] = sel-maxy+1;
+    scroll = dir->scroll[ctab];
 
     for (i = 0, j = dir->scroll[ctab]; i < (size_t)maxy && j < dir->size; i++, j++) {
         if (file[j].sel[ctab]&(1<<cs->tabs[ctab].sel))
@@ -142,7 +143,7 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
         wattr_set(win,0,0, NULL);
 
         color =  color_by_mode(file[j].mode,file[j].flags);
-        if (j == dir->sel[ctab])
+        if (j == sel)
             wattr_on(win,SEL_C,NULL);
         wcolor_set(win,color,NULL);
         mvwhline(win,i,1,' ',maxx);

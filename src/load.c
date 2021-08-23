@@ -97,6 +97,8 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         memset(d->sel,0,TABS*sizeof(size_t));
         memset(d->scroll,0,TABS*sizeof(size_t));
         memset(&d->ctime,0,sizeof(struct timespec));
+        d->searchlist = flexarr_init(sizeof(char*),SEARCHLIST_INCR);
+        d->searchlist_pos = 0;
     }
 
     struct stat statbuf;
@@ -111,14 +113,16 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     d->ctime = statbuf.st_ctim;
     
     if (d->files != NULL) {
-        for (i = 0; i < d->size; i++)
+        for (i = 0; i < d->asize; i++)
             free(d->files[i].name);
         free(d->files);
         d->files = NULL;
         d->size = 0;
+        d->asize = 0;
     }
     if (load_dir(d,flags) != 0)
         return -1;
+    d->asize = d->size;
     xfile_sort(d->files,d->size,SORT_CNAME|SORT_DIR_DISTINCTION|SORT_LDIR_DISTINCTION);
     
     END:
@@ -141,20 +145,3 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     closedir(dirp);
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

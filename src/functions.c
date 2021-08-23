@@ -3,6 +3,8 @@
 #include "load.h"
 #include "draw.h"
 #include "csas.h"
+#include "calc.h"
+#include "sort.h"
 #include "console.h"
 #include "functions.h"
 
@@ -157,12 +159,12 @@ cmd_move(char *src, csas *cs)
             } while (src[pos] && !isspace(src[pos]));
         } else if (src[pos] == '$') {
             value = dir->size-1;
-        } else if (isdigit(src[pos])) {
-            value = (size_t)atoll(src+pos);
-            while (isdigit(src[pos]))
-                pos++;
+        } else if (!isspace(src[pos])) {
+            pos += calc(src+pos,(li*)&value,cs->vars);
         }
         pos++;
+        while (isspace(src[pos]))
+            pos++;
     }
 
     move_d(dir,value,flags,cs->ctab);
@@ -1084,4 +1086,258 @@ cmd_bulk(char *src, csas *cs)
         return -1;
 
     return bulk(cs,tab,selected,(char**)args,flags);
+}
+
+int
+cmd_search(char *src, csas *cs)
+{
+    xdir *dir = &CTAB;
+    if (dir->size == 0)
+        return 0;
+    xfile *files = dir->files;
+    size_t pos=0,mul=(size_t)atol(cs->typed),s=strlen(src),ctab=cs->ctab;
+    if (mul == 0)
+        mul = 1;
+    int sel = -1;
+    char pattern[NAME_MAX],*r;
+    uchar flags = 0;
+    char **searchl = (char**)dir->searchlist->v;
+
+    while (src[pos]) {
+        if (src[pos] == '-') {
+            do {
+                pos++;
+                switch (src[pos]) {
+                    case 's': //sel
+                        pos++;
+                        while (isspace(src[pos]))
+                            pos++;
+                        switch (src[pos]) {
+                            case '-':
+                                sel = -1;
+                                pos++;
+                                break;
+                            case '.':
+                                sel = cs->tabs[ctab].sel;
+                                pos++;
+                                break;
+                            default:
+                                sel = atoi(src+pos);
+                                while (isdigit(src[pos]))
+                                    pos++;
+                                break;
+                        }
+                        break;
+                    case 'p': //previous
+                    case 'n': //next
+                        flags = (src[pos] == 'n' ? 0x2 : 0x1);
+                        pos++;
+                        while (isspace(src[pos]))
+                            pos++;
+                        pos += calc(src+pos,(li*)&mul,cs->vars);
+                        break;
+                    case 'i': //case insensitive
+                        flags |= 0x80;
+                        break;
+                    case 'N': //name
+                    case 'G': //regex
+                    case 'E': //extended regex
+                        switch (src[pos]) {
+                            case 'N': flags |= 0x4; break;
+                            case 'G': flags |= 0x8; break;
+                            case 'E': flags |= 0x10; break;
+                        }
+                        pos++;
+                        while (isspace(src[pos]))
+                            pos++;
+                        r = get_path(pattern,src+pos,' ',s-pos,NAME_MAX,cs);
+                        if (r == NULL)
+                            continue;
+                        pos = r-src+1;
+                        break;
+                }
+            } while (src[pos] && !isspace(src[pos]));
+        }
+        pos++;
+        while (isspace(src[pos]))
+            pos++;
+    }
+
+    if (flags == 0)
+        return 0;
+
+    if (flags&0x3) {
+        if (!dir->searchlist->size)
+            return 0;
+        if (files[dir->sel[ctab]].name == searchl[dir->searchlist_pos]) {
+            if (flags&0x2) {
+                if (mul+dir->searchlist_pos == dir->searchlist->size)
+                    dir->searchlist_pos = 0;
+                else if (mul+dir->searchlist_pos > dir->searchlist->size)
+                    dir->searchlist_pos = dir->searchlist->size-1;
+                else
+                    dir->searchlist_pos += mul;
+            }
+            if (flags&0x1) {
+                if (dir->searchlist_pos == 0)
+                    dir->searchlist_pos = dir->searchlist->size-1;
+                else if (mul > dir->searchlist_pos)
+                    dir->searchlist_pos = 0;
+                else
+                    dir->searchlist_pos -= mul;
+            }
+        }
+        size_t i;
+        uchar found = 0;
+        char *name = searchl[dir->searchlist_pos];
+        for (i = 0; i < dir->size; i++) {
+            if (name == files[i].name) {
+                found = 1;
+                break;
+            }
+        }
+        if (found)
+            dir->sel[ctab] = i;
+        return 0;
+    }
+
+    flexarr_free(dir->searchlist);
+    dir->searchlist = flexarr_init(sizeof(char*),SEARCHLIST_INCR);
+    dir->searchlist_pos = 0;
+    int cflags=(flags&0x80 ? REG_ICASE : 0)|(flags&0x10 ? REG_EXTENDED : 0);
+    char *(*cmp)(const char*,const char*)=(flags&0x80 ? strcasestr : strstr);
+    regex_t regex;
+    if (flags&0x18) {
+        if (regcomp(&regex,pattern,cflags) != 0) {
+            errno = EFAULT;
+            return -1;
+        }
+    }
+    
+    for (size_t i = 0; i < dir->size; i++) {
+        if (sel == -1 ? 0 : !(files[i].sel[ctab]&sel))
+            continue;
+        if (flags&0x4) {
+            if (cmp(files[i].name,pattern) == NULL)
+                continue;
+        } else if (regexec(&regex,files[i].name,0,NULL,0) != 0)
+            continue;
+    
+        *((char**)flexarr_inc(dir->searchlist)) = files[i].name;
+    }
+
+    if (flags&0x18)
+        regfree(&regex);
+
+    return 0;
+}
+
+int
+cmd_filter(char *src, csas *cs)
+{
+    xdir *dir = &CTAB;
+    if (dir->asize == 0)
+        return 0;
+    xfile *files = dir->files;
+    size_t pos=0,ctab=cs->ctab,s=strlen(src);
+    int sel = -1;
+    char pattern[NAME_MAX],*r;
+    uchar flags = 0;
+
+    if (dir->asize == 0)
+        dir->asize = dir->size;
+    else
+        dir->size = dir->asize;
+
+    while (src[pos]) {
+        if (src[pos] == '-') {
+            do {
+                pos++;
+                switch (src[pos]) {
+                    case 's': //sel
+                        pos++;
+                        while (isspace(src[pos]))
+                            pos++;
+                        switch (src[pos]) {
+                            case '-':
+                                sel = -1;
+                                pos++;
+                                break;
+                            case '.':
+                                sel = cs->tabs[ctab].sel;
+                                pos++;
+                                break;
+                            default:
+                                sel = atoi(src+pos);
+                                while (isdigit(src[pos]))
+                                    pos++;
+                                break;
+                        }
+                        break;
+                    case 'i': //case insensitive
+                        flags |= 0x80;
+                        break;
+                    case 'N': //name
+                    case 'G': //regex
+                    case 'E': //extended regex
+                        switch (src[pos]) {
+                            case 'N': flags |= 0x4; break;
+                            case 'G': flags |= 0x8; break;
+                            case 'E': flags |= 0x10; break;
+                        }
+                        pos++;
+                        while (isspace(src[pos]))
+                            pos++;
+                        r = get_path(pattern,src+pos,' ',s-pos,NAME_MAX,cs);
+                        if (r == NULL)
+                            continue;
+                        pos = r-src+1;
+                        break;
+                }
+            } while (src[pos] && !isspace(src[pos]));
+        }
+        pos++;
+        while (isspace(src[pos]))
+            pos++;
+    }
+
+    if (flags == 0)
+        goto END;
+
+    int cflags=(flags&0x80 ? REG_ICASE : 0)|(flags&0x10 ? REG_EXTENDED : 0);
+    char *(*cmp)(const char*,const char*)=(flags&0x80 ? strcasestr : strstr);
+    regex_t regex;
+    if (flags&0x18) {
+        if (regcomp(&regex,pattern,cflags) != 0) {
+            errno = EFAULT;
+            return -1;
+        }
+    }
+
+    dir->size = 0;
+    char t[sizeof(xfile)];
+    for (size_t i = 0; i < dir->asize; i++) {
+        if (sel == -1 ? 0 : !(files[i].sel[ctab]&sel))
+            continue;
+        if (flags&0x4) {
+            if (cmp(files[i].name,pattern) == NULL)
+                continue;
+        } else if (regexec(&regex,files[i].name,0,NULL,0) != 0)
+            continue;
+
+        if (i == dir->size)
+            continue;
+
+        memcpy(t,&files[dir->size],sizeof(xfile));
+        memcpy(&files[dir->size],&files[i],sizeof(xfile));
+        memcpy(&files[i],t,sizeof(xfile));
+        dir->size++;
+    }
+
+    if (flags&0x18)
+        regfree(&regex);
+
+    END: ;
+    xfile_sort(dir->files,dir->size,SORT_CNAME|SORT_DIR_DISTINCTION|SORT_LDIR_DISTINCTION);
+    return 0;
 }

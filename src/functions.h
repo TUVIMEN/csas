@@ -20,6 +20,8 @@ int cmd_map(char *src, csas *cs);
 int cmd_open_with(char *src, csas *cs);
 int cmd_bulk(char *src, csas *cs);
 int cmd_set(char *src, csas *cs);
+int cmd_search(char *src, csas *cs);
+int cmd_filter(char *src, csas *cs);
 int cmd_load(char *src, csas *cs);
 int cmd_quit(char *src, csas *cs);
 int cmd_alias(char *src, csas *cs);

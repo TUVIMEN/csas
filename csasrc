@@ -5,5 +5,7 @@ map s 'console "shell "'
 map S 'exec -nw ${SHELL}'
 map b "bulkrename"
 map B "bulkrename -NR"
+map K 'move -d LINES>>1'
+map J 'move -u LINES>>1'
 
 source ~/.config/csasrc

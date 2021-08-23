@@ -23,6 +23,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <regex.h>
 #include <wchar.h>
 #include <ctype.h>
 #include <sys/mman.h>
@@ -35,6 +36,7 @@
 #define FUNCTIONS_INCR 8
 #define VARS_INCR 8
 #define HISTORY_INCR 8
+#define SEARCHLIST_INCR 32
 #define BINDING_KEY_MAX 64
 #define FUNCTIONS_NAME_MAX 256
 #define VARS_NAME_MAX 256
@@ -155,12 +157,15 @@ typedef struct {
 } xfile;
 
 typedef struct {
+    size_t scroll[TABS];
+    size_t sel[TABS];
+    flexarr* searchlist;
+    size_t searchlist_pos;
     struct timespec ctime;
     char *path;
     xfile *files;
     size_t size;
-    size_t scroll[TABS];
-    size_t sel[TABS];
+    size_t asize;
     ushort plen;
 } xdir;
 

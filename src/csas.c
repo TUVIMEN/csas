@@ -145,6 +145,10 @@ add_bindings(flexarr *b)
     xbind_add("R","load -m1 .",b);
     xbind_add("a","rename %s",b);
     xbind_add("r","open_with %s",b);
+    xbind_add("/","console \"search -N \"",b);
+    xbind_add("n","search -n 1",b);
+    xbind_add("N","search -p 1",b);
+    xbind_add("f","console \"filter -N \"",b);
 }
 
 int
@@ -200,6 +204,8 @@ add_functions(flexarr *f)
     xfunc_add("bulk",'f',cmd_bulk,f);
     xfunc_add("fmod",'f',cmd_fmod,f);
     xfunc_add("rename",'f',cmd_rename,f);
+    xfunc_add("search",'f',cmd_search,f);
+    xfunc_add("filter",'f',cmd_filter,f);
     xfunc_add("map",'f',cmd_map,f);
     xfunc_add("set",'f',cmd_set,f);
     xfunc_add("alias",'f',cmd_alias,f);
@@ -267,6 +273,8 @@ static void
 add_vars(flexarr *v)
 {
     xvar_add(&BufferSize,"BufferSize",'I',NULL,v);
+    xvar_add(&COLS,"COLS",'I',NULL,v);
+    xvar_add(&LINES,"LINES",'I',NULL,v);
 }
 
 csas *
@@ -341,10 +349,11 @@ csas_run(csas *cs, int argc, char **argv)
 void
 xdir_free(xdir *dir)
 {
+    flexarr_free(dir->searchlist);
     free(dir->path);
     dir->path = NULL;
     dir->plen = 0;
-    for (size_t i = 0; i < dir->size; i++)
+    for (size_t i = 0; i < dir->asize; i++)
         free(dir->files[i].name);
     free(dir->files);
     dir->files = NULL;
