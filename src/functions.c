@@ -10,6 +10,9 @@
 
 extern uchar Exit;
 extern size_t BufferSize;
+extern uchar DirLoadingMode;
+extern uchar Visual;
+extern uchar WrapScroll;
 
 uint
 update_event(csas *cs)
@@ -106,22 +109,84 @@ command_run(char *src, csas *cs)
 }
 
 static void
-move_d(xdir *dir, const size_t value, const uchar flags, const size_t tab)
+move_d(xdir *dir, size_t value, const size_t tab, const uchar flags)
 {
-    size_t t = dir->sel[tab];
+    size_t sel=dir->sel[tab],t=sel,b1=0,e1=0,b2=0,e2=0;
     switch (flags&3) {
-        case MOVE_SET: t = value; break;
-        case MOVE_UP: t += value; break;
+        case MOVE_SET:
+            t = value;
+            if (t >= dir->size)
+                t = dir->size-1;
+            if (t > sel) {
+                b1 = sel;
+                e1 = t;
+            } else {
+                b1 = t;
+                e1 = sel;
+            }
+            break;
+        case MOVE_UP:
+            t += value;
+            b1 = sel;
+            e1 = t;
+            if (t >= dir->size) {
+                if (WrapScroll) {
+                    b1 = sel;
+                    e1 = dir->size-1;
+                    t %= dir->size;
+                    if (b1 != 0 || e1 != dir->size-1) {
+                        b2 = 0;
+                        e2 = t;
+                    }
+                } else {
+                    b1 = t;
+                    t = dir->size-1;
+                    e1 = t;
+                }
+                if (value >= dir->size) {
+                    b1 = 0;
+                    e1 = dir->size-1;
+                    b2 = 0;
+                    e2 = 0;
+                }
+            }
+            break;
         case MOVE_DOWN:
-            if (t < value)
-                t = 0;
-            else
+            if (t < value) {
+                if (WrapScroll) {
+                    b1 = 0;
+                    e1 = sel;
+                    t = (dir->size+sel-value)%dir->size;
+                    if (t > e1) {
+                        b2 = t;
+                        e2 = dir->size-1;
+                    }
+                } else {
+                    t = 0;
+                    b1 = t;
+                    e1 = sel;
+                }
+            } else {
                 t -= value;
+                b1 = t;
+                e1 = sel;
+            }
+            if (value >= dir->size) {
+                b1 = 0;
+                e1 = dir->size-1;
+                b2 = 0;
+                e2 = 0;
+            }
             break;
     }
 
-    if (t > dir->size-1)
-        t = dir->size-1;
+    if (Visual) {
+        for (; b1 < e1; b1++)
+            dir->files[b1].sel[tab] |= 1<<0;
+        for (; b2 < e2; b2++)
+            dir->files[b2].sel[tab] |= 1<<0;
+    }
+
     dir->sel[tab] = t;
 }
 
@@ -167,7 +232,7 @@ cmd_move(char *src, csas *cs)
             pos++;
     }
 
-    move_d(dir,value,flags,cs->ctab);
+    move_d(dir,value,cs->ctab,flags);
     return 0;
 }
 
@@ -404,7 +469,7 @@ cmd_fastselect(char *src, csas *cs)
     xdir *dir = &CTAB;
     ret_errno(dir->size==0,EINVAL,-1);
     dir->files[dir->sel[cs->ctab]].sel[cs->ctab] ^= (1<<cs->tabs[cs->ctab].sel);
-    move_d(dir,1,MOVE_UP,cs->ctab);
+    move_d(dir,1,cs->ctab,MOVE_UP);
     return 0;
 }
 
@@ -441,7 +506,7 @@ cmd_cd(char *src, csas *cs)
     if (path[0] == '.' && path[1] == '.' && path[2] == 0)
         search_name = memrchr(dir->path,'/',dir->plen);
 
-    li n = getdir(path,cs->dirs,D_MODE_ONCE|D_CHDIR);
+    li n = getdir(path,cs->dirs,DirLoadingMode|D_CHDIR);
     if (n == -1)
         return -1;
     cs->tabs[cs->ctab].t = (size_t)n;
@@ -482,7 +547,7 @@ cmd_file_run(char *src, csas *cs)
     if ((statbuf.st_mode&S_IFMT) != S_IFDIR)
         return file_run(path);
 
-    li n = getdir(path,cs->dirs,D_CHDIR|D_MODE_ONCE);
+    li n = getdir(path,cs->dirs,DirLoadingMode|D_CHDIR);
     if (n == -1)
         return -1;
     cs->tabs[cs->ctab].t = n;
@@ -940,12 +1005,12 @@ int
 cmd_set(char *src, csas *cs)
 {
     size_t pos=0,s=strlen(src);
-    char name[NAME_MAX],val[PATH_MAX],*r;
+    char name[VARS_NAME_MAX],val[PATH_MAX],*r;
     name[0] = 0;
     val[0] = 0;
     uchar string=0;
 
-    while (src[pos]) {
+    while (pos < s) {
         if (src[pos] == '-' && src[pos+1] == 's') {
             string = 1;
             pos += 2;

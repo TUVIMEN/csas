@@ -213,7 +213,7 @@ add_functions(flexarr *f)
 }
 
 int
-xvar_add(void *addr, const char *name, const uchar type, const void *val, flexarr *v)
+xvar_add(void *addr, const char *name, const uchar type, void *val, flexarr *v)
 {
     ret_errno(name==NULL||v==NULL,EINVAL,-1);
     ret_errno(strlen(name)>FUNCTIONS_NAME_MAX,EOVERFLOW,-1);
@@ -241,7 +241,7 @@ xvar_add(void *addr, const char *name, const uchar type, const void *val, flexar
         }
     }
 
-    switch (type) {
+    switch (type&~0x80) {
         case 's':
             addr = vars->v;
             if (!vars->v)
@@ -260,12 +260,14 @@ xvar_add(void *addr, const char *name, const uchar type, const void *val, flexar
             // fall through
         case 'I':
             vars->v = addr;
-            if (val)
+            if (type&0x80)
+                *(li*)vars->v = (li)val;
+            else if (val)
                 calc(val,vars->v,v);
             break;
     }
 
-    vars->type = type;
+    vars->type = type&~0x80;
     return 0;
 }
 
@@ -275,6 +277,21 @@ add_vars(flexarr *v)
     xvar_add(&BufferSize,"BufferSize",'I',NULL,v);
     xvar_add(&COLS,"COLS",'I',NULL,v);
     xvar_add(&LINES,"LINES",'I',NULL,v);
+    xvar_add(&Sort,"Sort",'I',NULL,v);
+    xvar_add(NULL,"s_none",'i'|0x80,(void*)SORT_NONE,v);
+    xvar_add(NULL,"s_name",'i'|0x80,(void*)SORT_NAME,v);
+    xvar_add(NULL,"s_cname",'i'|0x80,(void*)SORT_CNAME,v);
+    xvar_add(NULL,"s_size",'i'|0x80,(void*)SORT_SIZE,v);
+    xvar_add(NULL,"s_type",'i'|0x80,(void*)SORT_TYPE,v);
+    xvar_add(NULL,"s_reverse",'i'|0x80,(void*)SORT_REVERSE,v);
+    xvar_add(NULL,"s_ddist",'i'|0x80,(void*)SORT_DIR_DISTINCTION,v);
+    xvar_add(NULL,"s_lddist",'i'|0x80,(void*)SORT_LDIR_DISTINCTION,v);
+    xvar_add(NULL,"s_rddist",'i'|0x80,(void*)SORT_REVERSE_DIR_DISTINCTIONS,v);
+    xvar_add(&Visual,"Visual",'I',NULL,v);
+    xvar_add(&MoveOffset,"MoveOffset",'I',NULL,v);
+    xvar_add(&WrapScroll,"WrapScroll",'I',NULL,v);
+    xvar_add(&JumpScroll,"JumpScroll",'I',NULL,v);
+    xvar_add(&JumpScrollValue,"JumpScrollValue",'I',NULL,v);
 }
 
 csas *
@@ -331,8 +348,15 @@ csas_run(csas *cs, int argc, char **argv)
 
     config_load("/etc/csasrc",cs);
 
+    struct timespec timer;
     int e;
+    time_t t1,t2=0;
+    struct stat statbuf;
+
     while (!Exit) {
+        clock_gettime(1,&timer);
+        t1 = timer.tv_sec;
+
         csas_draw(cs);
 
         REPEAT: ;
@@ -341,6 +365,19 @@ csas_run(csas *cs, int argc, char **argv)
                 printmsg(ERROR_C,"%s: %s",BINDINGS[e].value,strerror(errno));
                 refresh();
                 goto REPEAT;
+            }
+        }
+
+        if (t1 != t2) {
+            xdir *d = &CTAB;
+            t2 = t1;
+            if (lstat(d->path,&statbuf) != 0)
+                continue;
+            if (memcmp(&statbuf.st_ctim,&d->ctime,sizeof(struct timespec)) != 0) {
+                if (DirLoadingMode == D_MODE_ONCE)
+                    d->flags |= S_CHANGED;
+                else
+                    getdir(d->path,cs->dirs,DirLoadingMode);
             }
         }
     }

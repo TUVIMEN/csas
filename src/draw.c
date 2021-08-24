@@ -3,6 +3,10 @@
 #include "draw.h"
 
 extern int sel_colors[];
+extern li Visual;
+extern li MoveOffset;
+extern li JumpScroll;
+extern li JumpScrollValue;
 
 void
 printmsg(const int attr, const char *fmt, ...)
@@ -115,28 +119,68 @@ draw_bbar(int y, csas *cs)
     i += j;
     mvaddnstr(LINES-1,COLS-i-1,cs->typed,j);
     
-    t[0] = cs->tabs[cs->ctab].sel+48;
-    t[1] = 'T';
-    t[2] = 0;
+    j = 0;
+    if (Visual) {
+        t[j++] = 'V';
+        i++;
+    }
+    if (dir->flags&S_CHANGED) {
+        t[j++] = 'C';
+        i++;
+    }
+    if (j != 0) {
+        t[j++] = ' ';
+        i++;
+    }
+    t[j++] = cs->tabs[cs->ctab].sel+48;
+    t[j++] = 'S';
+    t[j++] = 0;
     i += 3;
-    mvaddnstr(LINES-1,COLS-i-1,t,2);
+    mvaddnstr(LINES-1,COLS-i-1,t,j);
     
 }
 
 void
 draw_dir(WINDOW *win, xdir *dir, csas *cs)
 {
-    size_t i,j;
-    size_t ctab=cs->ctab,scroll=dir->scroll[ctab],sel=dir->sel[ctab];
+    size_t i,j,ctab=cs->ctab,scroll=dir->scroll[ctab],sel=dir->sel[ctab];
     xfile *file = dir->files;
-    int color,maxx=win->_maxx+1,maxy=win->_maxy+1;
-    if (sel < scroll)
+    int color,maxx=win->_maxx+1,maxy=win->_maxy+1,offset=maxy>>MoveOffset,
+        jumpvalue=maxy>>JumpScrollValue;
+
+    if (Visual && dir->size)
+        dir->files[dir->sel[ctab]].sel[ctab] |= 1<<cs->tabs[ctab].sel;
+
+    if ((size_t)maxy >= dir->size-1) {
+        dir->scroll[ctab] = 0;
+    } else if (sel < scroll+offset) {
+        if (sel <= (size_t)offset) {
+            dir->scroll[ctab] = 0;
+        } else {
+            dir->scroll[ctab] = sel-offset;
+            if (JumpScroll) {
+                if (dir->scroll[ctab] < (size_t)jumpvalue)
+                    dir->scroll[ctab] = 0;
+                else
+                    dir->scroll[ctab] -= jumpvalue;
+            }
+        }
+    } else if (sel < scroll) {
         dir->scroll[ctab] = sel;
-    else if (sel > scroll+maxy-1)
-        dir->scroll[ctab] = sel-maxy+1;
+    } else if (sel == dir->size-1) {
+        dir->scroll[ctab] = dir->size-maxy;
+    } else if (scroll > sel) {
+        dir->scroll[ctab] = dir->size-maxy;
+    } else if (scroll >= dir->size-maxy) {
+        dir->scroll[ctab] = dir->size-maxy;
+    } else if (sel >= scroll+maxy-offset) {
+        dir->scroll[ctab] = sel-maxy+1+offset;
+        if (JumpScroll)
+            dir->scroll[ctab] += jumpvalue;
+    }
     scroll = dir->scroll[ctab];
 
-    for (i = 0, j = dir->scroll[ctab]; i < (size_t)maxy && j < dir->size; i++, j++) {
+    for (i = 0, j = scroll; i < (size_t)maxy && j < dir->size; i++, j++) {
         if (file[j].sel[ctab]&(1<<cs->tabs[ctab].sel))
             wattr_set(win,A_REVERSE,sel_colors[cs->tabs[ctab].sel],NULL);
         mvwaddch(win,i,0,' ');

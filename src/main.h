@@ -98,6 +98,22 @@
 #define D_C 0x4 //count files
 #define D_S 0x8 //size
 
+#define S_CHANGED 0x1
+
+//flags for xfile_sort()
+#define SORT_NONE 0x0
+#define SORT_NAME 0x1
+#define SORT_CNAME 0x2
+#define SORT_SIZE 0x3
+#define SORT_TYPE 0x4
+
+#define SORT_MT 0xf
+#define SORT_REVERSE 0x10
+#define SORT_MTR 0x1f
+#define SORT_DIR_DISTINCTION 0x20
+#define SORT_LDIR_DISTINCTION 0x40
+#define SORT_REVERSE_DIR_DISTINCTIONS 0x80
+
 #define SLINK_TO_DIR 0x1
 #define SLINK_MISSING 0x2
 
@@ -167,6 +183,8 @@ typedef struct {
     size_t size;
     size_t asize;
     ushort plen;
+    uchar sort;
+    uchar flags;
 } xdir;
 
 typedef struct {

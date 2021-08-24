@@ -4,6 +4,8 @@
 #include "sort.h"
 #include "load.h"
 
+extern uchar Sort;
+
 int
 load_dir(xdir *dir, const mode_t flags)
 {
@@ -78,7 +80,12 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     }
 
     if (found) {
+        d = &d[i];
         if (flags&D_MODE_ONCE) {
+            if (d->sort != Sort) {
+                xfile_sort(d->files,d->size,Sort);
+                d->sort = Sort;
+            }
             if (flags&D_CHDIR)
                 if (chdir(path) != 0)
                     return -1;
@@ -86,7 +93,6 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
             goto END;
         }
         ret = i;
-        d = &d[i];
     } else {
         d = flexarr_inc(dirs);
         ret = dirs->size-1;
@@ -99,6 +105,8 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         memset(&d->ctime,0,sizeof(struct timespec));
         d->searchlist = flexarr_init(sizeof(char*),SEARCHLIST_INCR);
         d->searchlist_pos = 0;
+        d->sort = 0;
+        d->flags = 0;
     }
 
     struct stat statbuf;
@@ -107,9 +115,15 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     if (flags&D_CHDIR)
         if (chdir(path) != 0)
             return -1;
-    if (flags&D_MODE_CHANGE)
-        if (memcmp(&d->ctime,&statbuf.st_ctim,sizeof(struct timespec)) == 0)
+    if (flags&D_MODE_CHANGE) {
+        if (memcmp(&d->ctime,&statbuf.st_ctim,sizeof(struct timespec)) == 0) {
+            if (d->sort != Sort) {
+                xfile_sort(d->files,d->size,Sort);
+                d->sort = Sort;
+            }
             goto END;
+        }
+    }
     d->ctime = statbuf.st_ctim;
     
     if (d->files != NULL) {
@@ -122,8 +136,10 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     }
     if (load_dir(d,flags) != 0)
         return -1;
+    d->flags &= ~S_CHANGED;
     d->asize = d->size;
-    xfile_sort(d->files,d->size,SORT_CNAME|SORT_DIR_DISTINCTION|SORT_LDIR_DISTINCTION);
+    xfile_sort(d->files,d->size,Sort);
+    d->sort = Sort;
     
     END:
     if (!(flags&D_RECURSIVE))

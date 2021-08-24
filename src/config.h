@@ -5,7 +5,14 @@ char *FileOpener = "";
 char *Editor = "vim";
 uchar Exit = 0;
 size_t BufferSize = (1<<16);
+uchar DirLoadingMode = D_MODE_ONCE;
 const char *TTEMPLATE = "/tmp/CSAS-XXXXXX";
+uchar Sort = SORT_CNAME|SORT_DIR_DISTINCTION|SORT_LDIR_DISTINCTION;
+li Visual = 0;
+li MoveOffset = 3;
+li WrapScroll = 0;
+li JumpScroll = 0;
+li JumpScrollValue = 0;
 
 int sel_colors[] = {
     YELLOW,GREEN,RED,BLUE,

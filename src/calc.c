@@ -179,15 +179,17 @@ level_2(const char *v, li *n, flexarr *vars)
             num = t;
         if (c == '*')
             num *= t;
-        if (c == '/') {
+        if (c == '/' || c == '%') {
             if (t == 0)
                 num = 0;
-            else
+            else if (c == '/')
                 num /= t;
+            else
+                num %= t;
         }
         c = *(v+pos);
         pos++;
-    } while (c == '*' || c == '/');
+    } while (c == '*' || c == '/' || c == '%');
     *n = num;
     return pos-1;
 }
