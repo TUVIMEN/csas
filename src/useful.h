@@ -24,5 +24,9 @@ int file_mv(const int fd1, const int fd2, const char *name, char *buffer, const 
 int get_dirsize(const int fd, off_t *count, off_t *size, const uchar flags);
 char *mkpath(const char *dir, const char *name);
 int bulk(csas *cs, const size_t tab, const int selected, char **args, const uchar flags);
+void ltoa(li num, char *result);
+int ttoa(const time_t *time, char *result);
+char *lsperms(const mode_t mode);
+uchar get_extension_group(const char *name);
 
 #endif

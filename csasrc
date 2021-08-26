@@ -1,6 +1,10 @@
-alias shell='exec -ncw ${SHELL} -c $$'
-alias bulkrename='bulk -n -S sh -E ${EDITOR} -b mv -s.'
+alias shell 'exec -ncw ${SHELL} -c $$'
+alias bulkrename 'bulk -n -S sh -E ${EDITOR} -b mv -s.'
 
+map <left> 'cd ..'
+map <right> 'file_run %s'
+map <up> 'move -d'
+map <down> 'move -u'
 map s 'console "shell "'
 map S 'exec -nw ${SHELL}'
 map b "bulkrename"
@@ -8,5 +12,40 @@ map B "bulkrename -NR"
 map K 'move -d LINES>>1'
 map J 'move -u LINES>>1'
 map V 'set Visual Visual^1'
+map or 'set SortMethod s_none'
+map oR 'set SortMethod s_none|s_reverse'
+map ot 'set SortMethod s_type|s_s_ddist|s_lddist'
+map oT 'set SortMethod s_type|s_reverse|s_ddist|s_lddist'
+map os 'set SortMethod s_size|s_s_ddist|s_lddist'
+map oS 'set SortMethod s_size|s_reverse|s_ddist|s_lddist'
+map om 'set SortMethod s_mtime|s_s_ddist|s_lddist'
+map oM 'set SortMethod s_mtime|s_reverse|s_ddist|s_lddist'
+map on 'set SortMethod s_cname|s_s_ddist|s_lddist'
+map oN 'set SortMethod s_cname|s_reverse|s_ddist|s_lddist'
+map ob 'set SortMethod s_name|s_s_ddist|s_lddist'
+map oB 'set SortMethod s_name|s_reverse|s_ddist|s_lddist'
+map Ms 'set LineMode l_size'
+map Mm 'set LineMode l_mtime'
+map Mp 'set LineMode l_perms'
+
+set -s Editor ${EDITOR}
+set BufferSize 1<<18
+set MoveOffset 3
+set WrapScroll 0
+set JumpScroll 0
+set JumpScrollValue 0
+set DirSizeMethod d_c
+set SortMethod s_cname|s_ddist|s_lddist
+set DirLoadingMode dm_once
+set Color 1
+set HostnameInTitlebar 1
+set NumberLines 0
+set NumberLinesOffset 0
+set NumberLinesStartFrom 0
+set IdleDelay 2000
+set ColorByExtension 1
+set UpdateFile 1
+set SizeInBytes 0
+set FileSystemInfo fs_avail
 
 source ~/.config/csasrc

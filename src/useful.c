@@ -7,8 +7,9 @@
 static struct sigaction oldsighup;
 static struct sigaction oldsigtstp;
 extern fsig signatures[];
-extern char *FileOpener;
-extern char *Editor;
+extern fext extensions[];
+extern char FileOpener[];
+extern char Editor[];
 extern const char *TTEMPLATE;
 
 void
@@ -41,11 +42,7 @@ delchar(char *src, const size_t pos, const size_t size)
 void
 change_keys(wchar_t *dest, const char *src)
 {
-    size_t i, h;
-    for (i = 0; src[i] && i < BINDING_KEY_MAX; i++)
-        dest[i] = btowc(src[i]);
-    dest[i] = 0;
-    return;
+    size_t h,i;
     for (i = 0, h = 0; h < BINDING_KEY_MAX && src[i]; i++, h++) {
         if (src[i] == '<' && src[i+1] == 'C' && src[i+2] == '-' && src[i+3] && src[i+4] == '>') {
             i += 3;
@@ -75,7 +72,7 @@ change_keys(wchar_t *dest, const char *src)
         } else if (src[i] == '\\' && src[i+1]) {
             dest[h] = special_character(src[i++]);
         } else
-            dest[h++] = wctob(src[i]);
+            dest[h] = btowc(src[i]);
     }
     dest[h] = 0;
 }
@@ -115,7 +112,7 @@ char *
 size_shrink(size_t size)
 {
     static char ret[23];
-    const char suffixes[] = "BKMGTPEZY";
+    const char suffixes[] = "\0KMGTPEZY";
 
     if (size == 0) {
         ret[0] = '0';
@@ -132,7 +129,7 @@ size_shrink(size_t size)
     }
 
     if (t == 0 || size >= 100) {
-        snprintf(ret,23,"%lu %c",size,suffixes[t]);
+        snprintf(ret,23,"%lu%c",size,suffixes[t]);
         return ret;
     }
 
@@ -141,9 +138,9 @@ size_shrink(size_t size)
         r /= 10;
 
     if (r != 0)
-        snprintf(ret,23,"%lu.%lu %c",size,r,suffixes[t]);
+        snprintf(ret,23,"%lu.%lu%c",size,r,suffixes[t]);
     else
-        snprintf(ret,23,"%lu %c",size,suffixes[t]);
+        snprintf(ret,23,"%lu%c",size,suffixes[t]);
     return ret;
 }
 
@@ -211,7 +208,7 @@ strrev(char *str, size_t s)
     }
 }
 
-static void
+void
 ltoa(li num, char *result)
 {
     size_t n = 0;
@@ -440,6 +437,8 @@ get_line(char *dest, char *src, size_t *pos, size_t size)
             if (t == NULL)
                 goto END;
             size_t s = t-(src+*pos);
+            if (s > LLINE_MAX)
+                return;
             memcpy(dest+x,src+*pos,s);
             x += s;
             *pos += s;
@@ -1124,4 +1123,68 @@ bulk(csas *cs, const size_t tab, const int selected, char **args, const uchar fl
     unlink(tfile);
     errno = e;
     return -1;
+}
+
+int
+ttoa(const time_t *time, char *result)
+{
+    struct tm t;
+    localtime_r(time, &t);
+    return sprintf(result,"%d-%02d-%02d %02d:%02d",t.tm_year+1900,t.tm_mon+1,t.tm_mday,t.tm_hour,t.tm_min);
+}
+
+char *
+lsperms(const mode_t mode)
+{
+    const char *const rwx[] = {"---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"};
+    static char bits[11];
+
+    switch (mode & S_IFMT) {
+        case S_IFREG:
+            bits[0] = '-';
+            break;
+        case S_IFDIR:
+            bits[0] = 'd';
+            break;
+        case S_IFLNK:
+            bits[0] = 'l';
+            break;
+        case S_IFSOCK:
+            bits[0] = 's';
+            break;
+        case S_IFIFO:
+            bits[0] = 'p';
+            break;
+        case S_IFBLK:
+            bits[0] = 'b';
+            break;
+        case S_IFCHR:
+            bits[0] = 'c';
+            break;
+        default:
+            bits[0] = '?';
+            break;
+    }
+
+    memcpy(bits+1,rwx[(mode>>6)&7],4);
+    memcpy(bits+4,rwx[(mode>>3)&7],4);
+    memcpy(bits+7,rwx[mode&7],4);
+
+    return bits;
+}
+
+uchar
+get_extension_group(const char *name)
+{
+    register char *ret = memrchr(name,'.',strlen(name)-1);
+
+    if (ret == NULL)
+        return 0;
+    ret++;
+
+    for (register size_t j = 0; extensions[j].group != 0; j++)
+        if (strcasecmp(ret,extensions[j].name) == 0)
+            return extensions[j].group;
+
+    return 0;
 }

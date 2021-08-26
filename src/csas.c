@@ -13,13 +13,13 @@ initcurses()
     setlocale(LC_ALL, "");
     initscr();
     cbreak();
-    timeout(150);
+    timeout(IdleDelay);
     noecho();
     nonl();
     intrflush(stdscr, FALSE);
     keypad(stdscr, TRUE);
     curs_set(FALSE);
-    if (has_colors()) {
+    if (Color && has_colors()) {
         short bg;
         start_color();
         use_default_colors();
@@ -47,7 +47,6 @@ xbind_add(const char *keys, const char *value, flexarr *b)
     change_keys(k,keys);
     
     xbind *bind = (xbind*)b->v;
-
     uchar found = 0;
     for (i = 0; i < b->size; i++) {
         if (wcscmp(k,bind[i].keys) == 0) {
@@ -149,6 +148,7 @@ add_bindings(flexarr *b)
     xbind_add("n","search -n 1",b);
     xbind_add("N","search -p 1",b);
     xbind_add("f","console \"filter -N \"",b);
+    xbind_add("cd","console \"cd \"",b);
 }
 
 int
@@ -239,6 +239,17 @@ xvar_add(void *addr, const char *name, const uchar type, void *val, flexarr *v)
             free(vars->v);
             vars->v = NULL;
         }
+        if (vars->type == 'S') {
+            strcpy(vars->v,val);
+            return 0;
+        }
+        if (vars->type == 'I') {
+            if (type&0x80)
+                *(li*)vars->v = (li)val;
+            else
+                calc(val,vars->v,v);
+            return 0;
+        }
     }
 
     switch (type&~0x80) {
@@ -277,11 +288,12 @@ add_vars(flexarr *v)
     xvar_add(&BufferSize,"BufferSize",'I',NULL,v);
     xvar_add(&COLS,"COLS",'I',NULL,v);
     xvar_add(&LINES,"LINES",'I',NULL,v);
-    xvar_add(&Sort,"Sort",'I',NULL,v);
+    xvar_add(&SortMethod,"SortMethod",'I',NULL,v);
     xvar_add(NULL,"s_none",'i'|0x80,(void*)SORT_NONE,v);
     xvar_add(NULL,"s_name",'i'|0x80,(void*)SORT_NAME,v);
     xvar_add(NULL,"s_cname",'i'|0x80,(void*)SORT_CNAME,v);
     xvar_add(NULL,"s_size",'i'|0x80,(void*)SORT_SIZE,v);
+    xvar_add(NULL,"s_mtime",'i'|0x80,(void*)SORT_MTIME,v);
     xvar_add(NULL,"s_type",'i'|0x80,(void*)SORT_TYPE,v);
     xvar_add(NULL,"s_reverse",'i'|0x80,(void*)SORT_REVERSE,v);
     xvar_add(NULL,"s_ddist",'i'|0x80,(void*)SORT_DIR_DISTINCTION,v);
@@ -292,6 +304,80 @@ add_vars(flexarr *v)
     xvar_add(&WrapScroll,"WrapScroll",'I',NULL,v);
     xvar_add(&JumpScroll,"JumpScroll",'I',NULL,v);
     xvar_add(&JumpScrollValue,"JumpScrollValue",'I',NULL,v);
+    xvar_add(FileOpener,"FileOpener",'S',NULL,v);
+    xvar_add(Editor,"Editor",'S',NULL,v);
+    xvar_add(&DirLoadingMode,"DirLoadingMode",'I',NULL,v);
+    xvar_add(NULL,"dm_always",'i'|0x80,(void*)D_MODE_ALWAYS,v);
+    xvar_add(NULL,"dm_once",'i'|0x80,(void*)D_MODE_ONCE,v);
+    xvar_add(NULL,"dm_change",'i'|0x80,(void*)D_MODE_CHANGE,v);
+    xvar_add(&Color,"Color",'I',NULL,v);
+    xvar_add(&HostnameInTitlebar,"HostnameInTitlebar",'I',NULL,v);
+    xvar_add(&NumberLines,"NumberLines",'I',NULL,v);
+    xvar_add(&NumberLinesOffset,"NumberLinesOffset",'I',NULL,v);
+    xvar_add(&NumberLinesStartFrom,"NumberLinesStartFrom",'I',NULL,v);
+    xvar_add(&IdleDelay,"IdleDelay",'I',NULL,v);
+    xvar_add(&DirSizeMethod,"DirSizeMethod",'I',NULL,v);
+    xvar_add(NULL,"d_f",'i'|0x80,(void*)D_F,v);
+    xvar_add(NULL,"d_r",'i'|0x80,(void*)D_R,v);
+    xvar_add(NULL,"d_c",'i'|0x80,(void*)D_C,v);
+    xvar_add(NULL,"d_s",'i'|0x80,(void*)D_S,v);
+    xvar_add(&Sel_C,"Sel_C",'I',NULL,v);
+    xvar_add(&Reg_C,"Reg_C",'I',NULL,v);
+    xvar_add(&Exec_C,"Exec_C",'I',NULL,v);
+    xvar_add(&Dir_C,"Dir_C",'I',NULL,v);
+    xvar_add(&Link_C,"Link_C",'I',NULL,v);
+    xvar_add(&Chr_C,"Chr_C",'I',NULL,v);
+    xvar_add(&Blk_C,"Blk_C",'I',NULL,v);
+    xvar_add(&Fifo_C,"Fifo_C",'I',NULL,v);
+    xvar_add(&Sock_C,"Sock_C",'I',NULL,v);
+    xvar_add(&Missing_C,"Missing_C",'I',NULL,v);
+    xvar_add(&Other_C,"Other_C",'I',NULL,v);
+    xvar_add(&Error_C,"Error_C",'I',NULL,v);
+    xvar_add(&Bar_C,"Bar_C",'I',NULL,v);
+    xvar_add(&Host_C,"Host_C",'I',NULL,v);
+    xvar_add(NULL,"DEFAULT",'i'|0x80,(void*)COLOR_PAIR(DEFAULT),v);
+    xvar_add(NULL,"RED",'i'|0x80,(void*)COLOR_PAIR(RED),v);
+    xvar_add(NULL,"GREEN",'i'|0x80,(void*)COLOR_PAIR(GREEN),v);
+    xvar_add(NULL,"YELLOW",'i'|0x80,(void*)COLOR_PAIR(YELLOW),v);
+    xvar_add(NULL,"BLUE",'i'|0x80,(void*)COLOR_PAIR(BLUE),v);
+    xvar_add(NULL,"CYAN",'i'|0x80,(void*)COLOR_PAIR(CYAN),v);
+    xvar_add(NULL,"MAGENTA",'i'|0x80,(void*)COLOR_PAIR(MAGENTA),v);
+    xvar_add(NULL,"WHITE",'i'|0x80,(void*)COLOR_PAIR(WHITE),v);
+    xvar_add(NULL,"BLACK",'i'|0x80,(void*)COLOR_PAIR(BLACK),v);
+    xvar_add(NULL,"A_NORMAL",'i'|0x80,(void*)A_NORMAL,v);
+    xvar_add(NULL,"A_STANDOUT",'i'|0x80,(void*)A_STANDOUT,v);
+    xvar_add(NULL,"A_UNDERLINE",'i'|0x80,(void*)A_UNDERLINE,v);
+    xvar_add(NULL,"A_REVERSE",'i'|0x80,(void*)A_REVERSE,v);
+    xvar_add(NULL,"A_BLINK",'i'|0x80,(void*)A_BLINK,v);
+    xvar_add(NULL,"A_DIM",'i'|0x80,(void*)A_DIM,v);
+    xvar_add(NULL,"A_BOLD",'i'|0x80,(void*)A_BOLD,v);
+    xvar_add(NULL,"A_PROTECT",'i'|0x80,(void*)A_PROTECT,v);
+    xvar_add(NULL,"A_INVIS",'i'|0x80,(void*)A_INVIS,v);
+    xvar_add(NULL,"A_ALTCHARSET",'i'|0x80,(void*)A_ALTCHARSET,v);
+    xvar_add(NULL,"A_ITALIC",'i'|0x80,(void*)A_ITALIC,v);
+    xvar_add(NULL,"A_CHARTEXT",'i'|0x80,(void*)A_CHARTEXT,v);
+    xvar_add(NULL,"A_COLOR",'i'|0x80,(void*)A_COLOR,v);
+    xvar_add(NULL,"WA_HORIZONTAL",'i'|0x80,(void*)WA_HORIZONTAL,v);
+    xvar_add(NULL,"WA_LEFT",'i'|0x80,(void*)WA_LEFT,v);
+    xvar_add(NULL,"WA_LOW",'i'|0x80,(void*)WA_LOW,v);
+    xvar_add(NULL,"WA_RIGHT",'i'|0x80,(void*)WA_RIGHT,v);
+    xvar_add(NULL,"WA_TOP",'i'|0x80,(void*)WA_TOP,v);
+    xvar_add(NULL,"WA_VERTICAL",'i'|0x80,(void*)WA_VERTICAL,v);
+    xvar_add(&Linemode,"Linemode",'I',NULL,v);
+    xvar_add(NULL,"l_size",'i'|0x80,(void*)L_SIZE,v);
+    xvar_add(NULL,"l_mtime",'i'|0x80,(void*)L_MTIME,v);
+    xvar_add(NULL,"l_perms",'i'|0x80,(void*)L_PERMS,v);
+    xvar_add(&ColorByExtension,"ColorByExtension",'I',NULL,v);
+    xvar_add(&Archive_C,"Archive_C",'I',NULL,v);
+    xvar_add(&Image_C,"Image_C",'I',NULL,v);
+    xvar_add(&Video_C,"Video_C",'I',NULL,v);
+    xvar_add(&UpdateFile,"UpdateFile",'I',NULL,v);
+    xvar_add(&SizeInBytes,"SizeInBytes",'I',NULL,v);
+    xvar_add(&FileSystemInfo,"FileSystemInfo",'I',NULL,v);
+    xvar_add(NULL,"fs_free",'i'|0x80,(void*)FS_FREE,v);
+    xvar_add(NULL,"fs_avail",'i'|0x80,(void*)FS_AVAIL,v);
+    xvar_add(NULL,"fs_all",'i'|0x80,(void*)FS_ALL,v);
+    xvar_add(NULL,"fs_files",'i'|0x80,(void*)FS_FILES,v);
 }
 
 csas *
@@ -311,6 +397,9 @@ csas_init()
     add_functions(ret->functions);
     add_bindings(ret->bindings);
     add_vars(ret->vars);
+
+    gethostname(hostname,NAME_MAX);
+    username = getenv("USER");
 
     return ret;
 }
@@ -340,18 +429,20 @@ csas_run(csas *cs, int argc, char **argv)
     char *path = ".";
     if (argc > 1)
         path = argv[1];
+    config_load("/etc/csasrc",cs);
     li n = getdir(path,cs->dirs,D_CHDIR);
     if (n == -1)
         exiterr();
     cs->tabs[cs->ctab].t = (size_t)n;
     cs->tabs[cs->ctab].flags |= T_EXISTS;
 
-    config_load("/etc/csasrc",cs);
-
     struct timespec timer;
     int e;
     time_t t1,t2=0;
     struct stat statbuf;
+
+    if (FileSystemInfo)
+        statfs(".",&cs->fs);
 
     while (!Exit) {
         clock_gettime(1,&timer);
@@ -362,14 +453,21 @@ csas_run(csas *cs, int argc, char **argv)
         REPEAT: ;
         if ((e = update_event(cs)) != -1) {
             if (command_run(BINDINGS[e].value,cs) == -1) {
-                printmsg(ERROR_C,"%s: %s",BINDINGS[e].value,strerror(errno));
+                printmsg(Error_C,"%s: %s",BINDINGS[e].value,strerror(errno));
                 refresh();
                 goto REPEAT;
             }
+            if (FileSystemInfo)
+                statfs(".",&cs->fs);
+        }
+
+        if (UpdateFile) {
+            register xdir *d = &CTAB;
+            xfile_update(&d->files[d->sel[cs->ctab]]);
         }
 
         if (t1 != t2) {
-            xdir *d = &CTAB;
+            register xdir *d = &CTAB;
             t2 = t1;
             if (lstat(d->path,&statbuf) != 0)
                 continue;

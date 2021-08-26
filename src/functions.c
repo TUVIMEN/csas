@@ -8,11 +8,12 @@
 #include "console.h"
 #include "functions.h"
 
-extern uchar Exit;
+extern li Exit;
 extern size_t BufferSize;
-extern uchar DirLoadingMode;
-extern uchar Visual;
-extern uchar WrapScroll;
+extern li DirLoadingMode;
+extern li Visual;
+extern li WrapScroll;
+extern li Error_C;
 
 uint
 update_event(csas *cs)
@@ -323,7 +324,7 @@ cmd_console(char *src, csas *cs)
     console_getline((char**)history->v,history->size,first,add,cs);
     char *line = ((char**)history->v)[history->size-1];
     if (command_run(line,cs) != 0)
-        printmsg(ERROR_C,"%s: %s",line,strerror(errno));
+        printmsg(Error_C,"%s: %s",line,strerror(errno));
     return 0;
 }
 

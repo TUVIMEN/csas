@@ -13,6 +13,9 @@ cmp_name(const xfile *f1, const xfile *f2)
 static int
 cmp_cname(const xfile *f1, const xfile *f2)
     {return strcasecmp(f1->name,f2->name);}
+static int
+cmp_mtime(const xfile *f1, const xfile *f2)
+    {return f1->mtime < f2->mtime;}
 
 static int
 cmp_rtype(const xfile *f1, const xfile *f2)
@@ -26,17 +29,22 @@ cmp_rname(const xfile *f1, const xfile *f2)
 static int
 cmp_rcname(const xfile *f1, const xfile *f2)
     {return !strcasecmp(f2->name,f1->name);}
+static int
+cmp_rmtime(const xfile *f1, const xfile *f2)
+    {return f1->mtime < f2->mtime;}
 
 int (*sort_arr[])(const xfile*,const xfile*) = {
     [SORT_TYPE]=cmp_type,
     [SORT_SIZE]=cmp_size,
     [SORT_NAME]=cmp_name,
     [SORT_CNAME]=cmp_cname,
+    [SORT_MTIME]=cmp_mtime,
 
     [SORT_TYPE|SORT_REVERSE]=cmp_rtype,
     [SORT_SIZE|SORT_REVERSE]=cmp_rsize,
     [SORT_NAME|SORT_REVERSE]=cmp_rname,
     [SORT_CNAME|SORT_REVERSE]=cmp_rcname,
+    [SORT_MTIME|SORT_REVERSE]=cmp_rmtime,
 };
 
 static int

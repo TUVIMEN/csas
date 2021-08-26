@@ -1,22 +1,75 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-char *FileOpener = "";
-char *Editor = "vim";
-uchar Exit = 0;
+char FileOpener[PATH_MAX] = "";
+char Editor[PATH_MAX] = "vim";
+li Exit = 0;
 size_t BufferSize = (1<<16);
-uchar DirLoadingMode = D_MODE_ONCE;
+li DirLoadingMode = D_MODE_ONCE;
+li DirSizeMethod = D_F;
 const char *TTEMPLATE = "/tmp/CSAS-XXXXXX";
-uchar Sort = SORT_CNAME|SORT_DIR_DISTINCTION|SORT_LDIR_DISTINCTION;
+uchar SortMethod = SORT_CNAME|SORT_DIR_DISTINCTION|SORT_LDIR_DISTINCTION;
 li Visual = 0;
 li MoveOffset = 3;
 li WrapScroll = 0;
 li JumpScroll = 0;
 li JumpScrollValue = 0;
+li Color = 1;
+li HostnameInTitlebar = 1;
+li NumberLines = 0;
+li NumberLinesOffset = 0;
+li NumberLinesStartFrom = 0;
+li IdleDelay = 2000;
+char hostname[NAME_MAX],*username;
+li Sel_C = A_REVERSE|A_BOLD;
+li Reg_C = COLOR_PAIR(DEFAULT);
+li Exec_C = COLOR_PAIR(GREEN);
+li Dir_C = COLOR_PAIR(BLUE)|A_BOLD;
+li Link_C = COLOR_PAIR(CYAN);
+li Chr_C = COLOR_PAIR(MAGENTA);
+li Blk_C = COLOR_PAIR(MAGENTA);
+li Fifo_C = COLOR_PAIR(BLUE);
+li Sock_C = COLOR_PAIR(MAGENTA);
+li Missing_C = COLOR_PAIR(MAGENTA);
+li Other_C = COLOR_PAIR(DEFAULT);
+li Error_C = A_BOLD|COLOR_PAIR(RED);
+li Bar_C = COLOR_PAIR(GREEN);
+li Host_C = COLOR_PAIR(GREEN)|A_BOLD;
+li Archive_C = COLOR_PAIR(RED);
+li Image_C = COLOR_PAIR(YELLOW);
+li Video_C = COLOR_PAIR(MAGENTA);
+li SizeInBytes = 0;
+li Linemode = L_SIZE;
+li UpdateFile = 0;
+li ColorByExtension = 0;
+li FileSystemInfo = 0;
 
 int sel_colors[] = {
     YELLOW,GREEN,RED,BLUE,
     CYAN,MAGENTA,WHITE,BLACK
+};
+
+fext extensions[] = {
+    //Video || Audio
+    {"aiff",'V'}, {"mkv",'V'}, {"avi",'V'}, {"flac",'V'}, {"flv",'V'},
+    {"m4a",'V'}, {"m4b",'V'}, {"m4p",'V'}, {"mp2",'V'}, {"avchd",'V'},
+    {"mp3",'V'}, {"mp4",'V'}, {"mpe",'V'}, {"mpg",'V'}, {"mpv",'V'},
+    {"ogg",'V'}, {"mpeg",'V'}, {"pcm",'V'}, {"qt",'V'}, {"swf",'V'},
+    {"wav",'V'}, {"aac",'V'}, {"wma",'V'}, {"wmv",'V'}, {"vob",'V'},
+    {"mov",'V'}, {"webm",'V'}, {"rvi",'V'}, {"3g2",'V'}, {"3gp",'V'},
+    {"aa",'V'}, {"ac3",'V'}, {"mj2",'V'}, {"mpc",'V'}, {"mpc8",'V'},
+    {"m4v",'V'}, {"oga",'V'}, {"ogv",'V'}, {"rvi",'V'}, {"alac",'V'},
+    {"rmvb",'V'},
+    //Images
+    {"gif",'I'}, {"jpeg",'I'}, {"jpg",'I'}, {"png",'I'}, {"raw",'I'},
+    {"tiff",'I'}, {"bmp",'I'}, {"tga",'I'}, {"gvs",'I'}, {"webp",'I'},
+    {"svg",'I'},
+    //Archives
+    {"tar",'A'}, {"jar",'A'}, {"rar",'A'}, {"bz2",'A'}, {"exe",'A'},
+    {"gz",'A'}, {"img",'A'}, {"iso",'A'}, {"lzma",'A'}, {"tbz2",'A'},
+    {"tgz",'A'}, {"z",'A'}, {"zx",'A'}, {"zip",'A'}, {"7z",'A'},
+    {"xz",'A'},{"lz4",'A'},
+    {NULL,'\0'}
 };
 
 fsig signatures[] = {

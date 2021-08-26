@@ -17,6 +17,7 @@
 #include <limits.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <sys/statfs.h>
 #include <libgen.h>
 #include <locale.h>
 #include <time.h>
@@ -54,25 +55,12 @@
 #define BINDINGS ((xbind*)cs->bindings->v)
 #define FUNCTIONS ((xfunc*)cs->functions->v)
 
-#define SEL_C A_REVERSE|A_BOLD
-#define REG_C DEFAULT
-#define EXEC_C GREEN
-#define DIR_C BLUE
-#define LINK_C CYAN
-#define CHR_C MAGENTA
-#define BLK_C MAGENTA
-#define FIFO_C BLUE
-#define SOCK_C MAGENTA
-#define MISSING_C MAGENTA
-#define OTHER_C DEFAULT
-#define ERROR_C A_BOLD|COLOR_PAIR(RED)
-#define BAR_C GREEN
-
 #define MOVE_SET 0x0
 #define MOVE_DOWN 0x1
 #define MOVE_UP 0x2
 
 #define D_CHDIR 0x1 //change directory
+#define D_MODE_ALWAYS 0x0 //always
 #define D_MODE_ONCE 0x2 //load only once
 #define D_MODE_CHANGE 0x4 //load when ctime has changed
 #define D_RECURSIVE 0x8
@@ -105,7 +93,8 @@
 #define SORT_NAME 0x1
 #define SORT_CNAME 0x2
 #define SORT_SIZE 0x3
-#define SORT_TYPE 0x4
+#define SORT_MTIME 0x4
+#define SORT_TYPE 0x5
 
 #define SORT_MT 0xf
 #define SORT_REVERSE 0x10
@@ -116,6 +105,15 @@
 
 #define SLINK_TO_DIR 0x1
 #define SLINK_MISSING 0x2
+
+#define L_SIZE 0x0
+#define L_MTIME 0x1
+#define L_PERMS 0x2
+
+#define FS_FREE 0x1
+#define FS_AVAIL 0x2
+#define FS_ALL 0x4
+#define FS_FILES 0x8
 
 #define ret_errno(x,y,z) if (x) { errno = (y); return (z); }
 #define while_is(w,x,y,z) while ((y) < (z) && (w)((x)[(y)])) {(y)++;}
@@ -128,7 +126,7 @@ typedef long double ldb;
 typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
-typedef unsigned long int uli;
+typedef unsigned long int ul;
 typedef unsigned long long int ull;
 
 enum {
@@ -136,6 +134,11 @@ enum {
     BLUE, CYAN, MAGENTA, WHITE,
     BLACK
 };
+
+typedef struct {
+    char *name;
+    uchar group;
+} fext;
 
 typedef struct {
     uchar flags;
@@ -168,6 +171,7 @@ typedef struct {
     char *name;
     off_t size;
     mode_t mode;
+    time_t mtime;
     ushort nlen;
     uchar flags;
 } xfile;
@@ -195,6 +199,7 @@ typedef struct {
 
 typedef struct {
     xtab tabs[TABS];
+    struct statfs fs;
     flexarr *dirs;
     flexarr *bindings;
     flexarr *functions;

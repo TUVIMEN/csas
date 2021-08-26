@@ -105,7 +105,7 @@ get_num(const char *v, li *n, flexarr *vars)
         pos++;
     }
 
-    if (v[pos] == '0' && v[pos+1] != '.') {
+    if (v[pos] == '0' && v[pos+1] && v[pos+1] != '.') {
         pos++;
         if (v[pos] == 'b') {
             pos++;

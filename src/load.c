@@ -4,7 +4,30 @@
 #include "sort.h"
 #include "load.h"
 
-extern uchar Sort;
+extern li SortMethod;
+extern li DirSizeMethod;
+
+int
+xfile_update(xfile *f)
+{
+    struct stat statbuf;
+    if (lstat(f->name,&statbuf) != 0)
+        return -1;
+    f->mode = statbuf.st_mode;
+    register off_t size = statbuf.st_size;
+    f->mtime = statbuf.st_mtime;
+    f->flags = 0;
+    if ((f->mode&S_IFMT) == S_IFLNK) {
+        if (stat(f->name,&statbuf) != 0)
+            f->flags |= SLINK_MISSING;
+        else if ((statbuf.st_mode&S_IFMT) == S_IFDIR)
+            f->flags |= SLINK_TO_DIR;
+    }
+    if (!(DirSizeMethod&D_F) && (f->flags&SLINK_TO_DIR || (statbuf.st_mode&S_IFMT) == S_IFDIR))
+        return 0;
+    f->size = size;
+    return 0;
+}
 
 int
 load_dir(xdir *dir, const mode_t flags)
@@ -16,7 +39,7 @@ load_dir(xdir *dir, const mode_t flags)
     DIR *dp;
     if (!(dp = opendir(path)))
         return -1;
-    int fd = dirfd(dp);
+    int fd = dirfd(dp),t;
     struct dirent *ep;
     size_t s = 0,nlen;
     while (readdir(dp)) s++;
@@ -43,12 +66,20 @@ load_dir(xdir *dir, const mode_t flags)
         memset(f->sel,0,TABS);
         f->mode = statbuf.st_mode;
         f->size = statbuf.st_size;
+        f->mtime = statbuf.st_mtime;
         f->flags = 0;
         if ((f->mode&S_IFMT) == S_IFLNK) {
             if (fstatat(fd,dname,&statbuf,0) != 0)
                 f->flags |= SLINK_MISSING;
             else if ((statbuf.st_mode&S_IFMT) == S_IFDIR)
                 f->flags |= SLINK_TO_DIR;
+        }
+        if (!(DirSizeMethod&D_F) && (f->flags&SLINK_TO_DIR || ep->d_type == DT_DIR)) {
+            f->size = 0;
+            if ((t = openat(fd,dname,O_DIRECTORY)) != -1) {
+                get_dirsize(t,&f->size,&f->size,DirSizeMethod);
+                close(t);
+            }
         }
         s++;
     }
@@ -82,9 +113,9 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     if (found) {
         d = &d[i];
         if (flags&D_MODE_ONCE) {
-            if (d->sort != Sort) {
-                xfile_sort(d->files,d->size,Sort);
-                d->sort = Sort;
+            if (d->sort != SortMethod) {
+                xfile_sort(d->files,d->size,SortMethod);
+                d->sort = SortMethod;
             }
             if (flags&D_CHDIR)
                 if (chdir(path) != 0)
@@ -117,9 +148,9 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
             return -1;
     if (flags&D_MODE_CHANGE) {
         if (memcmp(&d->ctime,&statbuf.st_ctim,sizeof(struct timespec)) == 0) {
-            if (d->sort != Sort) {
-                xfile_sort(d->files,d->size,Sort);
-                d->sort = Sort;
+            if (d->sort != SortMethod) {
+                xfile_sort(d->files,d->size,SortMethod);
+                d->sort = SortMethod;
             }
             goto END;
         }
@@ -138,8 +169,8 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         return -1;
     d->flags &= ~S_CHANGED;
     d->asize = d->size;
-    xfile_sort(d->files,d->size,Sort);
-    d->sort = Sort;
+    xfile_sort(d->files,d->size,SortMethod);
+    d->sort = SortMethod;
     
     END:
     if (!(flags&D_RECURSIVE))
