@@ -50,8 +50,8 @@
 #define BUFFER_MAX (1<<16)
 #define SIG_MAX (1<<10)
 
-#define TAB(x) ((xdir*)cs->dirs->v)[cs->tabs[x].t]
-#define CTAB TAB(cs->ctab)
+#define TAB(x,y) ((xdir*)cs->dirs->v)[cs->tabs[x].wins[y]]
+#define CTAB(x) TAB(cs->ctab,x)
 #define BINDINGS ((xbind*)cs->bindings->v)
 #define FUNCTIONS ((xfunc*)cs->functions->v)
 
@@ -192,7 +192,7 @@ typedef struct {
 } xdir;
 
 typedef struct {
-    size_t t;
+    size_t wins[3];
     uchar sel;
     uchar flags;
 } xtab;
@@ -205,7 +205,7 @@ typedef struct {
     flexarr *functions;
     flexarr *vars;
     flexarr *consoleh;
-    WINDOW *win;
+    WINDOW *wins[3];
     char typed[NUM_MAX];
     uchar ctab;
 } csas;

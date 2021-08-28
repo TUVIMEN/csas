@@ -6,6 +6,7 @@
 #include "calc.h"
 #include "sort.h"
 #include "console.h"
+#include "preview.h"
 #include "functions.h"
 
 extern li Exit;
@@ -199,7 +200,7 @@ cmd_move(char *src, csas *cs)
     if (value == 0)
         value = 1;
 
-    xdir *dir = &CTAB;
+    xdir *dir = &CTAB(1);
 
     if (dir->size == 0)
         return 0;
@@ -220,7 +221,7 @@ cmd_move(char *src, csas *cs)
                         while (isdigit(src[pos]))
                             pos++;
                         if (tab < TABS)
-                            dir = &TAB(tab);
+                            dir = &TAB(tab,1);
                 }
             } while (src[pos] && !isspace(src[pos]));
         } else if (src[pos] == '$') {
@@ -234,6 +235,7 @@ cmd_move(char *src, csas *cs)
     }
 
     move_d(dir,value,cs->ctab,flags);
+    preview_get(&dir->files[dir->sel[cs->ctab]],cs);
     return 0;
 }
 
@@ -243,12 +245,12 @@ tab_d(size_t t, int sel, csas *cs)
     ret_errno(t>=TABS,ERANGE,-1);
     if (cs->tabs[t].flags&T_EXISTS) {
         if (t != cs->ctab)
-            if (chdir(TAB(t).path) != 0)
+            if (chdir(TAB(t,1).path) != 0)
                 return -1;
         goto END;
     }
 
-    cs->tabs[t].t = cs->tabs[cs->ctab].t;
+    memcpy(cs->tabs[t].wins,cs->tabs[cs->ctab].wins,sizeof(cs->tabs[t].wins));
     cs->tabs[t].flags |= T_EXISTS;
     END: ;
     cs->ctab = t;
@@ -430,7 +432,7 @@ cmd_select(char *src, csas *cs)
     if (selected == -3) {
         if (!(flags&0x4))
             return 0;
-        uchar *s = dir[tabs[tab1].t].files[dir[tabs[tab1].t].sel[tab1]].sel;
+        uchar *s = dir[tabs[tab1].wins[1]].files[dir[tabs[tab1].wins[1]].sel[tab1]].sel;
         switch (flags&0x3) {
             case 0: s[tab2] &= ~(1<<toselected); break;
             case 1: s[tab2] |= 1<<toselected; break;
@@ -467,7 +469,7 @@ cmd_select(char *src, csas *cs)
 int
 cmd_fastselect(char *src, csas *cs)
 {
-    xdir *dir = &CTAB;
+    xdir *dir = &CTAB(1);
     ret_errno(dir->size==0,EINVAL,-1);
     dir->files[dir->sel[cs->ctab]].sel[cs->ctab] ^= (1<<cs->tabs[cs->ctab].sel);
     move_d(dir,1,cs->ctab,MOVE_UP);
@@ -497,38 +499,14 @@ int
 cmd_cd(char *src, csas *cs)
 {
     size_t size=strlen(src),pos = 0;
-    char path[PATH_MAX], *search_name = NULL;
-    xdir *dir = &CTAB;
+    char path[PATH_MAX];
     while_is(isspace,src,pos,size);
     if (get_path(path,src+pos,' ',size-pos,PATH_MAX,cs) == NULL) {
         errno = ENOENT;
         return -1;
     }
-    if (path[0] == '.' && path[1] == '.' && path[2] == 0)
-        search_name = memrchr(dir->path,'/',dir->plen);
 
-    li n = getdir(path,cs->dirs,DirLoadingMode|D_CHDIR);
-    if (n == -1)
-        return -1;
-    cs->tabs[cs->ctab].t = (size_t)n;
-
-    if (!search_name)
-        return 0;
-    search_name++;
-    size_t nlen = strlen(search_name);
-    if (nlen == 0)
-        return 0;
-    dir = &CTAB;
-    xfile *files = dir->files;
-    for (size_t i = 0; i < dir->size; i++) {
-        if (nlen == files[i].nlen 
-                && memcmp(search_name,files[i].name,nlen) == 0) {
-            dir->sel[cs->ctab] = i;
-            break;
-        }
-    }
-
-    return 0;
+    return csas_cd(path,cs);
 }
 
 int
@@ -548,11 +526,7 @@ cmd_file_run(char *src, csas *cs)
     if ((statbuf.st_mode&S_IFMT) != S_IFDIR)
         return file_run(path);
 
-    li n = getdir(path,cs->dirs,DirLoadingMode|D_CHDIR);
-    if (n == -1)
-        return -1;
-    cs->tabs[cs->ctab].t = n;
-    return 0;
+    return csas_cd(path,cs);
 }
 
 int
@@ -722,7 +696,7 @@ cmd_ds(char *src, csas *cs)
     if (selected == -2) {
         selected = cs->tabs[tab].sel;
     } else if (selected == -3) {
-        xdir *dir = &TAB(tab);
+        xdir *dir = &TAB(tab,1);
         int dfd,fd;
         dfd = open(dir->path,O_DIRECTORY);
         if (dfd == -1)
@@ -855,7 +829,7 @@ cmd_fmod(char *src, csas *cs)
     int ev=-1;
 
     if (selected == -3) {
-        xdir *dir = &TAB(tab);
+        xdir *dir = &TAB(tab,1);
         if (dir->size == 0) {
             close(fd1);
             return 0;
@@ -1157,7 +1131,7 @@ cmd_bulk(char *src, csas *cs)
 int
 cmd_search(char *src, csas *cs)
 {
-    xdir *dir = &CTAB;
+    xdir *dir = &CTAB(1);
     if (dir->size == 0)
         return 0;
     xfile *files = dir->files;
@@ -1301,7 +1275,7 @@ cmd_search(char *src, csas *cs)
 int
 cmd_filter(char *src, csas *cs)
 {
-    xdir *dir = &CTAB;
+    xdir *dir = &CTAB(1);
     if (dir->asize == 0)
         return 0;
     xfile *files = dir->files;
@@ -1404,6 +1378,7 @@ cmd_filter(char *src, csas *cs)
         regfree(&regex);
 
     END: ;
-    xfile_sort(dir->files,dir->size,SORT_CNAME|SORT_DIR_DISTINCTION|SORT_LDIR_DISTINCTION);
+    if (dir->files)
+        xfile_sort(dir->files,dir->size,SORT_CNAME|SORT_DIR_DISTINCTION|SORT_LDIR_DISTINCTION);
     return 0;
 }

@@ -3,6 +3,7 @@
 #include "load.h"
 #include "functions.h"
 #include "useful.h"
+#include "preview.h"
 #include "calc.h"
 #include "draw.h"
 #include "config.h"
@@ -378,6 +379,33 @@ add_vars(flexarr *v)
     xvar_add(NULL,"fs_avail",'i'|0x80,(void*)FS_AVAIL,v);
     xvar_add(NULL,"fs_all",'i'|0x80,(void*)FS_ALL,v);
     xvar_add(NULL,"fs_files",'i'|0x80,(void*)FS_FILES,v);
+    xvar_add(&MultipaneView,"MultipaneView",'I',NULL,v);
+    xvar_add(&FollowParentDir,"FollowParentDir",'I',NULL,v);
+    xvar_add(&LeftWindowSize,"LefetWindowSize",'I',NULL,v);
+    xvar_add(&CenterWindowSize,"CenterWindowSize",'I',NULL,v);
+    xvar_add(&RightWindowSize,"RightWindowSize",'I',NULL,v);
+}
+
+static void
+wins_resize(WINDOW **wins)
+{
+    if (!MultipaneView) {
+        wins[1] = subwin(stdscr,LINES-2,COLS,1,0);
+        delwin(wins[0]);
+        wins[0] = 0;
+        delwin(wins[2]);
+        wins[2] = 0;
+        return;
+    }
+
+    li sum = CenterWindowSize+LeftWindowSize+RightWindowSize,t1,t2;
+    t1 = (COLS/sum)*LeftWindowSize;
+    t2 = t1+1;
+    wins[0] = subwin(stdscr,LINES-2,t1,1,0);
+    t1 = (COLS/sum)*CenterWindowSize;
+    wins[1] = subwin(stdscr,LINES-2,t1,1,t2);
+    t2 += t1+1;
+    wins[2] = subwin(stdscr,LINES-2,COLS-t2,1,t2);
 }
 
 csas *
@@ -392,7 +420,7 @@ csas_init()
     ret->functions = flexarr_init(sizeof(xfunc),FUNCTIONS_INCR);
     ret->bindings = flexarr_init(sizeof(xbind),BINDINGS_INCR);
     initcurses();
-    ret->win = subwin(stdscr,LINES-2,COLS,1,0);
+    wins_resize(ret->wins);
 
     add_functions(ret->functions);
     add_bindings(ret->bindings);
@@ -407,20 +435,91 @@ csas_init()
 static void
 csas_draw(csas *cs)
 {
+    if (MultipaneView && (!cs->wins[0] || !cs->wins[2])) {
+        csas_resize(cs);
+        csas_cd(".",cs);
+    }
+    if (!MultipaneView && (cs->wins[0] || cs->wins[2]))
+        csas_resize(cs);
     draw_tbar(0,cs);
     draw_bbar(LINES-1,cs);
-    draw_dir(cs->win,&CTAB,cs);
+    xdir *d = &CTAB(1);
+    draw_dir(cs->wins[1],d,cs);
+    if (MultipaneView) {
+        if (d->path[0] == '/' && d->path[1] == 0) {
+            werase(cs->wins[0]);
+            wrefresh(cs->wins[0]);
+        } else {
+            draw_dir(cs->wins[0],&CTAB(0),cs);
+        }
+        preview_draw(cs->wins[2],cs);
+    }
 }
 
 void
 csas_resize(csas *cs)
 {
-    delwin(cs->win);
+    delwin(cs->wins[1]);
+    if (MultipaneView) {
+        delwin(cs->wins[0]);
+        delwin(cs->wins[2]);
+    }
     endwin();
     refresh();
     clear();
-    cs->win = subwin(stdscr,LINES-2,COLS,1,0);
+    wins_resize(cs->wins);
     csas_draw(cs);
+}
+
+static void
+searchfor(const char *name, const size_t tab, xdir *d)
+{
+    size_t nlen = strlen(name),i;
+    if (nlen == 0)
+        return;
+    xfile *files = d->files;
+    i = d->sel[tab];
+    if (i != 0 && nlen == files[i].nlen
+        && memcmp(name,files[i].name,nlen) == 0)
+        return;
+    for (i = 0; i < d->size; i++) {
+        if (nlen == files[i].nlen
+            && memcmp(name,files[i].name,nlen) == 0) {
+            d->sel[tab] = i;
+            break;
+        }
+    }
+}
+
+int
+csas_cd(const char *path, csas* cs)
+{
+    char *search_name = NULL;
+    xdir *dir = &CTAB(1);
+    if (FollowParentDir && path[0] == '.' && path[1] == '.' && path[2] == 0)
+        search_name = memrchr(dir->path,'/',dir->plen);
+
+    li n = getdir(path,cs->dirs,DirLoadingMode|D_CHDIR);
+    if (n == -1)
+        return -1;
+    cs->tabs[cs->ctab].wins[1] = (size_t)n;
+    dir = &CTAB(1);
+    if (search_name)
+        searchfor(++search_name,cs->ctab,dir);
+    preview_get(&dir->files[dir->sel[cs->ctab]],cs);
+    if (MultipaneView && (dir->path[0] != '/' || dir->path[1] != 0)) {
+        n = getdir("..",cs->dirs,DirLoadingMode);
+        if (n == -1)
+            return -1;
+        cs->tabs[cs->ctab].wins[0] = (size_t)n;
+        if (FollowParentDir) {
+            search_name = memrchr(dir->path,'/',dir->plen);
+            dir = &CTAB(0);
+            if (search_name)
+                searchfor(++search_name,cs->ctab,dir);
+        }
+    }
+    return 0;
 }
 
 void
@@ -430,10 +529,15 @@ csas_run(csas *cs, int argc, char **argv)
     if (argc > 1)
         path = argv[1];
     config_load("/etc/csasrc",cs);
-    li n = getdir(path,cs->dirs,D_CHDIR);
+    /*li n = getdir(path,cs->dirs,D_CHDIR);
     if (n == -1)
         exiterr();
-    cs->tabs[cs->ctab].t = (size_t)n;
+    cs->tabs[cs->ctab].wins[1] = (size_t)n;
+    if (MultipaneView) {
+        n = getdir("..",cs->dirs,D_CHDIR);
+        cs->tabs[cs->ctab].wins[0] = n;
+    }*/
+    csas_cd(path,cs);
     cs->tabs[cs->ctab].flags |= T_EXISTS;
 
     struct timespec timer;
@@ -462,12 +566,12 @@ csas_run(csas *cs, int argc, char **argv)
         }
 
         if (UpdateFile) {
-            register xdir *d = &CTAB;
+            register xdir *d = &CTAB(1);
             xfile_update(&d->files[d->sel[cs->ctab]]);
         }
 
         if (t1 != t2) {
-            register xdir *d = &CTAB;
+            register xdir *d = &CTAB(1);
             t2 = t1;
             if (lstat(d->path,&statbuf) != 0)
                 continue;

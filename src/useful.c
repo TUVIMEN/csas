@@ -400,7 +400,7 @@ get_path(char *dest, char *src, const char delim, size_t size, const size_t max,
                     continue;
                 if (addcalc(dest,src,&x,&pos,max,size,cs->vars) == 0)
                     continue;
-            } else if (handle_percent(dest,src,&x,&pos,max,&CTAB,cs->ctab) == 0)
+            } else if (handle_percent(dest,src,&x,&pos,max,&CTAB(1),cs->ctab) == 0)
                 continue;
             dest[x] = src[pos];
         }

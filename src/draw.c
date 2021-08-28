@@ -93,7 +93,7 @@ draw_hostname()
 static void
 draw_path(csas *cs)
 {
-    xdir *dir = &CTAB;
+    xdir *dir = &CTAB(1);
     xfile *file = dir->files;
     size_t i=0,ctab=cs->ctab,sel=dir->sel[ctab];
     attron(Dir_C);
@@ -153,7 +153,7 @@ void
 draw_bbar(int y, csas *cs)
 {
     char tmp[32],*t;
-    xdir *dir = &CTAB;
+    xdir *dir = &CTAB(1);
     size_t i=0,j,ctab=cs->ctab,sel=dir->sel[ctab];
     mvhline(y,0,' ',COLS);
 
@@ -286,8 +286,8 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
     }
     scroll = dir->scroll[ctab];
 
-    size_t offt=0,off1=0,off2;
-    char tmp[32];
+    size_t offt=0,off1=0,off2,endl=0;
+    char tmp[32],*end;
     if (NumberLinesOffset) {
         off1 = 0;
         register size_t c = (dir->size-1)+NumberLinesStartFrom;
@@ -308,54 +308,55 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
         wattron(win,color);
         mvwhline(win,i,1,' ',maxx);
 
-        if (NumberLines) {
-            offt = 0;
-            if (NumberLinesOffset) {
-                off2 = 0;
-                register size_t c = j+NumberLinesStartFrom;
-                while (c > 9) {
-                    c /= 10;
-                    off2++;
+        if (win == cs->wins[1]) {
+            if (NumberLines) {
+                offt = 0;
+                if (NumberLinesOffset) {
+                    off2 = 0;
+                    register size_t c = j+NumberLinesStartFrom;
+                    while (c > 9) {
+                        c /= 10;
+                        off2++;
+                    }
+                    offt = off1-off2;
                 }
-                offt = off1-off2;
+                ltoa(j+NumberLinesStartFrom,tmp);
+                mvwaddstr(win,i,2+offt,tmp);
+                offt += strlen(tmp)+1;
             }
-            ltoa(j+NumberLinesStartFrom,tmp);
-            mvwaddstr(win,i,2+offt,tmp);
-            offt += strlen(tmp)+1;
-        }
-
-        register char *end;
-        register size_t endl;
-
-        switch (Linemode) {
-            case L_SIZE:
-                if (SizeInBytes) {
-                    ltoa(file[j].size,tmp);
+            
+            switch (Linemode) {
+                case L_SIZE:
+                    if (SizeInBytes) {
+                        ltoa(file[j].size,tmp);
+                        end = tmp;
+                    } else {
+                        end = size_shrink(file[j].size);
+                    }
+                    endl = strlen(end);
+                    break;
+                case L_MTIME:
                     end = tmp;
-                } else {
-                    end = size_shrink(file[j].size);
-                }
-                endl = strlen(end);
-                break;
-            case L_MTIME:
-                end = tmp;
-                endl = ttoa(&file[j].mtime,tmp);
-                break;
-            case L_PERMS:
-                end = lsperms(file[j].mode);
-                endl = 10;
-                break;
-            default:
-                end = NULL;
-                endl = 0;
+                    endl = ttoa(&file[j].mtime,tmp);
+                    break;
+                case L_PERMS:
+                    end = lsperms(file[j].mode);
+                    endl = 10;
+                    break;
+                default:
+                    end = NULL;
+                    endl = 0;
+            }
         }
 
         if (file[j].nlen >= maxx-endl-5-offt) {
             mvwaddnstr(win,i,2+offt,file[j].name,maxx-endl-5);
             waddch(win,'~');
-        } else
+        } else {
             mvwaddnstr(win,i,2+offt,file[j].name,file[j].nlen);
-        mvwaddnstr(win,i,maxx-endl-1,end,endl);
+        }
+        if (win == cs->wins[1])
+            mvwaddnstr(win,i,maxx-endl-1,end,endl);
         wattroff(win,-1);
     }
     for (; i < (size_t)maxy; i++)

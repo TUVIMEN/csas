@@ -43,6 +43,11 @@ li Linemode = L_SIZE;
 li UpdateFile = 0;
 li ColorByExtension = 0;
 li FileSystemInfo = 0;
+li MultipaneView = 0;
+li FollowParentDir = 1;
+li LeftWindowSize = 1;
+li CenterWindowSize = 3;
+li RightWindowSize = 4;
 
 int sel_colors[] = {
     YELLOW,GREEN,RED,BLUE,

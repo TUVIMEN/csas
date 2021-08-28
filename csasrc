@@ -47,5 +47,10 @@ set ColorByExtension 1
 set UpdateFile 1
 set SizeInBytes 0
 set FileSystemInfo fs_avail
+set MultipaneView 1
+set FollowParentDir 1
+set LeftWindowSize 1
+set CenterWindowSize 3
+set RightWindowSize 4
 
 source ~/.config/csasrc
