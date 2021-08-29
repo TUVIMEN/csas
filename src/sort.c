@@ -71,7 +71,7 @@ cmp_dir_distinction(const xfile *f1, const xfile *f2, void *flags)
 void
 xfile_sort(xfile *f, const size_t size, uchar flags)
 {
-    if (flags == SORT_NONE)
+    if (f == NULL || flags == SORT_NONE)
         return;
     if (flags == SORT_REVERSE) {
         xfile t;

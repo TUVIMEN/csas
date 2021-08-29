@@ -235,7 +235,8 @@ cmd_move(char *src, csas *cs)
     }
 
     move_d(dir,value,cs->ctab,flags);
-    preview_get(&dir->files[dir->sel[cs->ctab]],cs);
+    if (dir->size)
+        preview_get(&dir->files[dir->sel[cs->ctab]],cs);
     return 0;
 }
 
@@ -1037,6 +1038,7 @@ cmd_open_with(char *src, csas *cs)
         return -1;
 
     n = path;
+    n[0] = 0;
     console_getline(&n,1,"open_with ",NULL,cs);
     return spawn(n,file,NULL,F_NORMAL|F_WAIT);
 }
@@ -1317,6 +1319,9 @@ cmd_filter(char *src, csas *cs)
                     case 'i': //case insensitive
                         flags |= 0x80;
                         break;
+                    case 'v': //invert match
+                        flags |= 0x20;
+                        break;
                     case 'N': //name
                     case 'G': //regex
                     case 'E': //extended regex
@@ -1356,17 +1361,24 @@ cmd_filter(char *src, csas *cs)
 
     dir->size = 0;
     char t[sizeof(xfile)];
+    int n;
     for (size_t i = 0; i < dir->asize; i++) {
         if (sel == -1 ? 0 : !(files[i].sel[ctab]&sel))
             continue;
+
+        n = 0;
         if (flags&0x4) {
-            if (cmp(files[i].name,pattern) == NULL)
-                continue;
-        } else if (regexec(&regex,files[i].name,0,NULL,0) != 0)
+            if (cmp(files[i].name,pattern) != NULL)
+                n = 1;
+        } else if (regexec(&regex,files[i].name,0,NULL,0) == 0)
+            n = 1;
+        if ((flags&0x20) ? n : !n)
             continue;
 
-        if (i == dir->size)
+        if (i == dir->size) {
+            dir->size++;
             continue;
+        }
 
         memcpy(t,&files[dir->size],sizeof(xfile));
         memcpy(&files[dir->size],&files[i],sizeof(xfile));
@@ -1378,7 +1390,6 @@ cmd_filter(char *src, csas *cs)
         regfree(&regex);
 
     END: ;
-    if (dir->files)
-        xfile_sort(dir->files,dir->size,SORT_CNAME|SORT_DIR_DISTINCTION|SORT_LDIR_DISTINCTION);
+    xfile_sort(dir->files,dir->size,SORT_CNAME|SORT_DIR_DISTINCTION|SORT_LDIR_DISTINCTION);
     return 0;
 }

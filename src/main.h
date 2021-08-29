@@ -115,6 +115,11 @@
 #define FS_ALL 0x4
 #define FS_FILES 0x8
 
+#define B_NONE 0x0
+#define B_SEPARATORS 0x1
+#define B_OUTLINE 0x2
+#define B_ALL 0x3
+
 #define ret_errno(x,y,z) if (x) { errno = (y); return (z); }
 #define while_is(w,x,y,z) while ((y) < (z) && (w)((x)[(y)])) {(y)++;}
 #define while_isnt(w,x,y,z) while ((y) < (z) && !(w)((x)[(y)])) {(y)++;}

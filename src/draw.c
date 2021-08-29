@@ -157,28 +157,30 @@ draw_bbar(int y, csas *cs)
     size_t i=0,j,ctab=cs->ctab,sel=dir->sel[ctab];
     mvhline(y,0,' ',COLS);
 
-    t = lsperms(dir->files[sel].mode);
-    addstr(t);
-    addch(' ');
-    if (SizeInBytes) {
-        ltoa(dir->files[sel].size,tmp);
+    if (dir->size) {
+        t = lsperms(dir->files[sel].mode);
+        addstr(t);
+        addch(' ');
+        if (SizeInBytes) {
+            ltoa(dir->files[sel].size,tmp);
+            t = tmp;
+        } else {
+            t = size_shrink(dir->files[sel].size);
+        }
+        addstr(t);
+        addch(' ');
         t = tmp;
-    } else {
-        t = size_shrink(dir->files[sel].size);
-    }
-    addstr(t);
-    addch(' ');
-    t = tmp;
-    ttoa(&dir->files[sel].mtime,tmp);
-    addstr(t);
-
-    if (dir->size > 0) {
-        i = snprintf(tmp,16,"%lu/%lu",sel+1,dir->size);
-        if (i)
-            mvaddnstr(LINES-1,COLS-i,tmp,i);
-    } else {
-        mvaddch(LINES-1,COLS-1,'0');
-        i = 1;
+        ttoa(&dir->files[sel].mtime,tmp);
+        addstr(t);
+        
+        if (dir->size > 0) {
+            i = snprintf(tmp,16,"%lu/%lu",sel+1,dir->size);
+            if (i)
+                mvaddnstr(LINES-1,COLS-i,tmp,i);
+        } else {
+            mvaddch(LINES-1,COLS-1,'0');
+            i = 1;
+        }
     }
 
     j = strlen(cs->typed);

@@ -11,7 +11,7 @@ int
 xfile_update(xfile *f)
 {
     struct stat statbuf;
-    if (lstat(f->name,&statbuf) != 0)
+    if (!f || lstat(f->name,&statbuf) != 0)
         return -1;
     f->mode = statbuf.st_mode;
     register off_t size = statbuf.st_size;
@@ -114,8 +114,7 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         d = &d[i];
         if (flags&D_MODE_ONCE) {
             if (d->sort != SortMethod) {
-                if (d->files)
-                    xfile_sort(d->files,d->size,SortMethod);
+                xfile_sort(d->files,d->size,SortMethod);
                 d->sort = SortMethod;
             }
             if (flags&D_CHDIR)
@@ -150,8 +149,7 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     if (flags&D_MODE_CHANGE) {
         if (memcmp(&d->ctime,&statbuf.st_ctim,sizeof(struct timespec)) == 0) {
             if (d->sort != SortMethod) {
-                if (d->files)
-                    xfile_sort(d->files,d->size,SortMethod);
+                xfile_sort(d->files,d->size,SortMethod);
                 d->sort = SortMethod;
             }
             goto END;

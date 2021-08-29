@@ -384,28 +384,77 @@ add_vars(flexarr *v)
     xvar_add(&LeftWindowSize,"LefetWindowSize",'I',NULL,v);
     xvar_add(&CenterWindowSize,"CenterWindowSize",'I',NULL,v);
     xvar_add(&RightWindowSize,"RightWindowSize",'I',NULL,v);
+    xvar_add(&Border_C,"Border_C",'I',NULL,v);
+    xvar_add(&Borders,"Borders",'I',NULL,v);
+    xvar_add(NULL,"b_none",'i'|0x80,(void*)B_NONE,v);
+    xvar_add(NULL,"b_separators",'i'|0x80,(void*)B_SEPARATORS,v);
+    xvar_add(NULL,"b_outline",'i'|0x80,(void*)B_OUTLINE,v);
+    xvar_add(NULL,"b_all",'i'|0x80,(void*)B_ALL,v);
 }
 
 static void
 wins_resize(WINDOW **wins)
 {
+    int outline=0,separators=0;
+    if (Borders&B_OUTLINE)
+        outline = 1;
+    if (Borders&B_SEPARATORS)
+        separators = 1;
     if (!MultipaneView) {
-        wins[1] = subwin(stdscr,LINES-2,COLS,1,0);
+        wins[1] = subwin(stdscr,LINES-2-(outline<<1),COLS-(outline<<1),1+outline,outline);
         delwin(wins[0]);
         wins[0] = 0;
         delwin(wins[2]);
         wins[2] = 0;
+        if (outline) {
+            attron(Border_C);
+            mvhline(1,1,ACS_HLINE,COLS-2);
+            mvhline(LINES-2,1,ACS_HLINE,COLS-2);
+            mvvline(2,0,ACS_VLINE,LINES-4);
+            mvvline(2,COLS-1,ACS_VLINE,LINES-4);
+            mvaddch(1,0,ACS_ULCORNER);
+            mvaddch(1,COLS-1,ACS_URCORNER);
+            mvaddch(LINES-2,0,ACS_LLCORNER);
+            mvaddch(LINES-2,COLS-1,ACS_LRCORNER);
+            attroff(Border_C);
+        }
         return;
     }
 
+    attron(Border_C);
+
     li sum = CenterWindowSize+LeftWindowSize+RightWindowSize,t1,t2;
     t1 = (COLS/sum)*LeftWindowSize;
+    if (separators)
+        mvvline(1,t1,ACS_VLINE,LINES-2);
+    if (outline) {
+        mvhline(1,1,ACS_HLINE,COLS-2);
+        mvhline(LINES-2,1,ACS_HLINE,COLS-2);
+        mvvline(2,0,ACS_VLINE,LINES-4);
+        mvvline(2,COLS-1,ACS_VLINE,LINES-4);
+        mvaddch(1,0,ACS_ULCORNER);
+        mvaddch(1,COLS-1,ACS_URCORNER);
+        mvaddch(LINES-2,0,ACS_LLCORNER);
+        mvaddch(LINES-2,COLS-1,ACS_LRCORNER);
+    }
+    if (outline && separators) {
+        mvaddch(1,t1,ACS_URCORNER);
+        mvaddch(LINES-2,t1,ACS_LRCORNER);
+    }
     t2 = t1+1;
-    wins[0] = subwin(stdscr,LINES-2,t1,1,0);
+    wins[0] = subwin(stdscr,LINES-2-(outline<<1),t1-outline,1+outline,outline);
     t1 = (COLS/sum)*CenterWindowSize;
-    wins[1] = subwin(stdscr,LINES-2,t1,1,t2);
+    wins[1] = subwin(stdscr,LINES-2-(outline<<1),t1,1+outline,t2);
     t2 += t1+1;
-    wins[2] = subwin(stdscr,LINES-2,COLS-t2,1,t2);
+    if (separators)
+        mvvline(1,t2-1,ACS_VLINE,LINES-2);
+    if (outline && separators) {
+        mvaddch(1,t2-1,ACS_URCORNER);
+        mvaddch(LINES-2,t2-1,ACS_LRCORNER);
+    }
+    wins[2] = subwin(stdscr,LINES-2-(outline<<1),COLS-t2-outline,1+outline,t2);
+
+    attroff(Border_C);
 }
 
 csas *
@@ -420,7 +469,6 @@ csas_init()
     ret->functions = flexarr_init(sizeof(xfunc),FUNCTIONS_INCR);
     ret->bindings = flexarr_init(sizeof(xbind),BINDINGS_INCR);
     initcurses();
-    wins_resize(ret->wins);
 
     add_functions(ret->functions);
     add_bindings(ret->bindings);
@@ -506,7 +554,8 @@ csas_cd(const char *path, csas* cs)
     dir = &CTAB(1);
     if (search_name)
         searchfor(++search_name,cs->ctab,dir);
-    preview_get(&dir->files[dir->sel[cs->ctab]],cs);
+    if (dir->size)
+        preview_get(&dir->files[dir->sel[cs->ctab]],cs);
     if (MultipaneView && (dir->path[0] != '/' || dir->path[1] != 0)) {
         n = getdir("..",cs->dirs,DirLoadingMode);
         if (n == -1)
@@ -522,22 +571,16 @@ csas_cd(const char *path, csas* cs)
     return 0;
 }
 
-void
+int
 csas_run(csas *cs, int argc, char **argv)
 {
     char *path = ".";
     if (argc > 1)
         path = argv[1];
     config_load("/etc/csasrc",cs);
-    /*li n = getdir(path,cs->dirs,D_CHDIR);
-    if (n == -1)
-        exiterr();
-    cs->tabs[cs->ctab].wins[1] = (size_t)n;
-    if (MultipaneView) {
-        n = getdir("..",cs->dirs,D_CHDIR);
-        cs->tabs[cs->ctab].wins[0] = n;
-    }*/
-    csas_cd(path,cs);
+    wins_resize(cs->wins);
+    if (csas_cd(path,cs) == -1)
+        return -1;
     cs->tabs[cs->ctab].flags |= T_EXISTS;
 
     struct timespec timer;
@@ -583,6 +626,7 @@ csas_run(csas *cs, int argc, char **argv)
             }
         }
     }
+    return 0;
 }
 
 void
