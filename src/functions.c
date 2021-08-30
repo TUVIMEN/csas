@@ -34,6 +34,8 @@ extern li DirLoadingMode;
 extern li Visual;
 extern li WrapScroll;
 extern li Error_C;
+extern li Borders;
+extern li ShowKeyBindings;
 
 uint
 update_event(csas *cs)
@@ -48,6 +50,17 @@ update_event(csas *cs)
         passed[i] = i;
     i = 0;
     while (true) {
+        if (ShowKeyBindings && i > 0) {
+            if (i > 1) {
+                if (Borders)
+                    draw_borders();
+                csas_draw(cs);
+            }
+            for (j = 0; j < passedl && j < (size_t)LINES-2; j++) {
+                mvhline(LINES-2-j,0,' ',COLS);
+                mvprintw(LINES-2-j,0," %c\t%s",b[passed[j]].keys[i],b[passed[j]].value);
+            }
+        }
         while ((event = getinput(cs)) == -1);
         cs->typed[n++] = (char)event;
         cs->typed[n] = 0;
@@ -72,11 +85,21 @@ update_event(csas *cs)
     }
 
     END: ;
+    if (ShowKeyBindings && i > 0) {
+        if (Borders)
+            draw_borders();
+        csas_draw(cs);
+    }
     event = passed[0];
     free(passed);
     return (uint)event;
 
     EXIT: ;
+    if (ShowKeyBindings && i > 0) {
+        if (Borders)
+            draw_borders();
+        csas_draw(cs);
+    }
     cs->typed[0] = 0;
     free(passed);
     return -1;

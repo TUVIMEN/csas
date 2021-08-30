@@ -53,5 +53,6 @@ set LeftWindowSize 1
 set CenterWindowSize 3
 set RightWindowSize 4
 set Borders b_none
+set ShowKeyBindings 1
 
 source ~/.config/csasrc

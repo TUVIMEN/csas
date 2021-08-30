@@ -68,6 +68,7 @@ li FollowParentDir = 1;
 li LeftWindowSize = 1;
 li CenterWindowSize = 3;
 li RightWindowSize = 4;
+li ShowKeyBindings = 0;
 
 int sel_colors[] = {
     YELLOW,GREEN,RED,BLUE,

@@ -410,71 +410,34 @@ add_vars(flexarr *v)
     xvar_add(NULL,"b_separators",'i'|0x80,(void*)B_SEPARATORS,v);
     xvar_add(NULL,"b_outline",'i'|0x80,(void*)B_OUTLINE,v);
     xvar_add(NULL,"b_all",'i'|0x80,(void*)B_ALL,v);
+    xvar_add(&ShowKeyBindings,"ShowKeyBindings",'I',NULL,v);
 }
 
 static void
 wins_resize(WINDOW **wins)
 {
-    int outline=0,separators=0;
+    if (Borders)
+        draw_borders();
+    int outline=0;
     if (Borders&B_OUTLINE)
         outline = 1;
-    if (Borders&B_SEPARATORS)
-        separators = 1;
     if (!MultipaneView) {
         wins[1] = subwin(stdscr,LINES-2-(outline<<1),COLS-(outline<<1),1+outline,outline);
         delwin(wins[0]);
         wins[0] = 0;
         delwin(wins[2]);
         wins[2] = 0;
-        if (outline) {
-            attron(Border_C);
-            mvhline(1,1,ACS_HLINE,COLS-2);
-            mvhline(LINES-2,1,ACS_HLINE,COLS-2);
-            mvvline(2,0,ACS_VLINE,LINES-4);
-            mvvline(2,COLS-1,ACS_VLINE,LINES-4);
-            mvaddch(1,0,ACS_ULCORNER);
-            mvaddch(1,COLS-1,ACS_URCORNER);
-            mvaddch(LINES-2,0,ACS_LLCORNER);
-            mvaddch(LINES-2,COLS-1,ACS_LRCORNER);
-            attroff(Border_C);
-        }
         return;
     }
 
-    attron(Border_C);
-
     li sum = CenterWindowSize+LeftWindowSize+RightWindowSize,t1,t2;
     t1 = (COLS/sum)*LeftWindowSize;
-    if (separators)
-        mvvline(1,t1,ACS_VLINE,LINES-2);
-    if (outline) {
-        mvhline(1,1,ACS_HLINE,COLS-2);
-        mvhline(LINES-2,1,ACS_HLINE,COLS-2);
-        mvvline(2,0,ACS_VLINE,LINES-4);
-        mvvline(2,COLS-1,ACS_VLINE,LINES-4);
-        mvaddch(1,0,ACS_ULCORNER);
-        mvaddch(1,COLS-1,ACS_URCORNER);
-        mvaddch(LINES-2,0,ACS_LLCORNER);
-        mvaddch(LINES-2,COLS-1,ACS_LRCORNER);
-    }
-    if (outline && separators) {
-        mvaddch(1,t1,ACS_URCORNER);
-        mvaddch(LINES-2,t1,ACS_LRCORNER);
-    }
     t2 = t1+1;
     wins[0] = subwin(stdscr,LINES-2-(outline<<1),t1-outline,1+outline,outline);
     t1 = (COLS/sum)*CenterWindowSize;
     wins[1] = subwin(stdscr,LINES-2-(outline<<1),t1,1+outline,t2);
     t2 += t1+1;
-    if (separators)
-        mvvline(1,t2-1,ACS_VLINE,LINES-2);
-    if (outline && separators) {
-        mvaddch(1,t2-1,ACS_URCORNER);
-        mvaddch(LINES-2,t2-1,ACS_LRCORNER);
-    }
     wins[2] = subwin(stdscr,LINES-2-(outline<<1),COLS-t2-outline,1+outline,t2);
-
-    attroff(Border_C);
 }
 
 csas *
@@ -500,7 +463,7 @@ csas_init()
     return ret;
 }
 
-static void
+void
 csas_draw(csas *cs)
 {
     if (MultipaneView && (!cs->wins[0] || !cs->wins[2])) {

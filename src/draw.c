@@ -52,6 +52,12 @@ extern li Image_C;
 extern li Video_C;
 extern li SizeInBytes;
 extern li FileSystemInfo;
+extern li Borders;
+extern li Border_C;
+extern li MultipaneView;
+extern li LeftWindowSize;
+extern li CenterWindowSize;
+extern li RightWindowSize;
 
 void
 printmsg(const int attr, const char *fmt, ...)
@@ -385,4 +391,62 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
     for (; i < (size_t)maxy; i++)
         mvwhline(win,i,0,' ',maxx);
     wrefresh(win);
+}
+
+void
+draw_borders()
+{
+    int outline=0,separators=0;
+    if (Borders&B_OUTLINE)
+        outline = 1;
+    if (Borders&B_SEPARATORS)
+        separators = 1;
+    if (!MultipaneView) {
+        if (outline) {
+            attron(Border_C);
+            mvhline(1,1,ACS_HLINE,COLS-2);
+            mvhline(LINES-2,1,ACS_HLINE,COLS-2);
+            mvvline(2,0,ACS_VLINE,LINES-4);
+            mvvline(2,COLS-1,ACS_VLINE,LINES-4);
+            mvaddch(1,0,ACS_ULCORNER);
+            mvaddch(1,COLS-1,ACS_URCORNER);
+            mvaddch(LINES-2,0,ACS_LLCORNER);
+            mvaddch(LINES-2,COLS-1,ACS_LRCORNER);
+            attroff(Border_C);
+        }
+        return;
+    }
+
+    attron(Border_C);
+
+    li sum = CenterWindowSize+LeftWindowSize+RightWindowSize,t1,t2;
+    t1 = (COLS/sum)*LeftWindowSize;
+    t2 = t1+1;
+    if (separators)
+        mvvline(1,t1,ACS_VLINE,LINES-2);
+    if (outline) {
+        mvhline(1,1,ACS_HLINE,COLS-2);
+        mvhline(LINES-2,1,ACS_HLINE,COLS-2);
+        mvvline(2,0,ACS_VLINE,LINES-4);
+        mvvline(2,COLS-1,ACS_VLINE,LINES-4);
+        mvaddch(1,0,ACS_ULCORNER);
+        mvaddch(1,COLS-1,ACS_URCORNER);
+        mvaddch(LINES-2,0,ACS_LLCORNER);
+        mvaddch(LINES-2,COLS-1,ACS_LRCORNER);
+    }
+    if (outline && separators) {
+        mvaddch(1,t1,ACS_URCORNER);
+        mvaddch(LINES-2,t1,ACS_LRCORNER);
+    }
+    t1 = (COLS/sum)*CenterWindowSize;
+    t2 += t1;
+
+    if (separators)
+        mvvline(1,t2,ACS_VLINE,LINES-2);
+    if (outline && separators) {
+        mvaddch(1,t2,ACS_URCORNER);
+        mvaddch(LINES-2,t2,ACS_LRCORNER);
+    }
+
+    attroff(Border_C);
 }
