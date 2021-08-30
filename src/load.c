@@ -1,3 +1,21 @@
+/*
+    csas - console file manager
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "main.h"
 #include "useful.h"
 #include "csas.h"
@@ -30,7 +48,7 @@ xfile_update(xfile *f)
 }
 
 int
-load_dir(xdir *dir, const mode_t flags)
+load_dir(xdir *dir)
 {
     ret_errno(dir==NULL,EINVAL,-1);
     char *path = dir->path;
@@ -165,8 +183,14 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         d->size = 0;
         d->asize = 0;
     }
-    if (load_dir(d,flags) != 0)
+    if (load_dir(d) != 0)
         return -1;
+    if (d->size) {
+        for (size_t i = 0; i < TABS; i++) {
+            if (d->sel[i] >= d->size)
+                d->sel[i] = d->size-1;
+        }
+    }
     d->flags &= ~S_CHANGED;
     d->asize = d->size;
     xfile_sort(d->files,d->size,SortMethod);

@@ -16,11 +16,14 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LOAD_H
-#define LOAD_H
+#ifndef EXPAND_H
+#define EXPAND_H
 
-int xfile_update(xfile *f);
-int load_dir(xdir *dir);
-li getdir(const char *path, flexarr *dir, const uchar flags);
+int expand_commands(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uchar *free_names, csas *cs);
+int expand_vars(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uchar *free_names, csas *cs);
+int expand_shell_commands(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uchar *free_names, csas *cs);
+int expand_shell(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uchar *free_names, csas *cs);
+int expand_file(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uchar *free_names, csas *cs);
+int expand_dir(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uchar *free_names, csas *cs);
 
 #endif

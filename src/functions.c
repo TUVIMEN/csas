@@ -1,3 +1,21 @@
+/*
+    csas - console file manager
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "main.h"
 #include "useful.h"
 #include "load.h"
@@ -7,6 +25,7 @@
 #include "sort.h"
 #include "console.h"
 #include "preview.h"
+#include "expand.h"
 #include "functions.h"
 
 extern li Exit;
@@ -324,7 +343,7 @@ cmd_console(char *src, csas *cs)
         *((char**)flexarr_inc(history)) = malloc(LLINE_MAX);
     ((char**)history->v)[history->size-1][0] = 0;
 
-    console_getline((char**)history->v,history->size,first,add,cs);
+    console_getline((char**)history->v,history->size,first,add,cs,expand_commands);
     char *line = ((char**)history->v)[history->size-1];
     if (command_run(line,cs) != 0)
         printmsg(Error_C,"%s: %s",line,strerror(errno));
@@ -586,7 +605,7 @@ cmd_alias(char *src, csas *cs)
         free(line);
         return -1;
     }
-    return xfunc_add(name,'a',line,cs->functions);
+    return xfunc_add(name,'a',line,NULL,cs->functions);
 }
 
 int
@@ -839,6 +858,7 @@ cmd_fmod(char *src, csas *cs)
             goto END;
 
         xfile *file = &dir->files[dir->sel[tab]];
+        count = 1;
         if ((file->mode&S_IFMT) == S_IFDIR) {
 	    if ((fd3 = openat(fd2,file->name,O_RDONLY)) == -1)
 	        goto END;
@@ -1020,7 +1040,7 @@ cmd_rename(char *src, csas *cs)
         return -1;
 
     n = name[1];
-    console_getline(&n,1,"rename ",(char*)name[0],cs);
+    console_getline(&n,1,"rename ",(char*)name[0],cs,NULL);
     return rename((char*)name[0],(char*)name[1]);
 }
 
@@ -1039,7 +1059,11 @@ cmd_open_with(char *src, csas *cs)
 
     n = path;
     n[0] = 0;
-    console_getline(&n,1,"open_with ",NULL,cs);
+    console_getline(&n,1,"open_with ",NULL,cs,expand_shell_commands);
+    pos = 0;
+    while (n[pos] && !isspace(n[pos]))
+        pos++;
+    n[pos] = 0;
     return spawn(n,file,NULL,F_NORMAL|F_WAIT);
 }
 

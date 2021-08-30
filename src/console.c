@@ -1,13 +1,33 @@
+/*
+    csas - console file manager
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "main.h"
 #include "useful.h"
 #include "console.h"
 
 void
-console_getline(char **history, size_t size, char *first, char *add, csas *cs)
+console_getline(char **history, size_t size, char *first, char *add, csas *cs,
+    int (*expand)(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uchar *free_names, csas *cs))
 {
     int ev;
     size_t firstl=strlen(first),current_line=size-1,s,off=0,x=0;
     char *h=history[current_line];
+    uchar tabp=0,free_names=0;
     s = strlen(h);
 
     curs_set(1);
@@ -19,6 +39,8 @@ console_getline(char **history, size_t size, char *first, char *add, csas *cs)
             off = COLS-(x-off);
     }
 
+    flexarr *arg = flexarr_init(sizeof(void*),DIR_INCR);;
+
     for (;;) {
         mvhline(LINES-1,0,' ',COLS);
         mvaddnstr(LINES-1,0,first,firstl);
@@ -26,9 +48,19 @@ console_getline(char **history, size_t size, char *first, char *add, csas *cs)
         move(LINES-1,x+firstl-off);
         refresh();
 
-        switch (ev = getinput(cs)) {
+        ev = getinput(cs);
+        if (tabp && ev != '\t')
+            tabp = 0;
+        switch (ev) {
             case -1: break;
-            case '\t': break;
+            case '\t':
+                if (expand) {
+                    expand(history[current_line],0,&x,&tabp,arg,&free_names,cs);
+                    s = x;
+                    /*if (tabp)
+                        x = strlen(history[current_line]);*/
+                }
+                break;
             case 10:
             case '\r':
                 goto END;
@@ -61,8 +93,8 @@ console_getline(char **history, size_t size, char *first, char *add, csas *cs)
                 break;
             case ('e'&0x1f):
                 x = s;
-        if (s > COLS-firstl-1)
-            off = s-COLS+firstl+1;
+                if (s > COLS-firstl-1)
+                    off = s-COLS+firstl+1;
                 break;
             case 27:
             case ('r'&0x1f):
@@ -118,5 +150,11 @@ console_getline(char **history, size_t size, char *first, char *add, csas *cs)
     }
 
     END: ;
+    if (arg->v) {
+        if (free_names)
+            for (size_t i = 0; i < arg->size; i++)
+                free(((char**)arg->v)[i]);
+        flexarr_free(arg);
+    }
     curs_set(0);
 }

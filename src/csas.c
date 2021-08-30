@@ -1,3 +1,21 @@
+/*
+    csas - console file manager
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "main.h"
 #include "csas.h"
 #include "load.h"
@@ -6,6 +24,7 @@
 #include "preview.h"
 #include "calc.h"
 #include "draw.h"
+#include "expand.h"
 #include "config.h"
 
 static void
@@ -153,7 +172,7 @@ add_bindings(flexarr *b)
 }
 
 int
-xfunc_add(const char *name, const uchar type, void *func, flexarr *f)
+xfunc_add(const char *name, const uchar type, void *func, void *expand, flexarr *f)
 {
     ret_errno(name==NULL||f==NULL,EINVAL,-1);
     ret_errno(strlen(name)>FUNCTIONS_NAME_MAX,EOVERFLOW,-1);
@@ -182,6 +201,7 @@ xfunc_add(const char *name, const uchar type, void *func, flexarr *f)
 
     funcs->type = type;
     funcs->func = func;
+    funcs->expand = expand;
 
     return 0;
 }
@@ -190,27 +210,27 @@ xfunc_add(const char *name, const uchar type, void *func, flexarr *f)
 static void
 add_functions(flexarr *f)
 {
-    xfunc_add("move",'f',cmd_move,f);
-    xfunc_add("cd",'f',cmd_cd,f);
-    xfunc_add("file_run",'f',cmd_file_run,f);
-    xfunc_add("source",'f',cmd_source,f);
-    xfunc_add("load",'f',cmd_load,f);
-    xfunc_add("fastselect",'f',cmd_fastselect,f);
-    xfunc_add("console",'f',cmd_console,f);
-    xfunc_add("tab",'f',cmd_tab,f);
-    xfunc_add("select",'f',cmd_select,f);
-    xfunc_add("exec",'f',cmd_exec,f);
-    xfunc_add("open_with",'f',cmd_open_with,f);
-    xfunc_add("ds",'f',cmd_ds,f);
-    xfunc_add("bulk",'f',cmd_bulk,f);
-    xfunc_add("fmod",'f',cmd_fmod,f);
-    xfunc_add("rename",'f',cmd_rename,f);
-    xfunc_add("search",'f',cmd_search,f);
-    xfunc_add("filter",'f',cmd_filter,f);
-    xfunc_add("map",'f',cmd_map,f);
-    xfunc_add("set",'f',cmd_set,f);
-    xfunc_add("alias",'f',cmd_alias,f);
-    xfunc_add("quit",'f',cmd_quit,f);
+    xfunc_add("move",'f',cmd_move,NULL,f);
+    xfunc_add("cd",'f',cmd_cd,expand_dir,f);
+    xfunc_add("file_run",'f',cmd_file_run,expand_file,f);
+    xfunc_add("source",'f',cmd_source,expand_file,f);
+    xfunc_add("load",'f',cmd_load,expand_dir,f);
+    xfunc_add("fastselect",'f',cmd_fastselect,NULL,f);
+    xfunc_add("console",'f',cmd_console,NULL,f);
+    xfunc_add("tab",'f',cmd_tab,NULL,f);
+    xfunc_add("select",'f',cmd_select,NULL,f);
+    xfunc_add("exec",'f',cmd_exec,expand_shell,f);
+    xfunc_add("open_with",'f',cmd_open_with,NULL,f);
+    xfunc_add("ds",'f',cmd_ds,NULL,f);
+    xfunc_add("bulk",'f',cmd_bulk,NULL,f);
+    xfunc_add("fmod",'f',cmd_fmod,NULL,f);
+    xfunc_add("rename",'f',cmd_rename,expand_file,f);
+    xfunc_add("search",'f',cmd_search,NULL,f);
+    xfunc_add("filter",'f',cmd_filter,NULL,f);
+    xfunc_add("map",'f',cmd_map,NULL,f);
+    xfunc_add("set",'f',cmd_set,expand_vars,f);
+    xfunc_add("alias",'f',cmd_alias,NULL,f);
+    xfunc_add("quit",'f',cmd_quit,NULL,f);
 }
 
 int
@@ -610,7 +630,8 @@ csas_run(csas *cs, int argc, char **argv)
 
         if (UpdateFile) {
             register xdir *d = &CTAB(1);
-            xfile_update(&d->files[d->sel[cs->ctab]]);
+            if (d->files)
+                xfile_update(&d->files[d->sel[cs->ctab]]);
         }
 
         if (t1 != t2) {
