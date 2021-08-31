@@ -712,7 +712,7 @@ spawn(char *file, char *arg1, char *arg2, const uchar flags)
     return 0;
 }
 
-static uchar
+uchar
 isbinfile(char *src, size_t size)
 {
     for (register size_t i = 0; i < size; i++)

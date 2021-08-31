@@ -1229,12 +1229,16 @@ cmd_search(char *src, csas *cs)
                         flags |= 0x80;
                         break;
                     case 'N': //name
+                    #ifdef REGEX
                     case 'G': //regex
                     case 'E': //extended regex
+                    #endif
                         switch (src[pos]) {
                             case 'N': flags |= 0x4; break;
+                            #ifdef REGEX
                             case 'G': flags |= 0x8; break;
                             case 'E': flags |= 0x10; break;
+                            #endif
                         }
                         pos++;
                         while (isspace(src[pos]))
@@ -1293,8 +1297,11 @@ cmd_search(char *src, csas *cs)
     flexarr_free(dir->searchlist);
     dir->searchlist = flexarr_init(sizeof(char*),SEARCHLIST_INCR);
     dir->searchlist_pos = 0;
+    #ifdef REGEX
     int cflags=(flags&0x80 ? REG_ICASE : 0)|(flags&0x10 ? REG_EXTENDED : 0);
+    #endif
     char *(*cmp)(const char*,const char*)=(flags&0x80 ? strcasestr : strstr);
+    #ifdef REGEX
     regex_t regex;
     if (flags&0x18) {
         if (regcomp(&regex,pattern,cflags) != 0) {
@@ -1302,6 +1309,7 @@ cmd_search(char *src, csas *cs)
             return -1;
         }
     }
+    #endif
     
     for (size_t i = 0; i < dir->size; i++) {
         if (sel == -1 ? 0 : !(files[i].sel[ctab]&sel))
@@ -1309,14 +1317,19 @@ cmd_search(char *src, csas *cs)
         if (flags&0x4) {
             if (cmp(files[i].name,pattern) == NULL)
                 continue;
-        } else if (regexec(&regex,files[i].name,0,NULL,0) != 0)
+        }
+        #ifdef REGEX
+        else if (regexec(&regex,files[i].name,0,NULL,0) != 0)
             continue;
+        #endif
     
         *((char**)flexarr_inc(dir->searchlist)) = files[i].name;
     }
 
+    #ifdef REGEX
     if (flags&0x18)
         regfree(&regex);
+    #endif
 
     return 0;
 }
@@ -1370,12 +1383,16 @@ cmd_filter(char *src, csas *cs)
                         flags |= 0x20;
                         break;
                     case 'N': //name
+                    #ifdef REGEX
                     case 'G': //regex
                     case 'E': //extended regex
+                    #endif
                         switch (src[pos]) {
                             case 'N': flags |= 0x4; break;
+                            #ifdef REGEX
                             case 'G': flags |= 0x8; break;
                             case 'E': flags |= 0x10; break;
+                            #endif
                         }
                         pos++;
                         while (isspace(src[pos]))
@@ -1396,8 +1413,11 @@ cmd_filter(char *src, csas *cs)
     if (flags == 0)
         goto END;
 
+    #ifdef REGEX
     int cflags=(flags&0x80 ? REG_ICASE : 0)|(flags&0x10 ? REG_EXTENDED : 0);
+    #endif
     char *(*cmp)(const char*,const char*)=(flags&0x80 ? strcasestr : strstr);
+    #ifdef REGEX
     regex_t regex;
     if (flags&0x18) {
         if (regcomp(&regex,pattern,cflags) != 0) {
@@ -1405,6 +1425,7 @@ cmd_filter(char *src, csas *cs)
             return -1;
         }
     }
+    #endif
 
     dir->size = 0;
     char t[sizeof(xfile)];
@@ -1417,8 +1438,11 @@ cmd_filter(char *src, csas *cs)
         if (flags&0x4) {
             if (cmp(files[i].name,pattern) != NULL)
                 n = 1;
-        } else if (regexec(&regex,files[i].name,0,NULL,0) == 0)
+        }
+        #ifdef REGEX
+        else if (regexec(&regex,files[i].name,0,NULL,0) == 0)
             n = 1;
+        #endif
         if ((flags&0x20) ? n : !n)
             continue;
 
@@ -1433,8 +1457,10 @@ cmd_filter(char *src, csas *cs)
         dir->size++;
     }
 
+    #ifdef REGEX
     if (flags&0x18)
         regfree(&regex);
+    #endif
 
     END: ;
     xfile_sort(dir->files,dir->size,SORT_CNAME|SORT_DIR_DISTINCTION|SORT_LDIR_DISTINCTION);

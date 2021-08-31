@@ -69,6 +69,8 @@ li LeftWindowSize = 1;
 li CenterWindowSize = 3;
 li RightWindowSize = 4;
 li ShowKeyBindings = 0;
+li PreviewSettings = P_DIR;
+char BinaryPreview[PATH_MAX] = "";
 
 int sel_colors[] = {
     YELLOW,GREEN,RED,BLUE,

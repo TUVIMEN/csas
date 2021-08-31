@@ -411,6 +411,12 @@ add_vars(flexarr *v)
     xvar_add(NULL,"b_outline",'i'|0x80,(void*)B_OUTLINE,v);
     xvar_add(NULL,"b_all",'i'|0x80,(void*)B_ALL,v);
     xvar_add(&ShowKeyBindings,"ShowKeyBindings",'I',NULL,v);
+    xvar_add(&PreviewSettings,"PreviewSettings",'I',NULL,v);
+    xvar_add(NULL,"p_dir",'i'|0x80,(void*)P_DIR,v);
+    xvar_add(NULL,"p_file",'i'|0x80,(void*)P_FILE,v);
+    xvar_add(NULL,"p_bfile",'i'|0x80,(void*)P_BFILE,v);
+    xvar_add(NULL,"p_wrap",'i'|0x80,(void*)P_WRAP,v);
+    xvar_add(BinaryPreview,"BinaryPreview",'S',NULL,v);
 }
 
 static void

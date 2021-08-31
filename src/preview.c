@@ -19,25 +19,66 @@
 #include "main.h"
 #include "load.h"
 #include "draw.h"
+#include "useful.h"
 #include "preview.h"
 
 extern li DirLoadingMode;
+extern li PreviewSettings;
+extern char BinaryPreview[];
 
 int
 preview_get(xfile *f, csas *cs)
 {
-    if (access(f->name,R_OK) == -1) {
-        cs->tabs[cs->ctab].wins[2] = (size_t)-1;
+    cs->tabs[cs->ctab].wins[2] = (size_t)-1;
+    if (!PreviewSettings)
+        return 0;
+
+    if (access(f->name,R_OK) == -1)
         return -1;
-    }
-    if ((f->mode&S_IFMT) == S_IFDIR || f->flags&SLINK_TO_DIR) {
+
+    if ((PreviewSettings&P_DIR) && ((f->mode&S_IFMT) == S_IFDIR || (f->flags&SLINK_TO_DIR))) {
         li n = getdir(f->name,cs->dirs,DirLoadingMode);
         cs->tabs[cs->ctab].wins[2] = (size_t)n;
         if (n == -1)
             return -1;
         return 0;
     }
-    cs->tabs[cs->ctab].wins[2] = (size_t)-1;
+
+    if (!(PreviewSettings&P_FILE) || (f->mode&S_IFMT) != S_IFREG)
+        return 0;
+
+    int fd = open(f->name,O_RDONLY);
+    if (fd == -1)
+        return -1;
+    ssize_t r = read(fd,cs->preview,PATH_MAX>>1);
+    if (isbinfile(cs->preview,r)) {
+        if (!(PreviewSettings&P_BFILE))
+            return 0;
+
+        int pipes[2];
+        if (pipe(pipes) == -1)
+            return -1;
+
+        if (vfork() == 0) {
+            dup2(pipes[1],1);
+            close(pipes[0]);
+            close(pipes[1]);
+            execlp(BinaryPreview,BinaryPreview,f->name,NULL);
+            _exit(1);
+        } else {
+            close(pipes[1]);
+            while (wait(NULL) != -1);
+            r = read(pipes[0],cs->preview,PREVIEW_MAX);
+            cs->preview[r] = 0;
+            close(pipes[0]);
+        }
+        return 0;
+    }
+    
+    cs->preview[r] = 0;
+    r = read(fd,cs->preview+r,PREVIEW_MAX-r);
+    if (r)
+        cs->preview[r] = 0;
     return 0;
 }
 
@@ -48,6 +89,23 @@ preview_draw(WINDOW *win, csas *cs)
         draw_dir(win,&CTAB(2),cs);
         return;
     }
-    werase(win);
+    
+    int posy=0,posx=1;
+    mvwhline(win,posy,0,' ',win->_maxx+1);
+    for (register ssize_t i = 0; cs->preview[i] && posy <= win->_maxy; i++) {
+        if (PreviewSettings&P_WRAP && win->_maxx <= posx) {
+            posy++;
+            mvwhline(win,posy,0,' ',win->_maxx+1);
+            posx = 1;
+        } else if (cs->preview[i] == '\n') {
+            posy++;
+            mvwhline(win,posy,0,' ',win->_maxx+1);
+            posx = 1;
+            continue;
+        }
+        mvwaddch(win,posy,posx++,cs->preview[i]);
+    }
+    for (; posy < win->_maxy+1; posy++)
+        mvwhline(win,posy,0,' ',win->_maxx+1);
     wrefresh(win);
 }

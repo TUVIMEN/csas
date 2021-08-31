@@ -44,6 +44,7 @@ char *mkpath(const char *dir, const char *name);
 int bulk(csas *cs, const size_t tab, const int selected, char **args, const uchar flags);
 void ltoa(li num, char *result);
 int ttoa(const time_t *time, char *result);
+uchar isbinfile(char *src, size_t size);
 char *lsperms(const mode_t mode);
 uchar get_extension_group(const char *name);
 

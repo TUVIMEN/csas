@@ -28,6 +28,8 @@
 #define NCURSES_WIDECHAR 1
 #endif
 
+#define REGEX
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -42,7 +44,9 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <errno.h>
+#ifdef REGEX
 #include <regex.h>
+#endif
 #include <wchar.h>
 #include <ctype.h>
 #include <sys/mman.h>
@@ -60,6 +64,7 @@
 #define FUNCTIONS_NAME_MAX 256
 #define VARS_NAME_MAX 256
 #define LLINE_MAX (1<<12)
+#define PREVIEW_MAX (1<<15)
 #define NUM_MAX 32
 #define HISTORY_MAX 32
 #define HEIGHT LINES-2
@@ -137,6 +142,11 @@
 #define B_SEPARATORS 0x1
 #define B_OUTLINE 0x2
 #define B_ALL 0x3
+
+#define P_DIR 0x1
+#define P_FILE 0x2
+#define P_BFILE 0x4
+#define P_WRAP 0x8
 
 #define ret_errno(x,y,z) if (x) { errno = (y); return (z); }
 #define while_is(w,x,y,z) while ((y) < (z) && (w)((x)[(y)])) {(y)++;}
@@ -222,6 +232,7 @@ typedef struct {
 } xtab;
 
 typedef struct {
+    char preview[PREVIEW_MAX];
     xtab tabs[TABS];
     struct statfs fs;
     flexarr *dirs;
