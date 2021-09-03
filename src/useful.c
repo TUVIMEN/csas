@@ -997,8 +997,8 @@ char *
 mkpath(const char *dir, const char *name)
 {
     static char path[PATH_MAX];
-    strcpy(path,dir);
     size_t dlen = strlen(dir);
+    memcpy(path,dir,dlen+1);
     if (path[0] == '/' && path[1] != '\0')
         path[dlen++] = '/';
     strcpy(path+dlen,name);
@@ -1010,13 +1010,14 @@ strtoshellpath(char *src)
 {
     size_t i,size=strlen(src);
     for (i = 0; i < size && size < PATH_MAX; i++) {
-        if(src[i] == '\\' || src[i] == '\"' || src[i] == '\'' || src[i] == ' ' || src[i] == '(' || src[i] == ')' || src[i] == '[' || src[i] == ']' || src[i] == '{' || src[i] == '}') {
+        if(src[i] == '\\' || src[i] == '\"' || src[i] == '\'' || src[i] == ' ' || src[i] == '(' || src[i] == ')' || src[i] == '[' || src[i] == ']' || src[i] == '{' || src[i] == '}' || src[i] == '|' || src[i] == '&' || src[i] == ';' || src[i] == '?' || src[i] == '~' || src[i] == '*' || src[i] == '!') {
             for (size_t j = size++; j > i; j--)
                 src[j] = src[j-1];
             src[i] = '\\';
             i++;
         }
     }
+    src[size] = 0;
     return src;
 }
 
@@ -1109,6 +1110,9 @@ bulk(csas *cs, const size_t tab, const int selected, char **args, const uchar fl
                     if (!(flags&0x1))
                         t = mkpath(d->path,t);
                     strtoshellpath(t);
+                    endwin();
+                    printf("%s\n",t);
+                    refresh();
                     fprintf(file,"%s %s ",t,args[4]);
                     t = mkpath(d->path,path);
                     strtoshellpath(t);
