@@ -533,7 +533,7 @@ csas_cd(const char *path, csas* cs)
 {
     char *search_name = NULL;
     xdir *dir = &CTAB(1);
-    if (FollowParentDir && path[0] == '.' && path[1] == '.' && path[2] == 0)
+    if (FollowParentDir && cs->dirs->size && path[0] == '.' && path[1] == '.' && path[2] == 0)
         search_name = memrchr(dir->path,'/',dir->plen);
 
     li n = getdir(path,cs->dirs,DirLoadingMode|D_CHDIR);
