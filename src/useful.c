@@ -873,13 +873,14 @@ file_cp(const int fd1, const int fd2, const char *name, char *buffer, const mode
 int
 file_mv(const int fd1, const int fd2, const char *name, char *buffer, const mode_t flags)
 {
-    struct stat statbuf;
+    struct stat statbuf,dir;
     int fd3, fd4;
     ssize_t bytesread;
-
-    char t[NAME_MAX];
     if (fstatat(fd2,name,&statbuf,0) != 0)
         return -1;
+    if (fstat(fd1,&dir) != 0)
+        return -1;
+    char t[NAME_MAX];
     strcpy(t,name);
     size_t num = 0;
 
@@ -896,6 +897,9 @@ file_mv(const int fd1, const int fd2, const char *name, char *buffer, const mode
         } else if (flags&M_REPLACE)
             file_rm(fd1,t);
     }
+
+    if (dir.st_dev == statbuf.st_dev)
+        return renameat(fd2,name,fd1,t);
 
     if ((statbuf.st_mode& S_IFMT) == S_IFDIR) {
         if ((fd3 = openat(fd2,name,O_DIRECTORY)) == -1)
