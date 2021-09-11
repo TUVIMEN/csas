@@ -62,8 +62,10 @@ load_dir(xdir *dir)
     size_t s = 0,nlen;
     while (readdir(dp)) s++;
     s -= 2;
-    if (s == 0)
+    if (s == 0) {
+        closedir(dp);
         return 0;
+    }
     dir->size = s;
     dir->files = malloc(s*sizeof(xfile));
     if (dir->files == NULL)
@@ -101,6 +103,7 @@ load_dir(xdir *dir)
         }
         s++;
     }
+    closedir(dp);
     return 0;
 }
 

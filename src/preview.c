@@ -52,12 +52,16 @@ preview_get(xfile *f, csas *cs)
         return -1;
     ssize_t r = read(fd,cs->preview,PATH_MAX>>1);
     if (isbinfile(cs->preview,r)) {
-        if (!(PreviewSettings&P_BFILE))
+        if (!(PreviewSettings&P_BFILE)) {
+            close(fd);
             return 0;
+        }
 
         int pipes[2];
-        if (pipe(pipes) == -1)
+        if (pipe(pipes) == -1) {
+            close(fd);
             return -1;
+        }
 
         if (vfork() == 0) {
             dup2(pipes[1],1);
@@ -72,6 +76,7 @@ preview_get(xfile *f, csas *cs)
             cs->preview[r] = 0;
             close(pipes[0]);
         }
+        close(fd);
         return 0;
     }
     
@@ -79,6 +84,7 @@ preview_get(xfile *f, csas *cs)
     r = read(fd,cs->preview+r,PREVIEW_MAX-r);
     if (r)
         cs->preview[r] = 0;
+    close(fd);
     return 0;
 }
 
