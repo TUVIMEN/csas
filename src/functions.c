@@ -35,6 +35,7 @@ extern li Visual;
 extern li WrapScroll;
 extern li Error_C;
 extern li Borders;
+extern li SortMethod;
 extern li ShowKeyBindings;
 
 uint
@@ -1093,6 +1094,15 @@ cmd_open_with(char *src, csas *cs)
         pos++;
     n[pos] = 0;
     return spawn(n,file,NULL,F_NORMAL|F_WAIT);
+}
+
+int
+cmd_sort(char *src, csas *cs)
+{
+    xdir *dir = &CTAB(1);
+    if (dir->size > 0)
+        xfile_sort(dir->files,dir->size,SortMethod);
+    return 0;
 }
 
 int

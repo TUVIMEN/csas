@@ -169,6 +169,7 @@ add_bindings(flexarr *b)
     xbind_add("N","search -p 1",b);
     xbind_add("f","console \"filter -N \"",b);
     xbind_add("cd","console \"cd \"",b);
+    xbind_add("O","sort",b);
 }
 
 int
@@ -223,6 +224,7 @@ add_functions(flexarr *f)
     xfunc_add("open_with",'f',cmd_open_with,NULL,f);
     xfunc_add("ds",'f',cmd_ds,NULL,f);
     xfunc_add("bulk",'f',cmd_bulk,NULL,f);
+    xfunc_add("sort",'f',cmd_sort,NULL,f);
     xfunc_add("fmod",'f',cmd_fmod,NULL,f);
     xfunc_add("rename",'f',cmd_rename,expand_file,f);
     xfunc_add("search",'f',cmd_search,NULL,f);

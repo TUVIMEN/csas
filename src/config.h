@@ -110,6 +110,7 @@ fsig signatures[] = {
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "GIF89a",6,"sxiv"},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "\x49\x49\x2A\x00",4,"sxiv"},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "\x49\x20\x49",3,"sxiv"},
+    { F_SILENT|F_BIN,           8,      SEEK_SET,       "WEBP",4,"sxiv"},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "\x49\x49\x1A\x00\x00\x00\x48\x45\x41\x50\x43\x43\x44\x52\x02\x00",16,"sxiv"},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "\x49\x49\x2A\x00\x10\x00\x00\x00\x43\x52",10,"sxiv"},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "RIFF",4,"mpv"},

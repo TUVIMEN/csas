@@ -289,9 +289,6 @@ void
 draw_dir(WINDOW *win, xdir *dir, csas *cs)
 {
     if (dir->size == 0) {
-        endwin();
-        printf("gsag\n");
-        refresh();
         werase(win);
         wattron(win,Error_C|A_REVERSE);
         if (dir->flags&SEACCES)
