@@ -176,26 +176,38 @@ draw_tbar(int y, csas *cs)
 void
 draw_bbar(int y, csas *cs)
 {
-    char tmp[32],*t;
+    char tmp[PATH_MAX],*t;
     xdir *dir = &CTAB(1);
     size_t i=0,j,ctab=cs->ctab,sel=dir->sel[ctab];
     mvhline(y,0,' ',COLS);
 
     if (dir->size) {
-        t = lsperms(dir->files[sel].mode);
+        xfile *file = &dir->files[sel];
+        t = lsperms(file->mode);
         addstr(t);
         addch(' ');
         if (SizeInBytes) {
-            ltoa(dir->files[sel].size,tmp);
+            ltoa(file->size,tmp);
             t = tmp;
         } else {
-            t = size_shrink(dir->files[sel].size);
+            t = size_shrink(file->size);
         }
         addstr(t);
         addch(' ');
         t = tmp;
-        ttoa(&dir->files[sel].mtime,tmp);
+        ttoa(&file->mtime,tmp);
         addstr(t);
+
+        if (file->flags&(SLINK_TO_DIR|SLINK_MISSING) || (file->mode&S_IFMT) == S_IFDIR) {
+            tmp[0] = ' ';
+            tmp[1] = '-';
+            tmp[2] = '>';
+            ssize_t c = readlink(file->name,tmp+3,PATH_MAX-3);
+            if (c != -1) {
+                tmp[c+3] = 0;
+                addstr(t);
+            }
+        }
         
         if (dir->size > 0) {
             i = snprintf(tmp,16,"%lu/%lu",sel+1,dir->size);
@@ -282,9 +294,6 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
 
     if (Visual && dir->size)
         dir->files[dir->sel[ctab]].sel[ctab] |= 1<<cs->tabs[ctab].sel;
-
-    /*if (sel >= dir->size)
-        sel = dir->size-1;*/
 
     if ((size_t)maxy >= dir->size-1) {
         dir->scroll[ctab] = 0;
