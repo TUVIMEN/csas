@@ -424,8 +424,7 @@ add_vars(flexarr *v)
 static void
 wins_resize(WINDOW **wins)
 {
-    if (Borders)
-        draw_borders();
+    draw_borders();
     int outline=0;
     if (Borders&B_OUTLINE)
         outline = 1;

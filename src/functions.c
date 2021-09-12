@@ -53,8 +53,7 @@ update_event(csas *cs)
     while (true) {
         if (ShowKeyBindings && i > 0) {
             if (i > 1) {
-                if (Borders)
-                    draw_borders();
+                draw_borders();
                 csas_draw(cs);
             }
             for (j = 0; j < passedl && j < (size_t)LINES-2; j++) {
@@ -87,8 +86,7 @@ update_event(csas *cs)
 
     END: ;
     if (ShowKeyBindings && i > 0) {
-        if (Borders)
-            draw_borders();
+        draw_borders();
         csas_draw(cs);
     }
     event = passed[0];
@@ -97,8 +95,7 @@ update_event(csas *cs)
 
     EXIT: ;
     if (ShowKeyBindings && i > 0) {
-        if (Borders)
-            draw_borders();
+        draw_borders();
         csas_draw(cs);
     }
     cs->typed[0] = 0;

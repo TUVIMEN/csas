@@ -419,10 +419,13 @@ void
 draw_borders()
 {
     int outline=0,separators=0;
+    int sep = ' ';
     if (Borders&B_OUTLINE)
         outline = 1;
-    if (Borders&B_SEPARATORS)
+    if (Borders&B_SEPARATORS) {
         separators = 1;
+        sep = ACS_VLINE;
+    }
     if (!MultipaneView) {
         if (outline) {
             attron(Border_C);
@@ -444,8 +447,7 @@ draw_borders()
     li sum = CenterWindowSize+LeftWindowSize+RightWindowSize,t1,t2;
     t1 = (COLS/sum)*LeftWindowSize;
     t2 = t1+1;
-    if (separators)
-        mvvline(1,t1,ACS_VLINE,LINES-2);
+    mvvline(1,t1,sep,LINES-2);
     if (outline) {
         mvhline(1,1,ACS_HLINE,COLS-2);
         mvhline(LINES-2,1,ACS_HLINE,COLS-2);
@@ -463,8 +465,7 @@ draw_borders()
     t1 = (COLS/sum)*CenterWindowSize;
     t2 += t1;
 
-    if (separators)
-        mvvline(1,t2,ACS_VLINE,LINES-2);
+    mvvline(1,t2,sep,LINES-2);
     if (outline && separators) {
         mvaddch(1,t2,ACS_URCORNER);
         mvaddch(LINES-2,t2,ACS_LRCORNER);
