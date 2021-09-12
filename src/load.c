@@ -111,8 +111,6 @@ li
 getdir(const char *path, flexarr *dirs, const uchar flags)
 {
     ret_errno(dirs==NULL,EINVAL,-1);
-    if (access(path,R_OK) != 0)
-        return -1;
 
     size_t i;
     li ret=0;
@@ -159,6 +157,11 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         d->searchlist_pos = 0;
         d->sort = 0;
         d->flags = 0;
+    }
+
+    if (access(path,R_OK) != 0) {
+        d->flags |= SEACCES;
+        return ret;
     }
 
     struct stat statbuf;

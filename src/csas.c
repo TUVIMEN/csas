@@ -489,7 +489,12 @@ csas_draw(csas *cs)
         } else {
             draw_dir(cs->wins[0],&CTAB(0),cs);
         }
-        preview_draw(cs->wins[2],cs);
+        if (CTAB(1).size == 0) {
+            werase(cs->wins[2]);
+            wrefresh(cs->wins[2]);
+        } else {
+            preview_draw(cs->wins[2],cs);
+        }
     }
 }
 

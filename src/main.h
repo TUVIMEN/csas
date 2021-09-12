@@ -128,6 +128,7 @@
 
 #define SLINK_TO_DIR 0x1
 #define SLINK_MISSING 0x2
+#define SEACCES 0x4
 
 #define L_SIZE 0x0
 #define L_MTIME 0x1

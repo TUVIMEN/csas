@@ -33,9 +33,6 @@ preview_get(xfile *f, csas *cs)
     if (!PreviewSettings)
         return 0;
 
-    if (access(f->name,R_OK) == -1)
-        return -1;
-
     if ((PreviewSettings&P_DIR) && ((f->mode&S_IFMT) == S_IFDIR || (f->flags&SLINK_TO_DIR))) {
         li n = getdir(f->name,cs->dirs,DirLoadingMode);
         cs->tabs[cs->ctab].wins[2] = (size_t)n;

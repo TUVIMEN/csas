@@ -44,6 +44,7 @@ extern li Missing_C;
 extern li Other_C;
 extern li Bar_C;
 extern li Host_C;
+extern li Error_C;
 extern li NumberLines;
 extern li NumberLinesOffset;
 extern li NumberLinesStartFrom;
@@ -287,6 +288,21 @@ draw_bbar(int y, csas *cs)
 void
 draw_dir(WINDOW *win, xdir *dir, csas *cs)
 {
+    if (dir->size == 0) {
+        endwin();
+        printf("gsag\n");
+        refresh();
+        werase(win);
+        wattron(win,Error_C|A_REVERSE);
+        if (dir->flags&SEACCES)
+            mvwaddstr(win,0,1,"NOT ACCESSIBLE");
+        else
+            mvwaddstr(win,0,1,"EMPTY");
+        wattroff(win,Error_C|A_REVERSE);
+        wrefresh(win);
+        return;
+    }
+
     size_t i,j,ctab=cs->ctab,scroll=dir->scroll[ctab],sel=dir->sel[ctab];
     xfile *file = dir->files;
     int color,maxx=win->_maxx+1,maxy=win->_maxy+1,offset=maxy>>MoveOffset,

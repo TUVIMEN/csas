@@ -1017,6 +1017,11 @@ cmd_load(char *src, csas *cs)
         while (isspace(src[pos]))
             pos++;
     }
+
+    xdir *dir = &CTAB(1);
+    if (dir->size)
+        preview_get(&dir->files[dir->sel[cs->ctab]],cs);
+
     return 0;
 }
 
