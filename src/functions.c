@@ -565,7 +565,7 @@ cmd_file_run(char *src, csas *cs)
     if (stat(path,&statbuf) != 0)
         return -1;
     if ((statbuf.st_mode&S_IFMT) != S_IFDIR)
-        return file_run(path);
+        return file_run(path,cs);
 
     return csas_cd(path,cs);
 }

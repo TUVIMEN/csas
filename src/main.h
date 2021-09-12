@@ -149,6 +149,12 @@
 #define P_BFILE 0x4
 #define P_WRAP 0x8
 
+#define OP_IMAGE "sxiv"
+#define OP_VIDEO "mpv"
+#define OP_ARCHIVE "file-roller"
+#define OP_DOC "zathura"
+#define OP_SVG "eog"
+
 #define ret_errno(x,y,z) if (x) { errno = (y); return (z); }
 #define while_is(w,x,y,z) while ((y) < (z) && (w)((x)[(y)])) {(y)++;}
 #define while_isnt(w,x,y,z) while ((y) < (z) && !(w)((x)[(y)])) {(y)++;}

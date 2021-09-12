@@ -419,6 +419,7 @@ add_vars(flexarr *v)
     xvar_add(NULL,"p_bfile",'i'|0x80,(void*)P_BFILE,v);
     xvar_add(NULL,"p_wrap",'i'|0x80,(void*)P_WRAP,v);
     xvar_add(BinaryPreview,"BinaryPreview",'S',NULL,v);
+    xvar_add(&OpenAllImages,"OpenAllImages",'I',NULL,v);
 }
 
 static void

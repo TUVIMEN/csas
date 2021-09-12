@@ -29,6 +29,7 @@ extern fext extensions[];
 extern char FileOpener[];
 extern char Editor[];
 extern const char *TTEMPLATE;
+extern li OpenAllImages;
 
 void
 exiterr()
@@ -712,6 +713,81 @@ spawn(char *file, char *arg1, char *arg2, const uchar flags)
     return 0;
 }
 
+static int
+openimages(char *name, csas *cs, const uchar flags)
+{
+    xdir *d = &CTAB(1);
+    xfile *files = d->files;
+    flexarr *matched = flexarr_init(sizeof(char*),8*((d->size>>8)+1));
+    *(char**)flexarr_inc(matched) = name;
+    size_t namel=strlen(name),spos=0;
+    char *ext;
+    static char *img_ext[] = {
+        "gif","jpeg","jpg","png","raw",
+        "tiff","bmp","tga","gvs","webp",
+        NULL
+    };
+
+    for (size_t i = 0; i < d->size; i++) {
+        if ((files[i].mode&S_IFMT) != S_IFREG)
+            continue;
+        if (namel == files[i].nlen && memcmp(name,files[i].name,namel) == 0) {
+            spos = matched->size;
+            *(char**)flexarr_inc(matched) = files[i].name;
+            continue;
+        }
+        ext = memrchr(files[i].name,'.',files[i].nlen);
+        if (ext == NULL || !*(++ext))
+            continue;
+        for (size_t j = 0; img_ext[j]; j++) {
+            if (strcmp(ext,img_ext[j]) == 0) {
+                *(char**)flexarr_inc(matched) = files[i].name;
+                break;
+            }
+        }
+    }
+
+    char tm1[3]="-n",tm2[32];
+    ltoa(spos,tm2);
+    *(char**)flexarr_inc(matched) = tm1;
+    *(char**)flexarr_inc(matched) = tm2;
+    *(char**)flexarr_inc(matched) = NULL;
+
+    if (flags&F_NORMAL)
+        endwin();
+
+    pid_t pid = xfork(flags);
+
+    if (pid == 0) {
+        if (flags&F_SILENT) {
+            int fd = open("/dev/null",O_WRONLY);
+            dup2(fd,1);
+            dup2(fd,2);
+            close(fd);
+        }
+        execvp(OP_IMAGE,(char**)matched->v);
+        _exit(1);
+    } else {
+        if (flags&F_WAIT)
+            while (waitpid(pid,NULL,0) == -1);
+
+        sigaction(SIGHUP, &oldsighup, NULL);
+        sigaction(SIGTSTP, &oldsigtstp, NULL);
+
+        if (flags&F_NORMAL) {
+            if (flags&F_CONFIRM) {
+                printf("\nPress ENTER to continue");
+                fflush(stdout);
+                while (getch() != '\n');
+            }
+            refresh();
+        }
+    }
+
+    flexarr_free(matched);
+    return 0;
+}
+
 uchar
 isbinfile(char *src, size_t size)
 {
@@ -722,7 +798,7 @@ isbinfile(char *src, size_t size)
 }
 
 int
-file_run(char *path)
+file_run(char *path, csas* cs)
 {
     if (*FileOpener)
         return spawn(FileOpener,path,NULL,F_NORMAL|F_WAIT);
@@ -749,7 +825,10 @@ file_run(char *path)
             sigl = read(fd,sig,signatures[i].len);
             if (sigl == signatures[i].len && memcmp(sig,signatures[i].sig,sigl) == 0) {
                 close(fd);
-                return spawn(signatures[i].path,path,NULL,signatures[i].flags);
+                if (OpenAllImages && strcmp(signatures[i].path,OP_IMAGE) == 0 && strrchr(path,'/') == NULL)
+                    return openimages(path,cs,signatures[i].flags);
+                else
+                    return spawn(signatures[i].path,path,NULL,signatures[i].flags);
             }
         }
     }

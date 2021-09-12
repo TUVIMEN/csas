@@ -33,7 +33,7 @@ char *get_path(char *dest, char *src, const char delim, size_t size, const size_
 void get_line(char *dest, char *src, size_t *pos, size_t size);
 int config_load(const char *path, csas *cs);
 void change_keys(wchar_t *dest, const char *src);
-int file_run(char *path);
+int file_run(char *path, csas *cs);
 pid_t xfork(uchar flag);
 int spawn(char *file, char *arg1, char *arg2, const uchar flags);
 int file_rm(const int fd, const char *name);
