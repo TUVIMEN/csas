@@ -56,5 +56,6 @@ set Borders b_none
 set ShowKeyBindings 1
 set PreviewSettings p_dir|p_file
 set -s BinaryPreview "file"
+set OpenAllImages 1
 
 source ~/.config/csasrc

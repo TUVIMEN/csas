@@ -550,7 +550,7 @@ csas_cd(const char *path, csas* cs)
     dir = &CTAB(1);
     if (search_name)
         searchfor(++search_name,cs->ctab,dir);
-    if (dir->size)
+    if (MultipaneView && dir->size)
         preview_get(&dir->files[dir->sel[cs->ctab]],cs);
     if (MultipaneView && (dir->path[0] != '/' || dir->path[1] != 0)) {
         n = getdir("..",cs->dirs,DirLoadingMode);

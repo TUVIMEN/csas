@@ -37,6 +37,7 @@ extern li Error_C;
 extern li Borders;
 extern li SortMethod;
 extern li ShowKeyBindings;
+extern li MultipaneView;
 
 uint
 update_event(csas *cs)
@@ -275,7 +276,7 @@ cmd_move(char *src, csas *cs)
     }
 
     move_d(dir,value,cs->ctab,flags);
-    if (dir->size)
+    if (MultipaneView && dir->size)
         preview_get(&dir->files[dir->sel[cs->ctab]],cs);
     return 0;
 }
@@ -1017,7 +1018,7 @@ cmd_load(char *src, csas *cs)
     }
 
     xdir *dir = &CTAB(1);
-    if (dir->size)
+    if (MultipaneView && dir->size)
         preview_get(&dir->files[dir->sel[cs->ctab]],cs);
 
     return 0;
