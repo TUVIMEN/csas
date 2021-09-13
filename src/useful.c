@@ -28,6 +28,7 @@ extern fsig signatures[];
 extern fext extensions[];
 extern char FileOpener[];
 extern char Editor[];
+extern li IdleDelay;
 extern const char *TTEMPLATE;
 extern li OpenAllImages;
 
@@ -43,8 +44,10 @@ int
 getinput(csas *cs)
 {
     int ret;
+    timeout(-1);
     while ((ret = getch()) == KEY_RESIZE)
         csas_resize(cs);
+    timeout(IdleDelay);
     return ret;
 }
 
@@ -740,7 +743,7 @@ openimages(char *name, csas *cs, const uchar flags)
         if (ext == NULL || !*(++ext))
             continue;
         for (size_t j = 0; img_ext[j]; j++) {
-            if (strcmp(ext,img_ext[j]) == 0) {
+            if (strcasecmp(ext,img_ext[j]) == 0) {
                 *(char**)flexarr_inc(matched) = files[i].name;
                 break;
             }
@@ -1193,9 +1196,6 @@ bulk(csas *cs, const size_t tab, const int selected, char **args, const uchar fl
                     if (!(flags&0x1))
                         t = mkpath(d->path,t);
                     strtoshellpath(t);
-                    endwin();
-                    printf("%s\n",t);
-                    refresh();
                     fprintf(file,"%s %s ",t,args[4]);
                     t = mkpath(d->path,path);
                     strtoshellpath(t);

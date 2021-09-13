@@ -1,6 +1,6 @@
 CC	=	gcc -std=c99
 LINK	=	-lncursesw -ltinfow
-CFLAGS	=	-O2 -pipe -march=native -Wall -Wextra
+CFLAGS	=	-O3 -pipe -march=native -Wall -Wextra
 TARGET	=	csas
 
 MANDIR	=	/usr/local/man/man1

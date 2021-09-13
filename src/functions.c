@@ -65,7 +65,7 @@ update_event(csas *cs)
         while ((event = getinput(cs)) == -1);
         cs->typed[n++] = (char)event;
         cs->typed[n] = 0;
-        if (n >= NUM_MAX || event == 27)
+        if (n >= NUM_MAX || event == ESC)
             goto EXIT;
         draw_bbar(LINES-1,cs);
         if (i == 0 && isdigit(event))

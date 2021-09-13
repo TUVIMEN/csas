@@ -59,8 +59,12 @@ load_dir(xdir *dir)
         return -1;
     int fd = dirfd(dp),t;
     struct dirent *ep;
-    size_t s = 0,nlen;
-    while (readdir(dp)) s++;
+    size_t s = 0,nlen,namesl=0,offset=0;
+    while ((ep = readdir(dp))) {
+        namesl += strlen(ep->d_name)+1;
+        s++;
+    }
+    namesl -= 5;
     s -= 2;
     if (s == 0) {
         closedir(dp);
@@ -68,7 +72,8 @@ load_dir(xdir *dir)
     }
     dir->size = s;
     dir->files = malloc(s*sizeof(xfile));
-    if (dir->files == NULL)
+    dir->names = malloc(namesl);
+    if (dir->files == NULL || dir->names == NULL)
         exiterr();
     rewinddir(dp);
     xfile *files = dir->files;
@@ -80,8 +85,10 @@ load_dir(xdir *dir)
             continue;
         xfile *f = &files[s];
         nlen = strlen(dname);
+        f->name = dir->names+offset;
         f->nlen = nlen++;
-        f->name = memcpy(malloc(nlen),dname,nlen);
+        memcpy(f->name,dname,nlen);
+        offset += nlen;
         fstatat(fd,dname,&statbuf,AT_SYMLINK_NOFOLLOW);
         memset(f->sel,0,TABS);
         f->mode = statbuf.st_mode;
@@ -150,6 +157,8 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         memcpy(d->path,rpath,rpathl+1);
         d->plen = rpathl;
         d->files = NULL;
+        d->size = 0;
+        d->asize = 0;
         memset(d->sel,0,TABS*sizeof(size_t));
         memset(d->scroll,0,TABS*sizeof(size_t));
         memset(&d->ctime,0,sizeof(struct timespec));
@@ -182,8 +191,8 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     d->ctime = statbuf.st_ctim;
     
     if (d->files != NULL) {
-        for (i = 0; i < d->asize; i++)
-            free(d->files[i].name);
+        free(d->names);
+        d->names = NULL;
         free(d->files);
         d->files = NULL;
         d->size = 0;

@@ -78,6 +78,10 @@
 #define BINDINGS ((xbind*)cs->bindings->v)
 #define FUNCTIONS ((xfunc*)cs->functions->v)
 
+#ifndef ESC
+#define ESC 27
+#endif
+
 #define MOVE_SET 0x0
 #define MOVE_DOWN 0x1
 #define MOVE_UP 0x2
@@ -224,6 +228,7 @@ typedef struct {
     size_t searchlist_pos;
     struct timespec ctime;
     char *path;
+    char *names;
     xfile *files;
     size_t size;
     size_t asize;

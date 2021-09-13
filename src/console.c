@@ -96,7 +96,7 @@ console_getline(char **history, size_t size, char *first, char *add, csas *cs,
                 if (s > COLS-firstl-1)
                     off = s-COLS+firstl+1;
                 break;
-            case 27:
+            case ESC:
             case ('r'&0x1f):
                 h[0] = 0;
                 goto END;

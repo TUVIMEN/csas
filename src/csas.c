@@ -630,11 +630,12 @@ void
 xdir_free(xdir *dir)
 {
     flexarr_free(dir->searchlist);
+    dir->searchlist = NULL;
     free(dir->path);
     dir->path = NULL;
     dir->plen = 0;
-    for (size_t i = 0; i < dir->asize; i++)
-        free(dir->files[i].name);
+    free(dir->names);
+    dir->names = NULL;
     free(dir->files);
     dir->files = NULL;
     dir->size = 0;
