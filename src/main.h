@@ -54,6 +54,8 @@
 
 #include "flexarr.h"
 
+#define VERSION "v1.1"
+
 #define DIR_INCR 32
 #define BINDINGS_INCR 8
 #define FUNCTIONS_INCR 8

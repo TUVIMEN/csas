@@ -459,7 +459,6 @@ csas_init()
     ret->vars = flexarr_init(sizeof(xvar),VARS_INCR);
     ret->functions = flexarr_init(sizeof(xfunc),FUNCTIONS_INCR);
     ret->bindings = flexarr_init(sizeof(xbind),BINDINGS_INCR);
-    initcurses();
 
     add_functions(ret->functions);
     add_bindings(ret->bindings);
@@ -567,13 +566,51 @@ csas_cd(const char *path, csas* cs)
     return 0;
 }
 
+static void
+usage(const char *argv0)
+{
+    fprintf(stderr,"Usage: %s [OPTION]... [PATH]\n\n"\
+      "Options:\n"\
+      "  -f FILE\tuse FILE as configuration file\n" \
+      "  -c\t\tdo not load configuration file\n" \
+      "  -h\t\tshow help\n" \
+      "  -v\t\tshow version\n",argv0);
+    exit(1);
+}
+
 int
 csas_run(csas *cs, int argc, char **argv)
 {
     char *path = ".";
-    if (argc > 1)
-        path = argv[1];
-    config_load("/etc/csasrc",cs);
+    char *conf = "/etc/csasrc";
+
+    for (int i = 1; i < argc; i++) {
+        if (argv[i][0] == '-') {
+            for (int j=1,brk=0; argv[i][j] && !brk; j++) {
+                switch (argv[i][j]) {
+                    case 'v':
+                        fprintf(stderr,"%s\n",VERSION);
+                        exit(1);
+                        break;
+                    case 'h': usage(argv[0]); break;
+                    case 'c': conf = NULL; break;
+                    case 'f':
+                        if (argv[i][++j]) {
+                            conf = argv[i]+j;
+                        } else if (i < argc) {
+                            conf = argv[++i];
+                        }
+                        brk = 1;
+                        break;
+                }
+            }
+        } else {
+            path = argv[i];
+        }
+    }
+
+    config_load(conf,cs);
+    initcurses();
     wins_resize(cs->wins);
     if (csas_cd(path,cs) == -1)
         return -1;
