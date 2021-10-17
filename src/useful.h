@@ -27,7 +27,7 @@ char *size_shrink(size_t size);
 #define seek_end_of_squote(x,y) (memchr(x,'\'',y)+1)
 char *seek_end_of_dquote(char *src, size_t size);
 int addenv(char *dest, char *src, size_t *x, size_t *y, const size_t max, size_t size);
-int handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xdir *dir, const size_t tab);
+int handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xdir *dir, const int tab, const uchar sel);
 char special_character(const char c);
 char *get_path(char *dest, char *src, const char delim, size_t size, const size_t max, csas *cs);
 void get_line(char *dest, char *src, size_t *pos, size_t size);

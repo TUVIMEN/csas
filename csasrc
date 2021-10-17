@@ -2,7 +2,7 @@ alias shell 'exec -ncw ${SHELL} -c $$'
 alias bulkrename 'bulk -n -S sh -E ${EDITOR} -b mv -s.'
 
 map <left> 'cd ..'
-map <right> 'file_run %s'
+map <right> 'file_run %f'
 map <up> 'move -d'
 map <down> 'move -u'
 map s 'console "shell "'

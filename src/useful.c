@@ -338,29 +338,57 @@ addcalc(char *dest, char *src, size_t *x, size_t *y, const size_t max, size_t si
 }
 
 int
-handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xdir *dir, const size_t tab)
+handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xdir *dir, const int tab, const uchar sel)
 {
     if (src[*y] != '%')
         return -1;
+
+    size_t posx=*x,posy=*y+1;
+    int num=sel;
+    xfile *files = dir->files;
+    if (isdigit(src[posy])) {
+        int n=atoi(src+posy++);
+        while (isdigit(src[posy])) posy++;
+        if (n < TABS)
+            num = n;
+    }
     
-    switch (src[++(*y)]) {
-        case 'c':
-           (*y)++;
-           if (*x+dir->plen > max)
+    switch (src[posy]) {
+        case 'd':
+           if (posx+dir->plen > max)
                return 0;
-           memcpy(dest+*x,dir->path,dir->plen);
-           *x += dir->plen-1;
+           memcpy(dest+posx,dir->path,dir->plen);
+           posx += dir->plen-1;
+           break;
+        case 'f':
+           if (dir->size == 0 || posx+files[dir->sel[tab]].nlen > max)
+               return 0;
+           memcpy(dest+posx,files[dir->sel[tab]].name,files[dir->sel[tab]].nlen);
+           posx += files[dir->sel[tab]].nlen-1;
            break;
         case 's':
-           (*y)++;
-           if (dir->size == 0 || *x+dir->files[dir->sel[tab]].nlen > max)
+           if (dir->size == 0 || posx+dir->files[dir->sel[tab]].nlen > max)
                return 0;
-           memcpy(dest+*x,dir->files[dir->sel[tab]].name,dir->files[dir->sel[tab]].nlen);
-           *x += dir->files[dir->sel[tab]].nlen-1;
+           for (size_t i = 0; i < dir->size; i++) {
+               if (num < 0 ? 1 : (files[i].sel[tab]&(1<<num))) {
+                   if (files[i].nlen+posx >= LLINE_MAX)
+                       break;
+                   memcpy(dest+posx,files[i].name,files[i].nlen+1);
+                   posx += files[i].nlen;
+                   dest[posx++] = ' ';
+               }
+           }
            break;
+        case '%':
+            dest[posx] = src[posy];
+            (*y)++;
+           return 0;
        default:
-           dest[*x] = src[*y];
+           dest[posx] = src[--posy];
+           return 0;
     }
+    *x = posx;
+    *y = posy;
     return 0;
 }
 
@@ -422,7 +450,7 @@ get_path(char *dest, char *src, const char delim, size_t size, const size_t max,
                     continue;
                 if (addcalc(dest,src,&x,&pos,max,size,cs->vars) == 0)
                     continue;
-            } else if (handle_percent(dest,src,&x,&pos,max,&CTAB(1),cs->ctab) == 0)
+            } else if (handle_percent(dest,src,&x,&pos,max,&CTAB(1),cs->ctab,cs->tabs[cs->ctab].sel) == 0)
                 continue;
             dest[x] = src[pos];
         }
@@ -1006,9 +1034,12 @@ file_mv(const int fd1, const int fd2, const char *name, char *buffer, const mode
             return -1;
         }
 
-        while ((dir = readdir(d)))
-            if (!(dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0'))))
-                file_cp(fd4,fd3,dir->d_name,buffer,flags);
+        while ((dir = readdir(d))) {
+            if (dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
+                continue;
+            file_mv(fd4,fd3,dir->d_name,buffer,flags);
+            //unlinkat(fd4,name,AT_REMOVEDIR);
+        }
         close(fd4);
         closedir(d);
         close(fd3);

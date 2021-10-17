@@ -1098,8 +1098,10 @@ int
 cmd_sort(char *src, csas *cs)
 {
     xdir *dir = &CTAB(1);
-    if (dir->size > 0)
+    if (dir->size > 0) {
         xfile_sort(dir->files,dir->size,SortMethod);
+        dir->sort = SortMethod;
+    }
     return 0;
 }
 

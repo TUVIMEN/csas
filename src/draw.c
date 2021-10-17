@@ -308,7 +308,7 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
     if (Visual && dir->size)
         dir->files[dir->sel[ctab]].sel[ctab] |= 1<<cs->tabs[ctab].sel;
 
-    if ((size_t)maxy >= dir->size-1) {
+    if ((size_t)maxy > dir->size) {
         dir->scroll[ctab] = 0;
     } else if (sel < scroll+offset) {
         if (sel <= (size_t)offset) {

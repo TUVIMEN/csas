@@ -99,7 +99,7 @@ add_bindings(flexarr *b)
     xbind_add("gg","move -s",b);
     xbind_add("G","move -s $",b);
     xbind_add("h","cd ..",b);
-    xbind_add("l","file_run %s",b);
+    xbind_add("l","file_run %f",b);
     xbind_add("g/","cd /",b);
     xbind_add("gu","cd /usr",b);
     xbind_add("gv","cd /var",b);
@@ -162,8 +162,8 @@ add_bindings(flexarr *b)
     xbind_add("DD","fmod -Ds .",b);
     xbind_add("Dt","fmod -Ds s",b);
     xbind_add("R","load -m1 .",b);
-    xbind_add("a","rename %s",b);
-    xbind_add("r","open_with %s",b);
+    xbind_add("a","rename %f",b);
+    xbind_add("r","open_with %f",b);
     xbind_add("/","console \"search -N \"",b);
     xbind_add("n","search -n 1",b);
     xbind_add("N","search -p 1",b);
