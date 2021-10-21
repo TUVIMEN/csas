@@ -1,0 +1,682 @@
+.TH CSAS 1 csas\-2.0
+
+.SH NAME
+csas - console file manager
+
+.SH SYNOPSIS
+.B csas
+.RI [ OPTION .\|.\|.]\&
+.RI [ PATH ]
+.br
+
+.SH DESCRIPTION
+.B csas
+is a console file manager focused on speed and expandability.
+
+.SH OPTIONS
+.TP
+.BI \-f " FILE"
+use
+.IR FILE
+as a configuration file.
+.TP
+.B -c
+do not load configuration file.
+.TP
+.B \-h
+Output a usage message and exit.
+.TP
+.BR \-v
+Output the version number of
+.B csas
+and exit.
+
+.SH MACROS
+ %f   the highlighted file
+ %d   the path of the current directory
+ %s   the selected files in the current directory
+
+.SH BRACKETS
+The '$' character followed by bracket is replaced by value based on expressions inside bracket.
+.SS "CURLY BRACKETS"
+Value inside specifies name of global variable.
+.SS "SQUARE BRACKETS"
+Value inside specifies expression for simple calculator.
+.SS "ROUND BRACKETS"
+Value inside specifies name of variable
+
+.SH KEYBINDINGS
+.SS "MAIN BINDINGS"
+ q
+"quit"
+ Q
+"quit -f"
+ k
+"move -d"
+ j
+"move -u"
+ gg
+"move -s"
+ G
+"move -s $"
+ h
+"cd .."
+ l
+"file_run %f"
+ g/
+"cd /"
+ gu
+"cd /usr"
+ gv
+"cd /var"
+ gp
+"cd /tmp"
+ gs
+"cd /srv"
+ go
+"cd /opt"
+ gM
+"cd /mnt"
+ ge
+"cd /etc"
+ gd
+"cd /dev"
+ gh
+"cd ~"
+ \' \'
+"fastselect"
+ :
+"console"
+ z1
+"tab 0"
+ z2
+"tab 1"
+ z3
+"tab 2"
+ z4
+"tab 3"
+ z5
+"tab 4"
+ z6
+"tab 5"
+ z7
+"tab 6"
+ z8
+"tab 7"
+ z9
+"tab 8"
+ z0
+"tab 9"
+ x1
+"tab -g0"
+ x2
+"tab -g1"
+ x3
+"tab -g2"
+ x4
+"tab -g3"
+ x5
+"tab -g4"
+ x6
+"tab -g5"
+ x7
+"tab -g6"
+ x8
+"tab -g7"
+ vta
+"select -ts - -o ."
+ vth
+"select -ts - -o . ."
+ vda
+"select -ds - -o ."
+ vdh
+"select -ds - -o . ."
+ vea
+"select -es - -o ."
+ veh
+"select -es - -o . ."
+ dct
+"ds -cs s"
+ dCt
+"ds -crs s"
+ dst
+"ds -s s"
+ dSt
+"ds -rs s"
+ dft
+"ds -fs s"
+ dch
+"ds -cs ."
+ dCh
+"ds -crs ."
+ dsh
+"ds -s ."
+ dSh
+"ds -rs ."
+ dfh
+"ds -fs ."
+ mm
+"fmod -Ms . -c -o ."
+ mr
+"fmod -Ms . -r -o ."
+ md
+"fmod -Ms . -d -o ."
+ mM
+"fmod -Ms . -cm -o ."
+ mR
+"fmod -Ms . -rm -o ."
+ mD
+"fmod -Ms . -dm -o ."
+ pp
+"fmod -Cs . -c -o ."
+ pr
+"fmod -Cs . -r -o ."
+ pd
+"fmod -Cs . -d -o ."
+ pP
+"fmod -Cs . -cm -o ."
+ pR
+"fmod -Cs . -rm -o ."
+ pD
+"fmod -Cs . -dm -o ."
+ Dd
+"fmod -Ds . ."
+ DD
+"fmod -Ds ."
+ Dt
+"fmod -Ds s"
+ R
+"load -m1 ."
+ a
+"rename %f"
+ r
+"open_with %f"
+ /
+"console \\"search -N \\""
+ n
+"search -n 1"
+ N
+"search -p 1"
+ f
+"console \\"filter -N \\""
+ cd
+"console \\"cd \\""
+ O
+"sort"
+.SS "BINDINGS IN CONSOLE"
+ ^B, ^F
+Move left and right
+ ^P, ^N
+Move up and down
+ ^A, ^E
+Move to the start or to the end
+ ^D
+Delete the current character
+ ^W
+Delete word
+ ^H
+Backspace
+
+.SH SETTINGS
+.SS VARIABLES
+.TP
+Editor [string]
+Default editor
+.TP
+FileOpener [string]
+Default file opener
+.TP
+BufferSize [int]
+Size of the buffer used in copying
+.TP
+MoveOffset [int]
+Offset used in moving
+.TP
+WrapScroll [bool]
+Enable scroll wrapping
+.TP
+JumpScroll [bool]
+Enable scrolling by jumping with the value of JumpScrollValue
+.TP
+JumpScrollValue [int]
+Used by JumpScroll
+.TP
+DirSizeMethod [int]
+Change method of getting size of directories. Possible values are:
+    d_f - as file
+    d_r - recursive
+    d_c - count files inside
+    d_s - size of files inside
+.TP
+SortMethod [int]
+Change method of sorting. Possible values are:
+    s_none - do not sort
+    s_name - sort by name
+    s_cname - sort by name without case distinction
+    s_size - sort by size
+    s_mtime - sort by msize
+    s_type - sort by file type
+    s_reverse - reverse sorting
+    s_ddist - sort directories separatly
+    s_lddist - threat symlinks to directories as directories
+    s_rddist - reverse sorting of directories
+.TP
+DirLoadingMode [int]
+Change method of loading directories. Possible values are:
+    dm_once - loads directory only once
+    dm_change - reloads directory whenever it is changed
+    dm_always - always reloads directory
+.TP
+Linemode [int]
+Change showed information about file. Possible values are:
+    l_size - show size
+    l_mtime - show mtime
+    l_perms - show permissions
+.TP
+Color [bool]
+Enable colors
+.TP
+HostnameInTitlebar [bool]
+Show hostname and username in top bar
+.TP
+NumberLines [bool]
+Show number of files
+.TP
+NumberLinesOffset [bool]
+Add offset before numbers making them in the same size
+.TP
+NumberLinesStartFrom [int]
+Start counting from that number
+.TP
+IdleDelay [int]
+Delay between frames in miliseconds when in idle
+.TP
+ColorByExtension [bool]
+Enable coloring files by its extensions
+.TP
+UpdateFile [bool]
+Enable updating file information when scrolling
+.TP
+SizeInBytes [bool]
+When enabled shows size in bytes otherwise shrinks it
+.TP
+FileSystemInfo [int]
+Specifies what is showed about file system. Possible values are:
+    fs_free - size of free space in file system
+    fs_avail - size of available space to unprivilegend user in file system
+    fs_all - size of space in file system
+    fs_files - count of files on file system
+.TP
+MultipaneView [bool]
+Use multiple panes
+.TP
+FollowParentDir [bool]
+When changing directory to .. scroll to previously entered directory
+.TP
+LeftWindowSize [int]
+Change size of left window
+.TP
+CenterWindowSize [int]
+Change size of center window
+.TP
+RightWindowSize [int]
+Change size of right window
+.TP
+Borders [int]
+Manipulate borders. Possible values are:
+    b_none - no borders
+    b_separators - borders in separators
+    b_outline -  borders in outline
+    b_all - all borders
+.TP
+ShowKeyBindings [bool]
+Show key bindings when typing
+.TP
+PreviewSettings [int]
+Manipulate preview. Possible values are:
+    p_dir - preview of directories
+    p_file - preview of files
+    p_bfile - preview of binary files
+    p_wrap - wrap lines of preview
+.TP
+OpenAllImages [bool]
+When image is opened all images in directory will be opened along with it
+.TP
+BinaryPreview [string]
+Specify program used for preview on binary files
+.TP
+Sel_C [int]
+Change color of highlighted files
+.TP
+Reg_C [int]
+Change color of regular files
+.TP
+Exec_C [int]
+Change color of executable files
+.TP
+Dir_C [int]
+Change color of directories
+.TP
+Link_C [int]
+Change color of links
+.TP
+Chr_C [int]
+Change color of character devices
+.TP
+Blk_C [int]
+Change color of block devices
+.TP
+Fifo_C [int]
+Change color of named pipes
+.TP
+Sock_C [int]
+Change color of UNIX domain sockets
+.TP
+Missing_C [int]
+Change color of symlinks with missing targets
+.TP
+Other_C [int]
+Change color of unknown file type
+.TP
+Error_C [int]
+Change color of error message
+.TP
+Bar_C [int]
+Change bar color
+.TP
+Host_C [int]
+Change color of host and user in top bar
+.TP
+Archive_C [int]
+Change color of archive files
+.TP
+Image_C [int]
+Change color of image files
+.TP
+Video_C [int]
+Change color of video files
+.TP
+Border_C [int]
+Change color of borders
+.SS "COLOR VALUES"
+.TP
+DEFAULT
+.TP
+RED
+.TP
+GREEN
+.TP
+YELLOW
+.TP
+BLUE
+.TP
+CYAN
+.TP
+MAGENTA
+.TP
+WHITE
+.TP
+BLACK
+.TP
+A_NORMAL
+.TP
+A_STANDOUT
+.TP
+A_UNDERLINE
+.TP
+A_REVERSE
+.TP
+A_BLINK
+.TP
+A_DIM
+.TP
+A_BOLD
+.TP
+A_PROTECT
+.TP
+A_INVIS
+.TP
+A_ALTCHARSET
+.TP
+A_ITALIC
+.TP
+A_CHARTEXT
+.TP
+A_COLOR
+.TP
+WA_HORIZONTAL
+.TP
+WA_LEFT
+.TP
+WA_LOW
+.TP
+WA_RIGHT
+.TP
+WA_TOP
+.TP
+WA_VERTICAL
+
+.SH FUNCTIONS
+.IP "alias [\fINAME\fR] [\fICOMMAND\fR]" 2
+Aliase
+.I NAME
+to
+.I COMMAND
+.IP "cd [\fIPATH\fR]"
+Change directory to
+.I PATH
+.IP "move [\fINUM\fR]"
+ Scroll through directory. '$' character is threated as last number
+ Flags:
+ \-u    move up
+ \-d    move down
+ \-s    set
+ \-w
+.I NUM
+apply changes in diffrent tab
+.IP "tab [\fINUM\fR]"
+ Change tab to
+.I NUM
+ Flags:
+ \-x
+.I NUM
+change group of selected files
+.IP "console [\fITEXT\fR]"
+ Open console.
+.I TEXT
+will be added to the beginning
+ Flags:
+ \-f
+.I PS
+console changes PS to
+.I PS
+.IP "select [\fIPATH\fR]"
+ Select files
+ Flags:
+ \-r    recursive
+ \-o
+.I NUM
+select files to
+.I NUM
+, when
+.I NUM
+is '.' then it is set to current group
+ \-s
+.I NUM
+select files only matching
+.I NUM
+group, when group is '-' then group do not matter, when group is '.' then group is current group, when group is 's' then only highlighted file is affected
+ \-w
+.I NUM
+set source tab to
+.I NUM
+ \-W
+.I NUM
+set destination tab to
+.I NUM
+ \-e    enable
+ \-d    disable
+ \-t    toggle
+.IP fastselect
+ Select highlighted file and move down
+.IP "source [\fIFILE\fR]"
+ Load
+.I FILE
+as a configuration file
+.IP "file_run [\fIFILE\fR]"
+ Run
+.I FILE
+.IP "exec [\fICOMMAND\fR]"
+ Execute
+.I COMMAND
+ Flags:
+ \-s    suppress output from program
+ \-n    exit curses before executing program
+ \-c    await confirmation after program
+ \-w    wait for program to end
+.IP "map [\fIBINDING\fR] [\fICOMMAND\fR]"
+ Map
+.I BINDING
+to
+.I COMMAND
+.IP quit
+ Close current tab
+ flags:
+ \-f    close all tabs
+.IP "ds [\fIPATH\fR]"
+ Get size of
+.I PATH
+ flags:
+ \-w
+.I NUM
+do actions in
+.I NUM
+tab
+ \-s
+.I NUM
+use files only matching
+.I NUM
+group, when group is '-' then group do not matter, when group is '.' then group is current group, when group is 's' then only highlighted file is affected
+ \-R    get size recursively for every directory
+ \-r    get size recursively from every directory
+ \-c    count files
+ \-f    threat directories as a files
+.IP "fmod [\fIPATH\fR]"
+ Delete, move or copy files
+ flags:
+ \-o
+.I PATH
+destination path
+ \-w
+.I NUM
+do actions in
+.I NUM
+tab
+ \-s
+.I NUM
+use files only matching
+.I NUM
+group, when group is '-' then group do not matter, when group is '.' then group is current group, when group is 's' then only highlighted file is affected
+ \-c    if names colides then change name
+ \-r    if names colides then replace files
+ \-d    if names colides then ommit files
+ \-m    if names of directories colides then merge them
+ \-D    delete
+ \-M    move
+ \-C    copy
+.IP "load [\fIPATH\fR]"
+ Load
+.I PATH
+ flags:
+ \-R    recursive
+ \-m
+.I NUM
+for 0 loads once, for 1 when directories are changed, for 2 always loads
+.IP "set [\fIVARIABLE\fR] [\fIVALUE\fR]"
+ Set or creates
+.I VARIABLE
+to
+.I VALUE
+ flags:
+ \-s    use string as
+.I VALUE
+.IP "rename [\fIFILE\fR]"
+ Rename
+.I FILE
+to name specified in console
+.IP "open_with [\fIFILE\fR]"
+ Open
+.I FILE
+with program specified in console
+.IP sort
+ Sort current directory
+.IP "bulk [\fIPATH\fR]"
+ Create script processing files in
+.I PATH
+ flags:
+ \-n    use comments to show diffrent directories
+ \-N    do not use comments
+ \-f    use full paths of files
+ \-R    recursive
+ \-w
+.I NUM
+do actions in
+.I NUM
+tab
+ \-s
+.I NUM
+use files only matching
+.I NUM
+group, when group is '-' then group do not matter, when group is '.' then group is current group, when group is 's' then only highlighted file is affected
+ \-S    specify shell
+ \-E    specify editor
+ \-f    part of command before first file
+ \-m    part of command in middle of files
+ \-e    part of command at the end
+.IP search
+ Search for files in directory
+ flags:
+ \-s
+.I NUM
+use files only matching
+.I NUM
+group, when group is '-' then group do not matter, when group is '.' then group is current group
+ \-p
+.I NUM
+go to previous results
+ \-n
+.I NUM
+go to next results
+ \-i    ignore case distinctions in pattern
+ \-N
+.I PATTERN
+search for PATTERN
+ \-G
+.I PATTERN
+search for PATTERN using regular expressions
+ \-E
+.I PATTERN
+search for PATTERN using extended regular expressions
+.IP filter
+ Filter files in directory
+ flags:
+ \-s
+.I NUM
+use files only matching
+.I NUM
+group, when group is '-' then group do not matter, when group is '.' then group is current group
+ \-i    ignore case distinctions in pattern
+ \-v    invert the sense of matching, to select non-matching names
+ \-N
+.I PATTERN
+filter by PATTERN
+ \-G
+.I PATTERN
+filter by PATTERN using regular expressions
+ \-E
+.I PATTERN
+filter by PATTERN using extended regular expressions
+
+
+.SH AUTHOR
+TUVIMEN <suchora.dominik7@gmail.com>

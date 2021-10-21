@@ -403,7 +403,7 @@ add_vars(flexarr *v)
     xvar_add(NULL,"fs_files",'i'|0x80,(void*)FS_FILES,v);
     xvar_add(&MultipaneView,"MultipaneView",'I',NULL,v);
     xvar_add(&FollowParentDir,"FollowParentDir",'I',NULL,v);
-    xvar_add(&LeftWindowSize,"LefetWindowSize",'I',NULL,v);
+    xvar_add(&LeftWindowSize,"LeftWindowSize",'I',NULL,v);
     xvar_add(&CenterWindowSize,"CenterWindowSize",'I',NULL,v);
     xvar_add(&RightWindowSize,"RightWindowSize",'I',NULL,v);
     xvar_add(&Border_C,"Border_C",'I',NULL,v);

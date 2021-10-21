@@ -149,20 +149,20 @@ size_shrink(size_t size)
         size >>= 10;
         t++;
     }
+    
+    r *= 1000;
+    r >>= 10;
 
     if (t == 0 || size >= 100) {
         snprintf(ret,23,"%lu%c",size,suffixes[t]);
         return ret;
     }
 
-    size_t c = size <= 9 ? 100 : 10;
-    while (r >= c)
-        r /= 10;
-
-    if (r != 0)
-        snprintf(ret,23,"%lu.%lu%c",size,r,suffixes[t]);
-    else
-        snprintf(ret,23,"%lu%c",size,suffixes[t]);
+    if (size < 10) {
+        snprintf(ret,23,"%lu.%02lu%c",size,r/10,suffixes[t]);
+    } else {
+        snprintf(ret,23,"%lu.%lu%c",size,r/100,suffixes[t]);
+    }
     return ret;
 }
 
