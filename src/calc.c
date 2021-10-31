@@ -39,9 +39,9 @@ get_oct(const char *v, li *n)
     while (v[end] >= '0' && v[end] <= '7')
         end++;
     int num=0;
-    num |= v[--end]-48;
     if (!end)
         goto END;
+    num |= v[--end]-48;
     pos++;
     for (size_t i=pos-1; i != end; i++,pos++)
         num |= (v[(end-1)-i]-48)<<(3*pos);
@@ -134,9 +134,7 @@ get_num(const char *v, li *n, flexarr *vars)
         } else if (isdigit(v[pos])) {
             pos += get_oct(v+pos,n);
         }
-        if (c)
-            *n *= -1;
-        return pos;
+        goto END;
     }
     
     if (v[pos] == '(') {
@@ -147,6 +145,7 @@ get_num(const char *v, li *n, flexarr *vars)
     } else {
         pos += get_dec(v+pos,n);
     }
+    END: ;
     if (c == '-')
         *n *= -1;
     if (c == '~')

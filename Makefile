@@ -3,7 +3,7 @@ LINK	=	-lncursesw -ltinfow
 CFLAGS	=	-O3 -pipe -march=native -Wall -Wextra
 TARGET	=	csas
 
-MANDIR	=	/usr/local/man/man1
+MANDIR	=	/usr/share/man/man1
 BINDIR	=	/usr/bin
 
 SRC	=	src/main.c src/load.c src/csas.c src/useful.c src/flexarr.c src/sort.c src/functions.c src/draw.c src/console.c src/calc.c src/preview.c src/expand.c

@@ -660,20 +660,65 @@ csas_run(csas *cs, int argc, char **argv)
             }
         }
     }
+    endwin();
     return 0;
 }
 
-void
+static void
+xbind_free(xbind *b)
+{
+    free(b->keys);
+    free(b->value);
+}
+
+static void
+xfunc_free(xfunc *f)
+{
+    free(f->name);
+    if (f->type == 'a')
+        free(f->func);
+}
+
+static void
+xvar_free(xvar *v)
+{
+    free(v->name);
+    if (v->type == 's' || v->type == 'i')
+        free(v->v);
+}
+
+static void
 xdir_free(xdir *dir)
 {
     flexarr_free(dir->searchlist);
-    dir->searchlist = NULL;
     free(dir->path);
-    dir->path = NULL;
-    dir->plen = 0;
-    free(dir->names);
-    dir->names = NULL;
-    free(dir->files);
-    dir->files = NULL;
-    dir->size = 0;
+    if (dir->asize)
+        free(dir->names);
+    if (dir->files)
+        free(dir->files);
+}
+
+void
+csas_free(csas *cs)
+{
+    size_t i;
+    delwin(cs->wins[0]);
+    delwin(cs->wins[1]);
+    delwin(cs->wins[2]);
+    for (i = 0; i < cs->vars->size; i++)
+        xvar_free(&(((xvar*)cs->vars->v)[i]));
+    flexarr_free(cs->vars);
+    for (i = 0; i < cs->functions->size; i++)
+        xfunc_free(&(((xfunc*)cs->functions->v)[i]));
+    flexarr_free(cs->functions);
+    for (i = 0; i < cs->bindings->size; i++)
+        xbind_free(&(((xbind*)cs->bindings->v)[i]));
+    flexarr_free(cs->bindings);
+    for (i = 0; i < cs->consoleh->size; i++)
+        free(((char**)cs->consoleh->v)[i]);
+    flexarr_free(cs->consoleh);
+    for (i = 0; i < cs->dirs->size; i++)
+        xdir_free(&(((xdir*)cs->dirs->v)[i]));
+    flexarr_free(cs->dirs);
+    free(cs);
 }

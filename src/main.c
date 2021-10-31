@@ -24,6 +24,7 @@ main(int argc, char **argv)
 {
     csas *cs = csas_init();
     csas_run(cs,argc,argv);
+    csas_free(cs);
 
     return 0;
 }
