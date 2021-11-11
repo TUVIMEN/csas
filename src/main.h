@@ -56,8 +56,6 @@
 
 #pragma pack(1)
 
-#define VERSION "v2.0"
-
 #define DIR_INCR 32
 #define BINDINGS_INCR 8
 #define FUNCTIONS_INCR 8

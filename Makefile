@@ -1,6 +1,7 @@
+VERSION	=	2.0
 CC	=	gcc -std=c99
 LINK	=	-lncursesw -ltinfow
-CFLAGS	=	-O3 -pipe -march=native -Wall -Wextra
+CFLAGS	=	-O3 -pipe -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
 TARGET	=	csas
 
 MANDIR	=	/usr/share/man/man1
@@ -17,9 +18,10 @@ all: ${OBJ}
 	${CC} ${CFLAGS} -c $< -o $@
 
 install: all
+	mkdir -p ${BINDIR}
 	cp -f ${TARGET} ${BINDIR}
 	chmod 755 ${BINDIR}/${TARGET}
-	cp -f ${TARGET}.1 ${MANDIR}
+	sed "s/VERSION/${VERSION}/g" ${TARGET}.1 > ${MANDIR}/${TARGET}.1
 	chmod 644 ${MANDIR}/${TARGET}.1
 	cp csasrc /etc/
 

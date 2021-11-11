@@ -8,7 +8,8 @@ map <down> 'move -u'
 map s 'console "shell "'
 map S 'exec -nw ${SHELL}'
 map b "bulkrename"
-map B "bulkrename -NR"
+map Bb "bulkrename -N -R"
+map BB "bulkrename -n -R"
 map K 'move -d LINES>>1'
 map J 'move -u LINES>>1'
 map V 'set Visual Visual^1'
