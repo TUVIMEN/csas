@@ -43,7 +43,6 @@ install: all
 	mkdir -p ${MANDIR}
 	sed "s/VERSION/${VERSION}/g" ${TARGET}.1 | bzip2 -9 > ${MANDIR}/${TARGET}.1.bz2
 	chmod 644 ${MANDIR}/${TARGET}.1.bz2
-	cp -f csasrc /etc/
 
 uninstall:
 	rm ${BINDIR}/${TARGET}\

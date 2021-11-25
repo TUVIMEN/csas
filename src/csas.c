@@ -581,8 +581,28 @@ usage(const char *argv0)
 int
 csas_run(csas *cs, int argc, char **argv)
 {
-    char *path = ".";
-    char *conf = "/etc/csasrc";
+    char *path = ".", cf[PATH_MAX];
+    char *conf = getenv("CSAS_HOME");
+    if (!conf) {
+        size_t s;
+        conf = getenv("XDG_CONFIG_HOME");
+        if (conf) {
+            s = strlen(conf);
+            memcpy(cf,conf,s);
+            strcpy(cf+s,"/csasrc");
+            conf = cf;
+        } else {
+            conf = getenv("HOME");
+            if (conf) {
+                s = strlen(conf);
+                memcpy(cf,conf,s);
+                strcpy(cf+s,"/.csasrc");
+                conf = cf;
+            } else {
+                conf = "/etc/csasrc";
+            }
+        }
+    }
 
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] == '-') {
