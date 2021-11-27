@@ -619,9 +619,16 @@ csas_run(csas *cs, int argc, char **argv)
                             conf = argv[i]+j;
                         } else if (i < argc) {
                             conf = argv[++i];
+                            if (i == argc) {
+                                fprintf(stderr,"%s: option requires an argument -- 'f'\n",argv[0]);
+                                exit(1);
+                            }
                         }
                         brk = 1;
                         break;
+                    default:
+                        fprintf(stderr,"%s: invalid option -- '%c'\n",argv[0],argv[i][j]);
+                        exit(1);
                 }
             }
         } else {
