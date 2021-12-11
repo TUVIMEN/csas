@@ -50,6 +50,7 @@ xfile_update(xfile *f)
 int
 load_dir(xdir *dir)
 {
+    dir->size = 0;
     ret_errno(dir==NULL,EINVAL,-1);
     char *path = dir->path;
     ret_errno(path==NULL,EINVAL,-1);
@@ -59,36 +60,42 @@ load_dir(xdir *dir)
         return -1;
     int fd = dirfd(dp),t;
     struct dirent *ep;
-    size_t s = 0,nlen,namesl=0,offset=0;
-    while ((ep = readdir(dp))) {
-        namesl += strlen(ep->d_name)+1;
-        s++;
-    }
-    namesl -= 5;
-    s -= 2;
-    if (s == 0) {
-        closedir(dp);
-        return 0;
-    }
-    dir->size = s;
-    dir->files = malloc(s*sizeof(xfile));
-    dir->names = malloc(namesl);
-    if (dir->files == NULL || dir->names == NULL)
-        exiterr();
-    rewinddir(dp);
-    xfile *files = dir->files;
+    size_t size=0,asize=0,names_size=0,names_asize=0,nlen;
+    xfile *files = NULL;
+    char *names = NULL,*dname;
     struct stat statbuf;
-    s = 0;
+
     while ((ep = readdir(dp))) {
-        const char *dname = ep->d_name;
+        dname = ep->d_name;
         if (dname[0] == '.' && (dname[1] == 0 || (dname[1] == '.' && dname[2] == 0)))
             continue;
-        xfile *f = &files[s];
+        if (size == asize) {
+            asize += FILE_INCR;
+            void *pmem = realloc(files,asize*sizeof(xfile));
+            if (pmem == NULL) {
+                if (files)
+                    free(files);
+                return -1;
+            }
+            files = pmem;
+        }
+        xfile *f = &files[size];
+        if (names_size+NAME_MAX >= names_asize) {
+            names_asize += NAMES_INCR*NAME_MAX;
+            void *pmem = realloc(names,names_asize);
+            if (pmem == NULL) {
+                if (names)
+                    free(names);
+                return -1;
+            }
+            names = pmem;
+        }
         nlen = strlen(dname);
-        f->name = dir->names+offset;
         f->nlen = nlen++;
-        memcpy(f->name,dname,nlen);
-        offset += nlen;
+        memcpy(names+names_size,dname,nlen);
+        f->name = (void*)names_size;
+        names_size += nlen;
+
         fstatat(fd,dname,&statbuf,AT_SYMLINK_NOFOLLOW);
         memset(f->sel,0,TABS);
         f->mode = statbuf.st_mode;
@@ -108,9 +115,31 @@ load_dir(xdir *dir)
                 close(t);
             }
         }
-        s++;
+        size++;
     }
     closedir(dp);
+    if (size != asize) {
+        void *pmem = realloc(files,size*sizeof(xfile));
+        if (pmem == NULL) {
+            free(files);
+            return -1;
+        }
+        files = pmem;
+    }
+    if (names_size != names_asize) {
+        void *pmem = realloc(names,names_size);
+        if (pmem == NULL) {
+            free(files);
+            return -1;
+        }
+        names = pmem;
+    }
+    if (size)
+        for (size_t i = 0; i < size; i++)
+            files[i].name += (size_t)names;
+    dir->size = size;
+    dir->files = files;
+    dir->names = names;
     return 0;
 }
 

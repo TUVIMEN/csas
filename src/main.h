@@ -57,6 +57,8 @@
 #pragma pack(1)
 
 #define DIR_INCR 32
+#define FILE_INCR 128
+#define NAMES_INCR 32
 #define BINDINGS_INCR 8
 #define FUNCTIONS_INCR 8
 #define VARS_INCR 8
