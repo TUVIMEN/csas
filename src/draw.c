@@ -127,13 +127,19 @@ draw_path(csas *cs)
             i++;
         i = file[sel].nlen;
     }
-    addnstr(path_shrink(dir->path,dir->plen,COLS-i-getcurx(stdscr)-1),dir->plen);
+    size_t path_space = COLS-getcurx(stdscr)-1,pmax_size;
+    pmax_size = (i > path_space) ? 1 : path_space-i;
+    addnstr(path_shrink(dir->path,dir->plen,pmax_size),dir->plen);
     if (dir->size > 0) {
         if (dir->path[0] == '/' && dir->path[1])
             addch('/');
         attroff(-1);
-        attron(Reg_C|A_BOLD);
-        addnstr(file[sel].name,file[sel].nlen);
+        path_space = COLS-getcurx(stdscr)-1;
+        pmax_size = (file[sel].nlen > path_space+1) ? path_space : file[sel].nlen;
+        if (pmax_size) {
+            attron(Reg_C|A_BOLD);
+            addnstr(file[sel].name,pmax_size);
+        }
     }
     attroff(-1);
 }
@@ -304,9 +310,6 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
     xfile *file = dir->files;
     int color,maxx=win->_maxx+1,maxy=win->_maxy+1,offset=maxy>>MoveOffset,
         jumpvalue=maxy>>JumpScrollValue;
-
-    if (Visual && dir->size)
-        dir->files[dir->sel[ctab]].sel[ctab] |= 1<<cs->tabs[ctab].sel;
 
     if ((size_t)maxy > dir->size) {
         dir->scroll[ctab] = 0;

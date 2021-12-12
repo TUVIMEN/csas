@@ -482,6 +482,8 @@ csas_draw(csas *cs)
     draw_tbar(0,cs);
     draw_bbar(LINES-1,cs);
     xdir *d = &CTAB(1);
+    if (Visual && d->size)
+        d->files[d->sel[cs->ctab]].sel[cs->ctab] |= 1<<cs->tabs[cs->ctab].sel;
     draw_dir(cs->wins[1],d,cs);
     if (MultipaneView) {
         if (d->path[0] == '/' && d->path[1] == 0) {
