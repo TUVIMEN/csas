@@ -1304,8 +1304,11 @@ cmd_search(char *src, csas *cs)
                 break;
             }
         }
-        if (found)
+        if (found) {
             dir->sel[ctab] = i;
+            if (MultipaneView)
+                preview_get(&dir->files[i],cs);
+        }
         return 0;
     }
 
