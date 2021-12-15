@@ -1,8 +1,26 @@
 VERSION = 2.0
 CC = gcc -std=c99
 CFLAGS = -O3 -pipe -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
-LDFLAGS = -lncursesw -ltinfow
+LDFLAGS = 
 TARGET = csas
+
+PKG_CONFIG = pkg-config
+
+O_REGEX := 1 # regex support
+
+ifeq ($(strip ${O_REGEX}),1)
+	CFLAGS += -DREGEX
+endif
+
+ifeq ($(shell $(PKG_CONFIG) ncursesw && echo 1),1)
+	CFLAGS += $(shell ${PKG_CONFIG} --cflags ncursesw)
+	LDFLAGS += $(shell ${PKG_CONFIG} --libs ncursesw)
+else ifeq ($(shell $(PKG_CONFIG) ncurses && echo 1),1)
+	CFLAGS += $(shell ${PKG_CONFIG} --cflags ncurses)
+	LDFLAGS += $(shell ${PKG_CONFIG} --libs ncurses)
+else
+	LDFLAGS += -lncurses
+endif
 
 PREFIX = /usr
 MANPREFIX = ${PREFIX}/share/man

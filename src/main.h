@@ -20,15 +20,10 @@
 #define MAIN_H
 
 #define _GNU_SOURCE
-#define _XOPEN_SOURCE_EXTENDED
-#define __USE_XOPEN
-#define __USE_XOPEN_EXTENDED 1
 
 #ifndef NCURSES_WIDECHAR
 #define NCURSES_WIDECHAR 1
 #endif
-
-#define REGEX
 
 #include <stdlib.h>
 #include <stdio.h>
