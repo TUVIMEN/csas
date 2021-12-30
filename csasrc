@@ -72,6 +72,8 @@ map / 'console -n 9 "scout -G  -- list"'
 map n 'lmove -n 1'
 map N 'lmove -p 1'
 map f 'console -n 9 "scout -G  -- filter"'
+map F 'scout -- filter -C'
+map <space> 'scout -- select -s -T; move -u'
 
 set -s Editor ${EDITOR}
 set BufferSize 1<<18

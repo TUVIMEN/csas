@@ -61,7 +61,7 @@ xbind_add(const char *keys, const char *value, flexarr *b)
 {
     size_t i,size;
     ret_errno(keys==NULL||value==NULL||b==NULL,EINVAL,-1);
-    ret_errno((size=strlen(keys))>BINDING_KEY_MAX||strlen(value)>PATH_MAX,EOVERFLOW,-1);
+    ret_errno((size=strlen(keys))>BINDING_KEY_MAX||strlen(value)>LLINE_MAX,EOVERFLOW,-1);
 
     wchar_t k[BINDING_KEY_MAX];
     change_keys(k,keys);
@@ -77,15 +77,13 @@ xbind_add(const char *keys, const char *value, flexarr *b)
     
     if (found == 0) {
         bind = (xbind*)flexarr_inc(b);
-        bind->keys = malloc(BINDING_KEY_MAX*sizeof(wchar_t));
-        bind->value = malloc(PATH_MAX);
-        wcscpy(bind->keys,k);
+        bind->keys = wcsdup(k);
     } else {
+        free(bind[i].value);
         bind = &bind[i];
     }
 
-    strcpy(bind->value,value);
-
+    bind->value = strdup(value);
     return 0;
 }
 
@@ -102,7 +100,6 @@ add_bindings(flexarr *b)
     xbind_add("l","file_run %f",b);
     xbind_add("g/","cd /",b);
     xbind_add("gh","cd ~",b);
-    xbind_add(" ","fastselect",b);
     xbind_add(":","console",b);
     xbind_add("z1","tab 0",b);
     xbind_add("z2","tab 1",b);
@@ -148,14 +145,12 @@ xfunc_add(const char *name, const uchar type, void *func, void *expand, flexarr 
 
     if (found == 0) {
         funcs = (xfunc*)flexarr_inc(f);
-        funcs->name = malloc(FUNCTIONS_NAME_MAX*sizeof(wchar_t));
-        strcpy(funcs->name,name);
+        funcs->name = strdup(name);
     } else {
         funcs = &funcs[i];
+        if (funcs->type == 'a')
+            free(funcs->func);
     }
-
-    if (funcs->type == 'a')
-        free(funcs->func);
 
     funcs->type = type;
     funcs->func = func;
@@ -173,7 +168,6 @@ add_functions(flexarr *f)
     xfunc_add("scout",'f',cmd_scout,NULL,f);
     xfunc_add("file_run",'f',cmd_file_run,expand_file,f);
     xfunc_add("source",'f',cmd_source,expand_file,f);
-    xfunc_add("fastselect",'f',cmd_fastselect,NULL,f);
     xfunc_add("console",'f',cmd_console,NULL,f);
     xfunc_add("tab",'f',cmd_tab,NULL,f);
     xfunc_add("exec",'f',cmd_exec,expand_shell,f);
@@ -205,8 +199,7 @@ xvar_add(void *addr, const char *name, const uchar type, void *val, flexarr *v)
 
     if (found == 0) {
         vars = (xvar*)flexarr_inc(v);
-        vars->name = malloc(VARS_NAME_MAX);
-        strcpy(vars->name,name);
+        vars->name = strdup(name);
         vars->v = NULL;
     } else {
         vars = &vars[i];
@@ -229,10 +222,9 @@ xvar_add(void *addr, const char *name, const uchar type, void *val, flexarr *v)
 
     switch (type&~0x80) {
         case 's':
-            addr = vars->v;
-            if (!vars->v)
-                addr = malloc(PATH_MAX);
-            // fall through
+            if (!vars->v && val)
+                vars->v = strndup(val,LLINE_MAX);
+            break;
         case 'S':
             vars->v = addr;
             if (val)
@@ -616,7 +608,7 @@ csas_run(csas *cs, int argc, char **argv)
 
         REPEAT: ;
         if ((e = update_event(cs)) != -1) {
-            if (command_run(BINDINGS[e].value,cs) == -1) {
+            if (alias_run(BINDINGS[e].value,cs) == -1) {
                 printmsg(Error_C,"%s: %s",BINDINGS[e].value,strerror(errno));
                 refresh();
                 goto REPEAT;

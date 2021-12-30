@@ -106,6 +106,22 @@ update_event(csas *cs)
 }
 
 int
+alias_run(char *src, csas *cs)
+{
+    size_t size=strlen(src);
+    if (size == 0)
+        return -1;
+
+    char line[LLINE_MAX];
+    for (size_t i = 0; i < size; i++) {
+        get_line(line,src,&i,size);
+        command_run(line,cs);
+        i++;
+    }
+    return 0;
+}
+
+int
 command_run(char *src, csas *cs)
 {
     size_t size=strlen(src),pos=0,t,s;
@@ -116,7 +132,6 @@ command_run(char *src, csas *cs)
     t = pos;
     while_isnt(isspace,src,pos,size);
     s = pos-t;
-    ret_errno(size==0,EINVAL,-1);
     while_is(isspace,src,pos,size);
     
     size = cs->functions->size;
@@ -130,10 +145,10 @@ command_run(char *src, csas *cs)
                 cs->typed[0] = 0;
                 return r;
             } else if (functions[i].type == 'a') {
-                char line[LLINE_MAX];
                 s = strlen(functions[i].func);
                 if (s > LLINE_MAX)
                     return 0;
+                char line[LLINE_MAX];
                 memcpy(line,functions[i].func,s);
                 line[s++] = ' ';
                 size_t c = strlen(src+pos);
@@ -142,7 +157,7 @@ command_run(char *src, csas *cs)
                 memcpy(line+s,src+pos,c);
                 s += c;
                 line[s] = 0;
-                return command_run(line,cs);
+                return alias_run(line,cs);
             }
         }
     }
@@ -239,6 +254,7 @@ cmd_move(char *src, csas *cs)
 {
     uchar flags = MOVE_UP;
     size_t value=(size_t)atol(cs->typed),pos=0,tab=cs->ctab;
+    size_t size = strlen(src);
     if (value == 0)
         value = 1;
 
@@ -247,7 +263,7 @@ cmd_move(char *src, csas *cs)
     if (dir->size == 0)
         return 0;
 
-    while (src[pos]) {
+    while (pos < size) {
         if (src[pos] == '-') {
             do {
                 pos++;
@@ -271,7 +287,8 @@ cmd_move(char *src, csas *cs)
         } else if (!isspace(src[pos])) {
             pos += calc(src+pos,(li*)&value,cs->vars);
         }
-        pos++;
+        if (src[pos])
+            pos++;
         while (isspace(src[pos]))
             pos++;
     }
@@ -1280,16 +1297,6 @@ cmd_scout(char *src, csas *cs)
 }
 
 int
-cmd_fastselect(char *src, csas *cs)
-{
-    xdir *dir = &CTAB(1);
-    ret_errno(dir->size==0,EINVAL,-1);
-    dir->files[dir->sel[cs->ctab]].sel[cs->ctab] ^= (1<<cs->tabs[cs->ctab].sel);
-    move_d(dir,1,cs->ctab,MOVE_UP);
-    return 0;
-}
-
-int
 cmd_source(char *src, csas *cs)
 {
     char path[PATH_MAX];
@@ -1379,7 +1386,7 @@ int
 cmd_alias(char *src, csas *cs)
 {
     size_t pos=0,s=strlen(src);
-    char name[NAME_MAX],*line,*r;
+    char name[FUNCTIONS_NAME_MAX],line[LLINE_MAX],*r;
 
     while (isspace(src[pos]))
         pos++;
@@ -1391,14 +1398,9 @@ cmd_alias(char *src, csas *cs)
     while (isspace(src[pos]))
         pos++;
 
-    line = malloc(LLINE_MAX);
     r = get_path(line,src+pos,' ',s-pos,LLINE_MAX,cs);
-    errno = EINVAL;
-    if (r == NULL) {
-        free(line);
-        return -1;
-    }
-    return xfunc_add(name,'a',line,NULL,cs->functions);
+    ret_errno(r==NULL,EINVAL,-1);
+    return xfunc_add(name,'a',strdup(line),NULL,cs->functions);
 }
 
 int
