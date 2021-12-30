@@ -396,6 +396,17 @@ cmd_console(char *src, csas *cs)
     char *line = ((char**)history->v)[history->size-1];
     if (command_run(line,cs) != 0)
         printmsg(Error_C,"%s: %s",line,strerror(errno));
+    size_t empty = 1;
+    for (size_t i = 0; line[i]; i++) {
+        if (!isspace(line[i])) {
+            empty = 0;
+            break;
+        }
+    }
+    if (empty) {
+        free(line);
+        history->size--;
+    }
     return 0;
 }
 
