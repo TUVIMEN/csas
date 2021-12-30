@@ -156,10 +156,22 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         return -1;
     rpathl = strlen(rpath);
 
+    struct stat statbuf;
+    if (lstat(path,&statbuf) != 0)
+        return -1;
+    if (flags&D_FOLLOW && (statbuf.st_mode&S_IFMT) == S_IFLNK) {
+        if (stat(rpath,&statbuf) != 0)
+            return -1;
+    }
+    if ((statbuf.st_mode&S_IFMT) != S_IFDIR) {
+        errno = ENOTDIR;
+        return -1;
+    }
+
     xdir *d = (xdir*)dirs->v;
     uchar found = 0;
     for (i = 0; i < dirs->size; i++) {
-        if (rpathl == strlen(d[i].path) && memcmp(d[i].path,rpath,rpathl) == 0) {
+        if (rpathl == d[i].plen && memcmp(d[i].path,rpath,rpathl) == 0) {
             found = 1;
             break;
         }
@@ -202,9 +214,6 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         return ret;
     }
 
-    struct stat statbuf;
-    if (lstat(path,&statbuf) != 0)
-        return -1;
     if (flags&D_CHDIR)
         if (chdir(path) != 0)
             return -1;
@@ -243,8 +252,18 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     END:
     if (!(flags&D_RECURSIVE))
         return ret;
+
+    xfile *files = d->files;
+    rpath[rpathl++] = '/';
+    for (size_t i = 0; i < ((xdir*)dirs->v)[ret].asize; i++) {
+        if ((files[i].mode&S_IFMT) != S_IFDIR && (flags&D_FOLLOW && !(files[i].flags&SLINK_TO_DIR)))
+            continue;
+        memcpy(rpath+rpathl,files[i].name,files[i].nlen);
+        rpath[rpathl+files[i].nlen] = 0;
+        getdir(rpath,dirs,flags);
+    }
     
-    struct dirent *dir;
+    /*struct dirent *dir;
     DIR *dirp = opendir(rpath);
     if (dirp == NULL)
         return -1;
@@ -257,6 +276,6 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         memcpy(rpath+rpathl,dir->d_name,strlen(dir->d_name)+1);
         getdir(rpath,dirs,flags);
     }
-    closedir(dirp);
-    return 0;
+    closedir(dirp);*/
+    return ret;
 }

@@ -19,7 +19,7 @@
 #include "main.h"
 #include "calc.h"
 
-static size_t
+size_t
 get_bin(const char *v, li *n)
 {
     size_t pos=0,end=0;
@@ -32,7 +32,7 @@ get_bin(const char *v, li *n)
     return pos;
 }
 
-static size_t
+size_t
 get_oct(const char *v, li *n)
 {
     size_t pos=0,end=0;
@@ -51,7 +51,7 @@ get_oct(const char *v, li *n)
 }
 
 
-static size_t
+size_t
 get_dec(const char *v, li *n)
 {
     size_t pos=0,end=0;
@@ -78,7 +78,7 @@ hextodec(int n)
     return 0;
 }
 
-static size_t
+size_t
 get_hex(const char *v, li *n)
 {
     size_t pos=0,end=0;

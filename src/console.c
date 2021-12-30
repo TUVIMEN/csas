@@ -21,7 +21,7 @@
 #include "console.h"
 
 void
-console_getline(char **history, size_t size, char *first, char *add, csas *cs,
+console_getline(char **history, size_t size, char *first, char *add, li offset, csas *cs,
     int (*expand)(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uchar *free_names, csas *cs))
 {
     int ev;
@@ -32,12 +32,20 @@ console_getline(char **history, size_t size, char *first, char *add, csas *cs,
 
     curs_set(1);
 
+    if (offset < 0)
+        offset = 0;
     if (add) {
         strcpy(h,add);
-        x = s = strlen(add);
-        if (x-off >= (size_t)COLS)
-            off = COLS-(x-off);
+        s = strlen(add);
+        if (!offset)
+            x = s;
     }
+    if ((size_t)offset > s)
+        offset = s;
+    if (offset)
+        x = offset;
+    if (x-off >= (size_t)COLS)
+        off = COLS-(x-off);
 
     flexarr *arg = flexarr_init(sizeof(void*),DIR_INCR);;
 

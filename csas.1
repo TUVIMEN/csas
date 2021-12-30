@@ -65,22 +65,6 @@ Value inside specifies name of variable
 "file_run %f"
  g/
 "cd /"
- gu
-"cd /usr"
- gv
-"cd /var"
- gp
-"cd /tmp"
- gs
-"cd /srv"
- go
-"cd /opt"
- gM
-"cd /mnt"
- ge
-"cd /etc"
- gd
-"cd /dev"
  gh
 "cd ~"
  \' \'
@@ -123,82 +107,12 @@ Value inside specifies name of variable
 "tab -g6"
  x8
 "tab -g7"
- vta
-"select -ts - -o ."
- vth
-"select -ts - -o . ."
- vda
-"select -ds - -o ."
- vdh
-"select -ds - -o . ."
- vea
-"select -es - -o ."
- veh
-"select -es - -o . ."
- dct
-"ds -cs s"
- dCt
-"ds -crs s"
- dst
-"ds -s s"
- dSt
-"ds -rs s"
- dft
-"ds -fs s"
- dch
-"ds -cs ."
- dCh
-"ds -crs ."
- dsh
-"ds -s ."
- dSh
-"ds -rs ."
- dfh
-"ds -fs ."
- mm
-"fmod -Ms . -c -o ."
- mr
-"fmod -Ms . -r -o ."
- md
-"fmod -Ms . -d -o ."
- mM
-"fmod -Ms . -cm -o ."
- mR
-"fmod -Ms . -rm -o ."
- mD
-"fmod -Ms . -dm -o ."
- pp
-"fmod -Cs . -c -o ."
- pr
-"fmod -Cs . -r -o ."
- pd
-"fmod -Cs . -d -o ."
- pP
-"fmod -Cs . -cm -o ."
- pR
-"fmod -Cs . -rm -o ."
- pD
-"fmod -Cs . -dm -o ."
- Dd
-"fmod -Ds . ."
- DD
-"fmod -Ds ."
- Dt
-"fmod -Ds s"
  R
-"load -m1 ."
+"scout -l 1"
  a
 "rename %f"
  r
 "open_with %f"
- /
-"console \\"search -N \\""
- n
-"search -n 1"
- N
-"search -p 1"
- f
-"console \\"filter -N \\""
  cd
 "console \\"cd \\""
  O
@@ -261,7 +175,7 @@ Change method of sorting. Possible values are:
     s_type - sort by file type
     s_reverse - reverse sorting
     s_ddist - sort directories separatly
-    s_lddist - threat symlinks to directories as directories
+    s_lddist - treat symbolic links to directories as directories
     s_rddist - reverse sorting of directories
 .TP
 DirLoadingMode [int]
@@ -269,6 +183,9 @@ Change method of loading directories. Possible values are:
     dm_once - loads directory only once
     dm_change - reloads directory whenever it is changed
     dm_always - always reloads directory
+    d_recursive - load recursively
+    d_follow - follow symbolic links
+    d_chmod - change directory
 .TP
 Linemode [int]
 Change showed information about file. Possible values are:
@@ -376,7 +293,7 @@ Sock_C [int]
 Change color of UNIX domain sockets
 .TP
 Missing_C [int]
-Change color of symlinks with missing targets
+Change color of symbolic links with missing targets
 .TP
 Other_C [int]
 Change color of unknown file type
@@ -461,7 +378,7 @@ WA_VERTICAL
 
 .SH FUNCTIONS
 .IP "alias [\fINAME\fR] [\fICOMMAND\fR]" 2
-Aliase
+Aliases
 .I NAME
 to
 .I COMMAND
@@ -469,19 +386,19 @@ to
 Change directory to
 .I PATH
 .IP "move [\fINUM\fR]"
- Scroll through directory. '$' character is threated as last number
+ Scroll through directory. '$' character is treated as last number
  Flags:
- \-u    move up
- \-d    move down
- \-s    set
- \-w
+    \-u    move up
+    \-d    move down
+    \-s    set
+    \-w
 .I NUM
 apply changes in diffrent tab
 .IP "tab [\fINUM\fR]"
  Change tab to
 .I NUM
  Flags:
- \-x
+    \-x
 .I NUM
 change group of selected files
 .IP "console [\fITEXT\fR]"
@@ -489,37 +406,182 @@ change group of selected files
 .I TEXT
 will be added to the beginning
  Flags:
- \-f
+    \-f
 .I PS
 console changes PS to
 .I PS
-.IP "select [\fIPATH\fR]"
- Select files
+    \-n
+.I NUM
+specify offset
+.IP "scout [\fIPATH\fR] -- [\fIFUNCTION\fR]"
+ Scans for files
  Flags:
- \-r    recursive
- \-o
+    \-type
+.I C
+        File is of type \fIC\fR:
+        b           block (buffered) special
+        c           character (unbuffered) special
+        d           directory
+        p           named pipe (FIFO)
+        f           regular file
+        l           symbolic link
+        s           socket
+    \-f    load unloaded directories
+    \-perm
+.I MODE
+        File's permission bits are exacly
+.I MODE
+(octal)
+    \-size \fIX\fR[bcwkMGTP]
+        File uses exacly
+.I X
+units of space. The following suffixes can be used:
+            'b' for 512-byte blocks
+            'c' for bytes
+            'w' for two-byte words
+            'k' for kibibytes
+            'M' for megibytes
+            'G' for gibibytes
+            'T' for tebibytes
+            'P' for pebibytes
+    \-size \fIX\fR-\fIY\fR
+        File uses from \fIX\fR to \fIY\fR units of space
+    \-mtime \fIX\fR[mhdwMY]
+        File's data has been modified in less than
+.I X
+units of time ago. The following suffixes can be used:
+            'm' for minutes
+            'h' for hours
+            'd' for days
+            'w' for weeks
+            'M' for months
+            'Y' for years
+    \-mtime \fIX\fR[mhdwMY]
+        File's data has been modified in less than
+.I X
+and in more than
+.I Y
+units of time ago
+    \-a    get every loaded directory
+    \-r    get directories recursively
+    \-L    follow symbolic links
+    \-P    never follow symbolic links
+    \-v    invert match
+    \-i    ignore case distinctions
+    \-l
 .I NUM
-select files to
-.I NUM
-, when
-.I NUM
-is '.' then it is set to current group
- \-s
-.I NUM
-select files only matching
-.I NUM
-group, when group is '-' then group do not matter, when group is '.' then group is current group, when group is 's' then only highlighted file is affected
- \-w
-.I NUM
-set source tab to
-.I NUM
- \-W
-.I NUM
-set destination tab to
-.I NUM
- \-e    enable
- \-d    disable
- \-t    toggle
+        load directories with mode specified by \fINUM\fR, where:
+            0 loads once
+            1 when directories are changed
+            2 always loads
+    \-N
+.I PATTERN
+        File name matches
+.I PATTERN
+    \-G
+.I PATTERN
+        File name matches regular expression
+.I PATTERN
+    \-E
+.I PATTERN
+        File name matches extended regular expression
+.I PATTERN
+    \-g
+.I X
+        File's group
+.I X
+is set
+    \-g \fIX\fR-\fIY\fR
+        File's groups from
+.I X
+to
+.I Y
+are set
+    \-t
+.I X
+        File's groups are set in
+.I X
+tab
+    \-t \fIX\fR-\fIY\fR
+        File's groups are set in tabs from
+.I X
+to
+.I Y
+ Functions:
+    list
+        adds files to directory list
+    filter
+        hide files that do not match
+        flags:
+            \-C    clears previous filter
+    select
+        select files
+        flags:
+            \-E    enable group
+            \-D    disable group
+            \-T    toggle group
+            \-S    set group
+            \-s    affects only highlighted file
+            \-g
+.I X
+                set
+.I X
+group
+            \-g \fIX\fR-\fIY\fR
+                set groups from
+.I X
+to
+.I Y
+            \-t
+.I X
+                set groups in
+.I X
+tab
+            \-t \fIX\fR-\fIY\fR
+                set groups in tabs from
+.I X
+to
+.I Y
+    ds
+        get size of directories
+        flags:
+            \-C    count files inside directory
+            \-r    get size recursively
+            \-F    treat directories as files
+            \-S    get size of files inside directory
+            \-s    affect only highlighted file
+    bulk
+        create script processing files
+        flags:
+            \-n    do not use comments
+            \-N    use comment to show diffrent directories
+            \-f    use full paths of files
+            \-S
+.I SHELL
+                specify shell
+            \-E
+.I EDITOR
+                specify editor
+            \-b
+.I VALUE
+                specify beginning of command
+            \-m
+.I VALUE
+                specify middle part of command
+            \-e
+.I VALUE
+                specify ending of command
+    fmod
+        delete, move or copy files
+        flags:
+            \-c    if name collides then change names
+            \-r    if name collides then replace files
+            \-d    if name collides then ommit files
+            \-m    if name of directories collides then merge them
+            \-D    delete
+            \-M    move
+            \-C    copy
+            \-s    affect only highlighted file
 .IP fastselect
  Select highlighted file and move down
 .IP "source [\fIFILE\fR]"
@@ -530,13 +592,13 @@ as a configuration file
  Run
 .I FILE
 .IP "exec [\fICOMMAND\fR]"
- Execute
-.I COMMAND
+ Execute \fICOMMAND\fR.
+ After '$$' everything will be treated as one argument
  Flags:
- \-s    suppress output from program
- \-n    exit curses before executing program
- \-c    await confirmation after program
- \-w    wait for program to end
+    \-s    suppress output from program
+    \-n    exit curses before executing program
+    \-c    await confirmation after program
+    \-w    wait for program to end
 .IP "map [\fIBINDING\fR] [\fICOMMAND\fR]"
  Map
 .I BINDING
@@ -545,63 +607,14 @@ to
 .IP quit
  Close current tab
  flags:
- \-f    close all tabs
-.IP "ds [\fIPATH\fR]"
- Get size of
-.I PATH
- flags:
- \-w
-.I NUM
-do actions in
-.I NUM
-tab
- \-s
-.I NUM
-use files only matching
-.I NUM
-group, when group is '-' then group do not matter, when group is '.' then group is current group, when group is 's' then only highlighted file is affected
- \-R    get size recursively for every directory
- \-r    get size recursively from every directory
- \-c    count files
- \-f    threat directories as a files
-.IP "fmod [\fIPATH\fR]"
- Delete, move or copy files
- flags:
- \-o
-.I PATH
-destination path
- \-w
-.I NUM
-do actions in
-.I NUM
-tab
- \-s
-.I NUM
-use files only matching
-.I NUM
-group, when group is '-' then group do not matter, when group is '.' then group is current group, when group is 's' then only highlighted file is affected
- \-c    if names colides then change name
- \-r    if names colides then replace files
- \-d    if names colides then ommit files
- \-m    if names of directories colides then merge them
- \-D    delete
- \-M    move
- \-C    copy
-.IP "load [\fIPATH\fR]"
- Load
-.I PATH
- flags:
- \-R    recursive
- \-m
-.I NUM
-for 0 loads once, for 1 when directories are changed, for 2 always loads
+    \-f    close all tabs
 .IP "set [\fIVARIABLE\fR] [\fIVALUE\fR]"
  Set or creates
 .I VARIABLE
 to
 .I VALUE
  flags:
- \-s    use string as
+    \-s    use string as
 .I VALUE
 .IP "rename [\fIFILE\fR]"
  Rename
@@ -613,73 +626,6 @@ to name specified in console
 with program specified in console
 .IP sort
  Sort current directory
-.IP "bulk [\fIPATH\fR]"
- Create script processing files in
-.I PATH
- flags:
- \-n    do not use comments
- \-N    use comments to show diffrent directories
- \-f    use full paths of files
- \-R    recursive
- \-w
-.I NUM
-do actions in
-.I NUM
-tab
- \-s
-.I NUM
-use files only matching
-.I NUM
-group, when group is '-' then group do not matter, when group is '.' then group is current group, when group is 's' then only highlighted file is affected
- \-S    specify shell
- \-E    specify editor
- \-f    part of command before first file
- \-m    part of command in middle of files
- \-e    part of command at the end
-.IP search
- Search for files in directory
- flags:
- \-s
-.I NUM
-use files only matching
-.I NUM
-group, when group is '-' then group do not matter, when group is '.' then group is current group
- \-p
-.I NUM
-go to previous results
- \-n
-.I NUM
-go to next results
- \-i    ignore case distinctions in pattern
- \-N
-.I PATTERN
-search for PATTERN
- \-G
-.I PATTERN
-search for PATTERN using regular expressions
- \-E
-.I PATTERN
-search for PATTERN using extended regular expressions
-.IP filter
- Filter files in directory
- flags:
- \-s
-.I NUM
-use files only matching
-.I NUM
-group, when group is '-' then group do not matter, when group is '.' then group is current group
- \-i    ignore case distinctions in pattern
- \-v    invert the sense of matching, to select non-matching names
- \-N
-.I PATTERN
-filter by PATTERN
- \-G
-.I PATTERN
-filter by PATTERN using regular expressions
- \-E
-.I PATTERN
-filter by PATTERN using extended regular expressions
-
 
 .SH AUTHOR
 TUVIMEN <suchora.dominik7@gmail.com>

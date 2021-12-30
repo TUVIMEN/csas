@@ -19,7 +19,7 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
 
-void console_getline(char **history, size_t size, char *first, char *add, csas *cs,
+void console_getline(char **history, size_t size, char *first, char *add, li offset, csas *cs,
     int (*expand)(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uchar *free_names, csas *cs));
 
 #endif

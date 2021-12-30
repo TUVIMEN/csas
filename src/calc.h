@@ -19,6 +19,10 @@
 #ifndef CALC_H
 #define CALC_H
 
+size_t get_bin(const char *v, li *n);
+size_t get_oct(const char *v, li *n);
+size_t get_dec(const char *v, li *n);
+size_t get_hex(const char *v, li *n);
 size_t calc(const char *v, li *n, flexarr *vars);
 
 #endif

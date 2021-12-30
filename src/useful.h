@@ -47,5 +47,7 @@ int ttoa(const time_t *time, char *result);
 uchar isbinfile(char *src, size_t size);
 char *lsperms(const mode_t mode);
 uchar get_extension_group(const char *name);
+size_t get_range(const char *src, ul *x, ul *y, size_t(handle_number)(const char*,ul*));
+char *strtoshellpath(char *src);
 
 #endif

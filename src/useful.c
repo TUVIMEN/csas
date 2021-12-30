@@ -253,6 +253,37 @@ ltoa(li num, char *result)
     result[n] = 0;
 }
 
+size_t
+get_range(const char *src, ul *x, ul *y, size_t(handle_number)(const char*,ul*))
+{
+    *x = 0;
+    *y = 0;
+    size_t pos = 0;
+
+    if (src[pos] == '-')
+        goto NEXT_VALUE;
+    if (src[pos] == '$') {
+        *x = -1;
+        pos++;
+        goto END;
+    }
+
+    pos += handle_number(src+pos,x);
+    if (src[pos] != '-')
+        goto END;
+
+    NEXT_VALUE: ;
+    pos++;
+    if (src[pos] == ' ') {
+        *y = -1;
+        goto END;
+    }
+    pos += handle_number(src+pos,y);
+
+    END: ;
+    return pos;
+}
+
 static int
 addvar(char *dest, char *src, size_t *x, size_t *y, const size_t max, size_t size, flexarr *vars)
 {
@@ -1087,11 +1118,15 @@ get_dirsize(const int fd, off_t *count, off_t *size, const uchar flags)
             continue;
 
         if (flags&D_R && dir->d_type == DT_DIR) {
-            if (faccessat(fd,dir->d_name,R_OK,0) != 0)
+            if (faccessat(fd,dir->d_name,R_OK,0) != 0) {
+                closedir(d);
                 return -1;
+            }
             tfd = openat(fd,dir->d_name,O_DIRECTORY);
-            if (tfd == -1)
+            if (tfd == -1) {
+                closedir(d);
                 return -1;
+            }
             get_dirsize(tfd,count,size,flags);
             close(tfd);
         }
@@ -1122,7 +1157,7 @@ mkpath(const char *dir, const char *name)
     return path;
 }
 
-static char *
+char *
 strtoshellpath(char *src)
 {
     size_t i,size=strlen(src);
@@ -1136,129 +1171,6 @@ strtoshellpath(char *src)
     }
     src[size] = 0;
     return src;
-}
-
-int
-bulk(csas *cs, const size_t tab, const int selected, char **args, const uchar flags)
-{
-    char tfile[PATH_MAX],*t;
-    strcpy(tfile,TTEMPLATE);
-    int fd = mkstemp(tfile);
-    FILE *file = fdopen(fd,"w+");
-    if (!file)
-        return -1;
-
-    size_t plen = strlen(args[0]);
-    uchar comment_write;
-
-    flexarr *dirs = cs->dirs;
-    xdir *dir = (xdir*)dirs->v;
-    for (size_t i = 0; i < dirs->size; i++) {
-        xdir *d = &dir[i];
-        if (d->size == 0 || (plen && (flags&0x2 ? plen > d->plen : plen != d->plen || memcmp(args[0],d->path,plen) != 0)))
-            continue;
-
-        comment_write = flags&0x4;
-        for (size_t j = 0; j < d->size; j++) {
-            if (selected < 0 ? 1 : (d->files[j].sel[tab]&(1<<selected))) {
-                if (!comment_write) {
-                    fprintf(file,"//\t%s\n",d->path);
-                    comment_write = 1;
-                }
-                t = (flags&0x1) ? mkpath(d->path,d->files[j].name) : d->files[j].name;
-                fprintf(file,"%s\n",t);
-            }
-        }
-    }
-
-    fflush(file);
-    size_t pos=0,x;
-    rewind(file);
-    struct stat statbuf;
-
-    if (fstat(fd,&statbuf) != 0)
-        goto ERROR;
-    if (statbuf.st_size == 0)
-        goto END;
-    if (spawn(args[2],tfile,NULL,F_NORMAL|F_WAIT) != 0)
-        goto ERROR;
-    if (fstat(fd,&statbuf) != 0)
-        goto ERROR;
-    if (statbuf.st_size == 0)
-        goto END;
-
-    char *filecopy = (char*)malloc(statbuf.st_size+1);
-    if (read(fd,filecopy,statbuf.st_size) == -1)
-        goto ERROR;
-    if (freopen(tfile,"w+",file) == NULL)
-        goto ERROR;
-
-    char path[PATH_MAX];
-    uchar writed = 0;
-
-    fprintf(file,"#!%s\n\n",args[1]);
-
-    for (size_t i = 0; i < dirs->size; i++) {
-        xdir *d = &dir[i];
-        if (d->size == 0 || (plen && (flags&0x2 ? plen > d->plen : plen != d->plen || memcmp(args[0],d->path,plen) != 0)))
-            continue;
-
-        for (size_t j = 0; j < d->size && filecopy[pos]; j++) {
-            if (selected < 0 ? 0 : !(d->files[j].sel[tab]&(1<<selected)))
-                continue;
-
-            while (filecopy[pos] == '\n') {
-                pos++;
-                j--;
-            }
-            if (!(flags&0x4) && filecopy[pos] == '/' && filecopy[pos+1] == '/') {
-                while (filecopy[pos] && filecopy[pos] != '\n')
-                    pos++;
-                j--;
-            } else {
-                x = 0;
-                while (x < PATH_MAX && filecopy[pos] && filecopy[pos] != '\n')
-                    path[x++] = filecopy[pos++];
-                path[x] = '\0';
-
-                t = (flags&0x1) ? mkpath(d->path,d->files[j].name) : d->files[j].name;
-                if (x > 0 && strcmp(t,path) != 0) {
-                    fprintf(file,"%s ",args[3]);
-                    if (!(flags&0x1))
-                        t = mkpath(d->path,t);
-                    strtoshellpath(t);
-                    fprintf(file,"%s %s ",t,args[4]);
-                    t = mkpath(d->path,path);
-                    strtoshellpath(t);
-                    fprintf(file,"%s %s\n",t,args[5]);
-                    writed = 1;
-                }
-            }
-            pos++;
-        }
-    }
-
-    fflush(file);
-    free(filecopy);
-
-    if (writed == 0)
-        goto END;
-
-    if (spawn(args[2],tfile,NULL,F_NORMAL|F_WAIT) != 0 ||
-        spawn(args[1],tfile,NULL,F_NORMAL|F_WAIT|F_CONFIRM) != 0)
-        goto ERROR;
-
-    END: ;
-    fclose(file);
-    unlink(tfile);
-    return 0;
-
-    ERROR: ;
-    int e = errno;
-    fclose(file);
-    unlink(tfile);
-    errno = e;
-    return -1;
 }
 
 int

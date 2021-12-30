@@ -1,5 +1,6 @@
 alias shell 'exec -ncw ${SHELL} -c $$'
-alias bulkrename 'bulk -n -S sh -E ${EDITOR} -b mv -s.'
+alias bulkrename 'scout -g - -- bulk -n -S /bin/sh -E ${EDITOR} -b mv'
+alias bulkrename_r 'scout -r -g - -- bulk -S /bin/sh -E ${EDITOR} -b mv'
 
 map <left> 'cd ..'
 map <right> 'file_run %f'
@@ -8,8 +9,8 @@ map <down> 'move -u'
 map s 'console "shell "'
 map S 'exec -nw ${SHELL}'
 map b "bulkrename"
-map Bb "bulkrename -N -R"
-map BB "bulkrename -n -R"
+map Bb "bulkrename_r -N"
+map BB "bulkrename_r -n"
 map K 'move -d LINES>>1'
 map J 'move -u LINES>>1'
 map V 'set Visual Visual^1'
@@ -28,6 +29,49 @@ map oB 'set SortMethod s_name|s_reverse|s_ddist|s_lddist'
 map Ms 'set LineMode l_size'
 map Mm 'set LineMode l_mtime'
 map Mp 'set LineMode l_perms'
+map gu 'cd /usr'
+map gv 'cd /var'
+map gp 'cd /tmp'
+map gs 'cd /srv'
+map go 'cd /opt'
+map gM 'cd /mnt'
+map ge 'cd /etc'
+map gd 'cd /dev'
+map vta 'scout -a -- select -T'
+map vth 'scout -- select -T'
+map vda 'scout -a -- select -D'
+map vdh 'scout -- select -D'
+map vea 'scout -a -- select -E'
+map veh 'scout -- select -E'
+map dct 'scout -- ds -s -C'
+map dCt 'scout -- ds -s -r -C'
+map dst 'scout -- ds -s -S'
+map dSt 'scout -- ds -s -r -S'
+map dft 'scout -- ds -s -F'
+map dch 'scout -type d -g - -- ds -C'
+map dCh 'scout -type d -g - -- ds -r -C'
+map dsh 'scout -type d -g - -- ds -S'
+map dSh 'scout -type d -g - -- ds -r -S'
+map dfh 'scout -type d -g - -- ds -F'
+map mm 'scout -a -g - -- fmod -M -c'
+map mr 'scout -a -g - -- fmod -M -r'
+map md 'scout -a -g - -- fmod -M -d'
+map mM 'scout -a -g - -- fmod -M -m -c'
+map mR 'scout -a -g - -- fmod -M -m -r'
+map mD 'scout -a -g - -- fmod -M -m -d'
+map pp 'scout -a -g - -- fmod -C -c'
+map pr 'scout -a -g - -- fmod -C -r'
+map pd 'scout -a -g - -- fmod -C -d'
+map pP 'scout -a -g - -- fmod -C -c -m'
+map pR 'scout -a -g - -- fmod -C -r -m'
+map pD 'scout -a -g - -- fmod -C -d -m'
+map Dd 'scout -a -g - -- fmod -D'
+map DD 'scout -g - -- fmod -D'
+map Dt 'scout -- fmod -s -D'
+map / 'console -n 9 "scout -G  -- list"'
+map n 'lmove -n 1'
+map N 'lmove -p 1'
+map f 'console -n 9 "scout -G  -- filter"'
 
 set -s Editor ${EDITOR}
 set BufferSize 1<<18
@@ -37,7 +81,7 @@ set JumpScroll 0
 set JumpScrollValue 0
 set DirSizeMethod d_c
 set SortMethod s_cname|s_ddist|s_lddist
-set DirLoadingMode dm_once
+set DirLoadingMode dm_once|d_follow
 set Color 1
 set HostnameInTitlebar 1
 set NumberLines 0

@@ -90,6 +90,7 @@
 #define D_MODE_ONCE 0x2 //load only once
 #define D_MODE_CHANGE 0x4 //load when ctime has changed
 #define D_RECURSIVE 0x8
+#define D_FOLLOW 0x10 // follow symlinks
 
 #define T_EXISTS 0x1
 
