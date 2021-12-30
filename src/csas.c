@@ -629,7 +629,7 @@ csas_run(csas *cs, int argc, char **argv)
             if (lstat(d->path,&statbuf) != 0)
                 continue;
             if (memcmp(&statbuf.st_ctim,&d->ctime,sizeof(struct timespec)) != 0) {
-                if (DirLoadingMode == D_MODE_ONCE)
+                if (DirLoadingMode&D_MODE_ONCE)
                     d->flags |= S_CHANGED;
                 else
                     getdir(d->path,cs->dirs,DirLoadingMode);
