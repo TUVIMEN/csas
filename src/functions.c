@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2022 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -827,7 +827,7 @@ cmd_scout(char *src, csas *cs)
                     for (size_t n = (size_t)t; n < dirs->size; n++)
                         *((size_t*)flexarr_inc(dir_list)) = n;
                 }
-                if (!(lflags&D_RECURSIVE))
+                if ((flags&fl_load) ? (lflags&D_RECURSIVE) : !(lflags&D_RECURSIVE))
                     break;
             }
         }

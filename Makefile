@@ -4,7 +4,7 @@ CFLAGS = -O3 -pipe -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
 LDFLAGS = 
 TARGET = csas
 
-PKG_CONFIG = pkg-config
+PKG_CONFIG ?= pkg-config
 
 O_REGEX := 1 # regex support
 
@@ -22,8 +22,8 @@ else
 	LDFLAGS += -lncurses
 endif
 
-PREFIX = /usr
-MANPREFIX = ${PREFIX}/share/man
+PREFIX ?= /usr
+MANPREFIX ?= ${PREFIX}/share/man
 BINDIR = ${DESTDIR}${PREFIX}/bin
 MANDIR = $(DESTDIR)${MANPREFIX}/man1
 
