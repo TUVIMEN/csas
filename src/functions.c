@@ -44,10 +44,10 @@ uint
 update_event(csas *cs)
 {
     int event;
-    size_t i,j,size = cs->bindings->size,n=0;
+    size_t i,j,size = cs->bindings->size%BINDINGS_QUANTITY,n=0;
     xbind *b = BINDINGS;
     uint passedl=size,tmp_passedl,
-         *passed = malloc(size*sizeof(uint));
+         *passed = malloc(BINDINGS_QUANTITY*sizeof(uint));
 
     for (i = 0; i < size; i++)
         passed[i] = i;

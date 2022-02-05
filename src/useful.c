@@ -1162,7 +1162,7 @@ strtoshellpath(char *src)
 {
     size_t i,size=strlen(src);
     for (i = 0; i < size && size < PATH_MAX; i++) {
-        if(src[i] == '\\' || src[i] == '\"' || src[i] == '\'' || src[i] == ' ' || src[i] == '(' || src[i] == ')' || src[i] == '[' || src[i] == ']' || src[i] == '{' || src[i] == '}' || src[i] == '|' || src[i] == '&' || src[i] == ';' || src[i] == '?' || src[i] == '~' || src[i] == '*' || src[i] == '!') {
+        if(src[i] == '\\' || src[i] == '\"' || src[i] == '\'' || src[i] == ' ' || src[i] == '(' || src[i] == ')' || src[i] == '[' || src[i] == ']' || src[i] == '{' || src[i] == '}' || src[i] == '|' || src[i] == '&' || src[i] == ';' || src[i] == '?' || src[i] == '~' || src[i] == '*' || src[i] == '!' || src[i] == '$') {
             for (size_t j = size++; j > i; j--)
                 src[j] = src[j-1];
             src[i] = '\\';
