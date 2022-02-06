@@ -24,19 +24,20 @@ void
 console_getline(char **history, size_t size, char *first, char *add, li offset, csas *cs,
     int (*expand)(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uchar *free_names, csas *cs))
 {
-    int ev;
-    size_t firstl=strlen(first),current_line=size-1,s,off=0,x=0;
-    char *h=history[current_line];
+    wint_t ev[2];
+    int r;
+    wchar_t line[LLINE_MAX],wfirst[64];
+    size_t firstl,current_line=size-1,s,off=0,x=0;
+    firstl = mbstowcs(wfirst,first,63);
+    s = mbstowcs(line,history[current_line],LLINE_MAX-1);
     uchar tabp=0,free_names=0;
-    s = strlen(h);
 
     curs_set(1);
 
     if (offset < 0)
         offset = 0;
     if (add) {
-        strcpy(h,add);
-        s = strlen(add);
+        s = mbstowcs(line+s,add,LLINE_MAX-s-1);
         if (!offset)
             x = s;
     }
@@ -51,15 +52,17 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
 
     for (;;) {
         mvhline(LINES-1,0,' ',COLS);
-        mvaddnstr(LINES-1,0,first,firstl);
-        addnstr(h+off,COLS-firstl);
+        mvaddnwstr(LINES-1,0,wfirst,firstl);
+        addnwstr(line+off,COLS-firstl);
         move(LINES-1,x+firstl-off);
         refresh();
 
-        ev = getinput(cs);
-        if (tabp && ev != '\t')
+        r = getinput_wch(ev,cs);
+        if (r != OK)
+            continue;
+        if (tabp && *ev != '\t')
             tabp = 0;
-        switch (ev) {
+        switch (*ev) {
             case -1: break;
             case '\t':
                 if (expand) {
@@ -75,9 +78,8 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
                 break;
             case KEY_UP:
             case ('p'&0x1f):
-                if (current_line > 0) {
-                    x = s = strlen(history[--current_line]);
-                    memcpy(h,history[current_line],s+1);
+                if (current_line > 0 && current_line) {
+                    x = s = mbstowcs(line,history[--current_line],LLINE_MAX);
                 }
                 break;
             case KEY_DOWN:
@@ -85,14 +87,13 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
                 if (current_line < size-1) {
                     current_line++;
                     if (current_line == size-1) {
-                        h[0] = 0;
+                        line[0] = 0;
                         x = 0;
                         off = 0;
                         s = 0;
                         break;
                     }
-                    s = x = strlen(history[current_line]);
-                    memcpy(h,history[current_line],s+1);
+                    x = s = mbstowcs(line,history[current_line],LLINE_MAX);
                 }
                 break;
             case ('a'&0x1f):
@@ -106,13 +107,13 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
                 break;
             case ESC:
             case ('r'&0x1f):
-                h[0] = 0;
+                line[0] = 0;
                 goto END;
             case KEY_BACKSPACE:
             case ('h'&0x1f):
                 if (s == 0)
                     goto END;
-                delchar(h,--x,s--);
+                delwc(line,--x,s--);
                 if (off != 0)
                     off--;
                 break;
@@ -120,10 +121,10 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
                 if (x <= 0)
                     goto END;
                 do {
-                    delchar(h,--x,s--);
+                    delwc(line,--x,s--);
                     if (off != 0)
                         off--;
-                } while (x != 0 && h[x-1] != ' ');
+                } while (x != 0 && line[x-1] != ' ');
                 break;
             case KEY_LEFT:
             case ('b'&0x1f):
@@ -144,13 +145,13 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
             case ('d'&0x1f):
                 if (s == 0 || x > s-1)
                     break;
-                delchar(h,x,s--);
+                delwc(line,x,s--);
                 break;
             default:
-                h[++s] = 0;
+                line[++s] = 0;
                 for (size_t i = s-1; i > x; i--)
-                    h[i] = h[i-1];
-                h[x++] = (char)ev;
+                    line[i] = line[i-1];
+                line[x++] = *ev;
                 if (x+firstl-off >= (size_t)COLS)
                     off++;
                 break;
@@ -165,4 +166,7 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
         flexarr_free(arg);
     }
     curs_set(0);
+    x = wcstombs(history[size-1],line,LLINE_MAX-1);
+    if (x >= LLINE_MAX-1)
+        history[size-1][LLINE_MAX-1] = 0;
 }

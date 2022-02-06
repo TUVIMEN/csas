@@ -51,8 +51,29 @@ getinput(csas *cs)
     return ret;
 }
 
+int
+getinput_wch(wint_t *wch, csas *cs)
+{
+    int ret;
+    timeout(-1);
+    while ((ret = get_wch(wch)) == KEY_RESIZE)
+        csas_resize(cs);
+    timeout(IdleDelay);
+    return ret;
+}
+
 char *
 delchar(char *src, const size_t pos, const size_t size)
+{
+  size_t s = size-1;
+  for (size_t i = pos; i < s; i++)
+    src[i] = src[i+1];
+  src[s] = 0;
+  return src;
+}
+
+wchar_t *
+delwc(wchar_t *src, const size_t pos, const size_t size)
 {
   size_t s = size-1;
   for (size_t i = pos; i < s; i++)

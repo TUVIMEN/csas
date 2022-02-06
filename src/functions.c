@@ -47,7 +47,7 @@ update_event(csas *cs)
     size_t i,j,size = cs->bindings->size%BINDINGS_QUANTITY,n=0;
     xbind *b = BINDINGS;
     uint passedl=size,tmp_passedl,
-         *passed = malloc(BINDINGS_QUANTITY*sizeof(uint));
+         passed[BINDINGS_QUANTITY*sizeof(uint)];
 
     for (i = 0; i < size; i++)
         passed[i] = i;
@@ -92,7 +92,6 @@ update_event(csas *cs)
         csas_draw(cs);
     }
     event = passed[0];
-    free(passed);
     return (uint)event;
 
     EXIT: ;
@@ -101,7 +100,6 @@ update_event(csas *cs)
         csas_draw(cs);
     }
     cs->typed[0] = 0;
-    free(passed);
     return -1;
 }
 
