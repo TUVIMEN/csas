@@ -23,14 +23,17 @@
 static int
 expand_files(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uchar *free_names, const uchar only_dir, csas *cs)
 {
-    char path[PATH_MAX],name[NAME_MAX],*r,*cline=line+pos;
-    size_t linel=strlen(cline),pathl;
-    r = get_path(path,cline,' ',linel,PATH_MAX,cs);
-    if (r == NULL)
-        return -1;
-    linel = r-cline+1;
-    if (cline[linel] != 0)
-        return -1;
+    char path[PATH_MAX],name[NAME_MAX],*r,*cline;
+    size_t linel,pathl;
+    do {
+        cline = line+pos;
+        linel = strlen(cline);
+        r = get_path(path,cline,' ',linel,PATH_MAX,cs);
+        if (r == NULL)
+            return -1;
+        linel = r-cline+1;
+        pos += linel+1;
+    } while (cline[linel] != 0);
 
     if (!(*tabp)) {
         if (arg->size) {

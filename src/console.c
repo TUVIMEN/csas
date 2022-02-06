@@ -66,10 +66,13 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
             case -1: break;
             case '\t':
                 if (expand) {
+                    r = wcstombs(history[current_line],line,LLINE_MAX-1);
+                    if (r >= LLINE_MAX-1)
+                        history[current_line][LLINE_MAX-1] = 0;
                     expand(history[current_line],0,&x,&tabp,arg,&free_names,cs);
-                    s = x;
+                    s = x = mbstowcs(line,history[current_line],LLINE_MAX);
                     /*if (tabp)
-                        x = strlen(history[current_line]);*/
+                        x = wcslen(history[current_line]);*/
                 }
                 break;
             case 10:
@@ -166,7 +169,7 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
         flexarr_free(arg);
     }
     curs_set(0);
-    x = wcstombs(history[size-1],line,LLINE_MAX-1);
-    if (x >= LLINE_MAX-1)
+    r = wcstombs(history[size-1],line,LLINE_MAX-1);
+    if (r >= LLINE_MAX-1)
         history[size-1][LLINE_MAX-1] = 0;
 }
