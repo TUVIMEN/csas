@@ -82,7 +82,7 @@ set WrapScroll 0
 set JumpScroll 0
 set JumpScrollValue 0
 set DirSizeMethod d_c
-set SortMethod s_cname|s_ddist|s_lddist
+set SortMethod s_vcname|s_ddist|s_lddist
 set DirLoadingMode dm_once|d_follow
 set Color 1
 set HostnameInTitlebar 1

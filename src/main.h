@@ -120,9 +120,10 @@
 #define SORT_NONE 0x0
 #define SORT_NAME 0x1
 #define SORT_CNAME 0x2
-#define SORT_SIZE 0x3
-#define SORT_MTIME 0x4
-#define SORT_TYPE 0x5
+#define SORT_VCNAME 0x3
+#define SORT_SIZE 0x4
+#define SORT_MTIME 0x5
+#define SORT_TYPE 0x6
 
 #define SORT_MT 0xf
 #define SORT_REVERSE 0x10

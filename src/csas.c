@@ -259,6 +259,7 @@ add_vars(flexarr *v)
     xvar_add(NULL,"s_none",'i'|0x80,(void*)SORT_NONE,v);
     xvar_add(NULL,"s_name",'i'|0x80,(void*)SORT_NAME,v);
     xvar_add(NULL,"s_cname",'i'|0x80,(void*)SORT_CNAME,v);
+    xvar_add(NULL,"s_vcname",'i'|0x80,(void*)SORT_VCNAME,v);
     xvar_add(NULL,"s_size",'i'|0x80,(void*)SORT_SIZE,v);
     xvar_add(NULL,"s_mtime",'i'|0x80,(void*)SORT_MTIME,v);
     xvar_add(NULL,"s_type",'i'|0x80,(void*)SORT_TYPE,v);
