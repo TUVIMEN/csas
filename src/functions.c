@@ -63,7 +63,7 @@ update_event(csas *cs)
                 mvprintw(LINES-2-j,0," %c\t%s",b[passed[j]].keys[i],b[passed[j]].value);
             }
         }
-        while ((event = getinput(cs)) == -1);
+        event = getinput(cs);
         cs->typed[n++] = (char)event;
         cs->typed[n] = 0;
         if (n >= NUM_MAX || event == ESC)

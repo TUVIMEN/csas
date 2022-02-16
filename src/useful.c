@@ -45,8 +45,10 @@ getinput(csas *cs)
 {
     int ret;
     timeout(-1);
-    while ((ret = getch()) == KEY_RESIZE)
+    while ((ret = getch()) == KEY_RESIZE && ret != OK)
         csas_resize(cs);
+    if (ret == ERR)
+        exit(1);
     timeout(IdleDelay);
     return ret;
 }
@@ -56,8 +58,10 @@ getinput_wch(wint_t *wch, csas *cs)
 {
     int ret;
     timeout(-1);
-    while ((ret = get_wch(wch)) == KEY_RESIZE)
+    while ((ret = get_wch(wch)) == KEY_RESIZE && ret != OK)
         csas_resize(cs);
+    if (ret == ERR)
+        exit(1);
     timeout(IdleDelay);
     return ret;
 }
@@ -734,7 +738,7 @@ xfork(uchar flags)
     }
 
     if (!(flags&F_WAIT))
-	waitpid(p,&status,0);
+	    waitpid(p,&status,0);
     return p;
 }
 
@@ -875,7 +879,7 @@ uchar
 isbinfile(char *src, size_t size)
 {
     for (register size_t i = 0; i < size; i++)
-        if ((src[i] < 0x07 || src[i] > 0xd) && (src[i] < 0x20 || src[i] > 0x7e))
+        if (src[i]&0x80)
             return 1;
     return 0;
 }
@@ -901,7 +905,7 @@ file_run(char *path, csas* cs)
     uchar bin = isbinfile(sig,sigl);
 
     for (register int i = 0; signatures[i].sig != NULL; i++) {
-        if ((signatures[i].flags&F_BIN) ? bin : !bin) {
+        if (!(((signatures[i].flags&F_BIN)==F_BIN)^bin)) {
             lseek(fd,signatures[i].offset,signatures[i].whence);
             if (signatures[i].len > SIG_MAX)
                 continue;
@@ -1183,7 +1187,7 @@ strtoshellpath(char *src)
 {
     size_t i,size=strlen(src);
     for (i = 0; i < size && size < PATH_MAX; i++) {
-        if(src[i] == '\\' || src[i] == '\"' || src[i] == '\'' || src[i] == ' ' || src[i] == '(' || src[i] == ')' || src[i] == '[' || src[i] == ']' || src[i] == '{' || src[i] == '}' || src[i] == '|' || src[i] == '&' || src[i] == ';' || src[i] == '?' || src[i] == '~' || src[i] == '*' || src[i] == '!' || src[i] == '$') {
+        if(src[i] == '\\' || src[i] == '\"' || src[i] == '\'' || src[i] == ' ' || src[i] == '(' || src[i] == ')' || src[i] == '[' || src[i] == ']' || src[i] == '{' || src[i] == '}' || src[i] == '|' || src[i] == '&' || src[i] == ';' || src[i] == '?' || src[i] == '~' || src[i] == '*' || src[i] == '!' || src[i] == '$' || src[i] == '#') {
             for (size_t j = size++; j > i; j--)
                 src[j] = src[j-1];
             src[i] = '\\';

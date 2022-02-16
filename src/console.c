@@ -58,12 +58,10 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
         refresh();
 
         r = getinput_wch(ev,cs);
-        if (r != OK)
-            continue;
         if (tabp && *ev != '\t')
             tabp = 0;
-        switch (*ev) {
-            case -1: break;
+        if (r == OK)
+            switch (*ev) {
             case '\t':
                 if (expand) {
                     r = wcstombs(history[current_line],line,LLINE_MAX-1);
@@ -75,17 +73,15 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
                         x = wcslen(history[current_line]);*/
                 }
                 break;
+            case KEY_ENTER:
             case 10:
             case '\r':
                 goto END;
                 break;
-            case KEY_UP:
             case ('p'&0x1f):
-                if (current_line > 0 && current_line) {
+                if (current_line > 0 && current_line)
                     x = s = mbstowcs(line,history[--current_line],LLINE_MAX);
-                }
                 break;
-            case KEY_DOWN:
             case ('n'&0x1f):
                 if (current_line < size-1) {
                     current_line++;
@@ -112,8 +108,7 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
             case ('r'&0x1f):
                 line[0] = 0;
                 goto END;
-            case KEY_BACKSPACE:
-            case ('h'&0x1f):
+            case '\b':
                 if (s == 0)
                     goto END;
                 delwc(line,--x,s--);
@@ -129,7 +124,6 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
                         off--;
                 } while (x != 0 && line[x-1] != ' ');
                 break;
-            case KEY_LEFT:
             case ('b'&0x1f):
                 if (x > 0) {
                     if (off != 0 && x+firstl-off == (size_t)COLS>>1)
@@ -137,7 +131,6 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
                     x--;
                 }
                 break;
-            case KEY_RIGHT:
             case ('f'&0x1f):
                 if (x < s) {
                     if (s > COLS-firstl-1 && off != s-COLS+firstl+1 && x+firstl-off == (size_t)COLS>>1)
@@ -157,6 +150,54 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
                 line[x++] = *ev;
                 if (x+firstl-off >= (size_t)COLS)
                     off++;
+                break;
+        } else switch (*ev) {
+            case KEY_UP:
+                if (current_line > 0 && current_line)
+                    x = s = mbstowcs(line,history[--current_line],LLINE_MAX);
+                break;
+            case KEY_DOWN:
+                if (current_line < size-1) {
+                    current_line++;
+                    if (current_line == size-1) {
+                        line[0] = 0;
+                        x = 0;
+                        off = 0;
+                        s = 0;
+                        break;
+                    }
+                    x = s = mbstowcs(line,history[current_line],LLINE_MAX);
+                }
+                break;
+            case KEY_BACKSPACE:
+                if (s == 0)
+                    goto END;
+                delwc(line,--x,s--);
+                if (off != 0)
+                    off--;
+                break;
+            case KEY_LEFT:
+                if (x > 0) {
+                    if (off != 0 && x+firstl-off == (size_t)COLS>>1)
+                        off--;
+                    x--;
+                }
+                break;
+            case KEY_RIGHT:
+                if (x < s) {
+                    if (s > COLS-firstl-1 && off != s-COLS+firstl+1 && x+firstl-off == (size_t)COLS>>1)
+                        off++;
+                    x++;
+                }
+                break;
+            case KEY_HOME:
+                x = 0;
+                off = 0;
+                break;
+            case KEY_END:
+                x = s;
+                if (s > COLS-firstl-1)
+                    off = s-COLS+firstl+1;
                 break;
         }
     }

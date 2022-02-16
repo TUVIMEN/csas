@@ -47,8 +47,9 @@ preview_get(xfile *f, csas *cs)
     int fd = open(f->name,O_RDONLY);
     if (fd == -1)
         return -1;
-    ssize_t r = read(fd,cs->preview,PATH_MAX>>1);
+    ssize_t r = read(fd,cs->preview,2048);
     if (isbinfile(cs->preview,r)) {
+        cs->preview[0] = 0;
         if (!(PreviewSettings&P_BFILE)) {
             close(fd);
             return 0;
