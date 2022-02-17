@@ -16,6 +16,4 @@ csas is a console file manager written in C. It is heavily inspired by [ranger](
  - Hackable
 
 ## Installation
-    git clone 'https://github.com/TUVIMEN/csas'
-    cd csas
-    sudo make install
+    make install
