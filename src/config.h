@@ -78,7 +78,7 @@ int sel_colors[] = {
     CYAN,MAGENTA,WHITE,BLACK
 };
 
-fext extensions[] = {
+const fext extensions[] = {
     //Video || Audio
     {"aiff",'V'},{"mkv",'V'},{"avi",'V'},{"flac",'V'},{"flv",'V'},
     {"m4a",'V'},{"m4b",'V'},{"m4p",'V'},{"mp2",'V'},{"avchd",'V'},
@@ -101,9 +101,10 @@ fext extensions[] = {
     {NULL,'\0'}
 };
 
-fsig signatures[] = {
+const fsig signatures[] = {
     { F_SILENT,                 0,      SEEK_SET,       "<svg",4,OP_SVG},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "%PDF",4,OP_DOC},
+    { F_SILENT|F_BIN,           0,      SEEK_SET,       "AT&TFORM",4,OP_DOC},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A",8,OP_IMAGE},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "\xFF\xD8",2,OP_IMAGE},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "BM",2,OP_IMAGE},

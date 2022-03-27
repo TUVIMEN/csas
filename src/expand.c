@@ -252,17 +252,14 @@ expand_vars(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uch
             matched_n = 0;
             for (int j = 0; v[i].name[j] && cline[j] && v[i].name[j] == cline[j]; j++)
                 matched_n++;
+            if (matched_n < best_match_n)
+                continue;
 
             if (matched_n > best_match_n) {
                 arg->size = 0;
                 best_match_n = matched_n;
-                goto ADD_TO_ARR;
             }
-
-            if (matched_n == best_match_n) {
-                ADD_TO_ARR: ;
-                *(size_t*)flexarr_inc(arg) = i;
-            }
+            *(size_t*)flexarr_inc(arg) = i;
         }
         arg->asize = 0;
         *tabp = 1;
