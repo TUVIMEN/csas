@@ -467,7 +467,7 @@ special_character(const char c)
 }
 
 char *
-get_path(char *dest, char *src, const char delim, size_t size, const size_t max, csas *cs)
+get_arg(char *dest, char *src, const char delim, size_t size, size_t *count, const size_t max, csas *cs) //get_arg
 {
     size_t pos=0,x=0;
     if (*src == '\'') {
@@ -483,9 +483,9 @@ get_path(char *dest, char *src, const char delim, size_t size, const size_t max,
         dest[x] = 0;
         pos += s+1;
     } else {
-        if (*src == '"') {
+        if (*src == '"')
             pos++;
-        } else if (*src == '~' && !isalnum(*(src+1))) {
+        if (src[pos] == '~' && (src[pos+1] == '/' || src[pos+1] == 0)) {
             pos++;
             char *r = getenv("HOME");
             size_t s = strlen(r);
@@ -511,79 +511,87 @@ get_path(char *dest, char *src, const char delim, size_t size, const size_t max,
             dest[x] = src[pos];
         }
         dest[x] = 0;
-        if (src[pos] == '"')
-            pos++;
-        pos--;
+        if (src[pos] != '"')
+            pos--;
         if (x > max || pos > size)
             return NULL;
     }
+    if (count)
+        *count = x;
     return src+pos;
 }
 
-void
-get_line(char *dest, char *src, size_t *pos, size_t size)
+size_t
+get_line(char *dest, char *src, size_t *count, size_t size)
 {
-    while (*pos < size && isspace(src[*pos]))
-        (*pos)++;
+    size_t pos = 0;
+    while (pos < size && isspace(src[pos]))
+        pos++;
     size_t x = 0;
 
-    while (*pos < size && x < LLINE_MAX) {
-        if (src[*pos] == '\\')
-            *pos += 2;
+    while (pos < size && x < LLINE_MAX) {
+        if (src[pos] == '\\')
+            pos += 2;
 
-        if (src[*pos] == '\n' || src[*pos] == '\r' || src[*pos] == ';') {
+        if (src[pos] == '\n' || src[pos] == '\r' || src[pos] == ';') {
             dest[x] = '\0';
             break;
         }
 
-        if (src[*pos] == '\'' || src[*pos] == '"') {
-            dest[x++] = src[(*pos)++];
-            char *t = (src[*pos-1] == '\'' ? seek_end_of_squote(src+*pos,size-*pos) :
-                seek_end_of_dquote(src+*pos,size-*pos));
+        if (src[pos] == '\'' || src[pos] == '"') {
+            dest[x++] = src[pos++];
+            char *t = (src[pos-1] == '\'' ? seek_end_of_squote(src+pos,size-pos) :
+                seek_end_of_dquote(src+pos,size-pos));
             if (t == NULL)
                 goto END;
-            size_t s = t-(src+*pos);
-            if (s > LLINE_MAX)
-                return;
-            memcpy(dest+x,src+*pos,s);
+            size_t s = t-(src+pos);
+            if (s > LLINE_MAX) {
+                if (count)
+                    *count = x;
+                return pos;
+            }
+            memcpy(dest+x,src+pos,s);
             x += s;
-            *pos += s;
+            pos += s;
             continue;
         }
 
-        if (src[*pos] == '/') {
-            if (src[*pos+1] == '/') {
-                (*pos) += 2;
-                while (*pos < size && x < LLINE_MAX) {
-                    if (src[*pos] == '\\') {
-                        if (++(*pos) >= size)
+        if (src[pos] == '/') {
+            if (src[pos+1] == '/') {
+                pos += 2;
+                while (pos < size && x < LLINE_MAX) {
+                    if (src[pos] == '\\') {
+                        if (++pos >= size)
                             break;
-                        if (++(*pos) >= size)
+                        if (++pos >= size)
                             break;
                         continue;
                     }
-                    if (src[*pos] == '\n')
+                    if (src[pos] == '\n')
                         break;
-                    (*pos)++;
+                    pos++;
                 }
-                (*pos)++;
-            } else if (src[*pos+1] == '*') {
-                *pos += 2;
-                while (*pos < size && (src[*pos] != '*' || src[*pos+1] != '/'))
-                    (*pos)++;
-                *pos += 3;
+                pos++;
+            } else if (src[pos+1] == '*') {
+                pos += 2;
+                while (pos < size && (src[pos] != '*' || src[pos+1] != '/'))
+                    pos++;
+                pos += 3;
             }
-            dest[x++] = src[(*pos)++];
+            dest[x++] = src[pos++];
             continue;
         }
 
-        dest[x++] = src[(*pos)++];
+        dest[x++] = src[pos++];
     }
     
     END: ;
     if (x >= LLINE_MAX)
         x = LLINE_MAX-1;
     dest[x] = 0;
+    if (count)
+        *count = x;
+    return pos;
 }
 
 int
@@ -608,11 +616,13 @@ config_load(const char *path, csas *cs)
 
     char line[LLINE_MAX];
     int r;
+    size_t s,count;
 
-    for (size_t pos = 0, i = 0; file[pos]; i++)
+    for (size_t pos = 0, i = 0; pos < (size_t)statbuf.st_size; i++)
     {
-        get_line(line,file,&pos,statbuf.st_size);
-        r = command_run(line,cs);
+        s = get_line(line,file+pos,&count,statbuf.st_size-pos);
+        pos += s;
+        r = command_run(line,count,cs);
         if (r != 0)
             fprintf(stderr,"%s: %s\n%lu:\t%s\n",path,strerror(errno),i+1,line);
         pos++;

@@ -28,7 +28,7 @@ expand_files(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uc
     do {
         cline = line+pos;
         linel = strlen(cline);
-        r = get_path(path,cline,' ',linel,PATH_MAX,cs);
+        r = get_arg(path,cline,' ',linel,NULL,PATH_MAX,cs);
         if (r == NULL)
             return -1;
         linel = r-cline+1;

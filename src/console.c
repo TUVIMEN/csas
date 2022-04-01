@@ -20,7 +20,7 @@
 #include "useful.h"
 #include "console.h"
 
-void
+size_t
 console_getline(char **history, size_t size, char *first, char *add, li offset, csas *cs,
     int (*expand)(char *line, size_t pos, size_t *size, uchar *tabp, flexarr *arg, uchar *free_names, csas *cs))
 {
@@ -213,4 +213,5 @@ console_getline(char **history, size_t size, char *first, char *add, li offset, 
     r = wcstombs(history[size-1],line,LLINE_MAX-1);
     if (r >= LLINE_MAX-1)
         history[size-1][LLINE_MAX-1] = 0;
+    return r;
 }

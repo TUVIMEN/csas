@@ -407,6 +407,7 @@ csas_init()
     ret->vars = flexarr_init(sizeof(xvar),VARS_INCR);
     ret->functions = flexarr_init(sizeof(xfunc),FUNCTIONS_INCR);
     ret->bindings = flexarr_init(sizeof(xbind),BINDINGS_INCR);
+    ret->args = flexarr_init(sizeof(char**),ARGS_INCR);
 
     add_functions(ret->functions);
     add_bindings(ret->bindings);
@@ -533,6 +534,7 @@ csas_run(csas *cs, int argc, char **argv)
 {
     char *path = ".", cf[PATH_MAX];
     char *conf = getenv("CSAS_HOME");
+    opterr = 0;
     if (!conf) {
         size_t s;
         conf = getenv("XDG_CONFIG_HOME");
@@ -609,7 +611,7 @@ csas_run(csas *cs, int argc, char **argv)
 
         REPEAT: ;
         if ((e = update_event(cs)) != -1) {
-            if (alias_run(BINDINGS[e].value,cs) == -1) {
+            if (alias_run(BINDINGS[e].value,strlen(BINDINGS[e].value),cs) == -1) {
                 printmsg(Error_C,"%s: %s",BINDINGS[e].value,strerror(errno));
                 refresh();
                 goto REPEAT;
@@ -691,6 +693,9 @@ csas_free(csas *cs)
     for (i = 0; i < cs->bindings->size; i++)
         xbind_free(&(((xbind*)cs->bindings->v)[i]));
     flexarr_free(cs->bindings);
+    for (i = 0; i < cs->args->size; i++)
+        free((((char**)cs->args->v)[i]));
+    flexarr_free(cs->args);
     for (i = 0; i < cs->consoleh->size; i++)
         free(((char**)cs->consoleh->v)[i]);
     flexarr_free(cs->consoleh);

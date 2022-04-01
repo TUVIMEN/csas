@@ -414,7 +414,7 @@ specify offset
 .IP "scout [\fIPATH\fR] -- [\fIFUNCTION\fR]"
  Scans for files
  Flags:
-    \-type
+    \-t
 .I C
         File is of type \fIC\fR:
         b           block (buffered) special
@@ -425,12 +425,12 @@ specify offset
         l           symbolic link
         s           socket
     \-f    load unloaded directories
-    \-perm
+    \-p
 .I MODE
         File's permission bits are exacly
 .I MODE
 (octal)
-    \-size \fIX\fR[bcwkMGTP]
+    \-s \fIX\fR[bcwkMGTP]
         File uses exacly
 .I X
 units of space. The following suffixes can be used:
@@ -442,9 +442,9 @@ units of space. The following suffixes can be used:
             'G' for gibibytes
             'T' for tebibytes
             'P' for pebibytes
-    \-size \fIX\fR-\fIY\fR
+    \-s \fIX\fR-\fIY\fR
         File uses from \fIX\fR to \fIY\fR units of space
-    \-mtime \fIX\fR[mhdwMY]
+    \-m \fIX\fR[mhdwMY]
         File's data has been modified in less than
 .I X
 units of time ago. The following suffixes can be used:
@@ -454,7 +454,7 @@ units of time ago. The following suffixes can be used:
             'w' for weeks
             'M' for months
             'Y' for years
-    \-mtime \fIX\fR-\fIY\fR
+    \-m \fIX\fR-\fIY\fR
         File's data has been modified in less than
 .I X
 and in more than
@@ -495,12 +495,12 @@ is set
 to
 .I Y
 are set
-    \-t
+    \-T
 .I X
         File's groups are set in
 .I X
 tab
-    \-t \fIX\fR-\fIY\fR
+    \-T \fIX\fR-\fIY\fR
         File's groups are set in tabs from
 .I X
 to
@@ -572,6 +572,8 @@ to
     fmod
         delete, move or copy files
         flags:
+            \-o \fIDEST\fR
+                set destination to DEST
             \-c    if name collides then change names
             \-r    if name collides then replace files
             \-d    if name collides then ommit files

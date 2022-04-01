@@ -104,42 +104,62 @@ update_event(csas *cs)
 }
 
 int
-alias_run(char *src, csas *cs)
+alias_run(char *src, size_t size, csas *cs)
 {
-    size_t size=strlen(src);
     if (size == 0)
         return -1;
 
     char line[LLINE_MAX];
+    size_t s,count;
     for (size_t i = 0; i < size; i++) {
-        get_line(line,src,&i,size);
-        command_run(line,cs);
+        s = get_line(line,src+i,&count,size-i);
+        i += s;
+        command_run(line,count,cs);
         i++;
     }
     return 0;
 }
 
 int
-command_run(char *src, csas *cs)
+splitargs(char *src, size_t size, csas *cs)
 {
-    size_t size=strlen(src),pos=0,t,s;
-    if (size == 0)
-        return 0;
+    char *r;
+    int argc = 0;
+    size_t count;
+    for (size_t i = 0; i < size; i++) {
+        while (isspace(src[i]) && i < size)
+            i++;
+        if ((int)cs->args->size == argc)
+            *((char**)flexarr_inc(cs->args)) = malloc(ARG_MAX);
+        r = get_arg(((char**)cs->args->v)[argc],src+i,' ',size-i,&count,ARG_MAX-1,cs);
+        if (r == NULL)
+            return argc;
+        ((char**)cs->args->v)[argc][count] = 0;
+        i = r-src;
+        argc++;
+    }
+    return argc;
+}
+
+int
+command_run(char *src, size_t size, csas *cs)
+{
+    size_t pos=0,t,s;
 
     while_is(isspace,src,pos,size);
     t = pos;
     while_isnt(isspace,src,pos,size);
     s = pos-t;
     while_is(isspace,src,pos,size);
-    
-    size = cs->functions->size;
+
     xfunc *functions = FUNCTIONS;
 
-
-    for (size_t i = 0; i < size; i++) {
+    for (size_t i = 0; i < cs->functions->size; i++) {
         if (s == strlen(functions[i].name) && memcmp(src+t,functions[i].name,s) == 0) {
             if (functions[i].type == 'f') {
-                int r = ((int (*)(char*,csas*))functions[i].func)(src+pos,cs);
+                int argc = splitargs(src+pos,size-pos,cs);
+                char **argv = (char**)cs->args->v;
+                int r = ((int (*)(int,char**,csas*))functions[i].func)(argc,argv,cs);
                 cs->typed[0] = 0;
                 return r;
             } else if (functions[i].type == 'a') {
@@ -155,7 +175,7 @@ command_run(char *src, csas *cs)
                 memcpy(line+s,src+pos,c);
                 s += c;
                 line[s] = 0;
-                return alias_run(line,cs);
+                return alias_run(line,s,cs);
             }
         }
     }
@@ -248,11 +268,11 @@ move_d(xdir *dir, size_t value, const size_t tab, const uchar flags)
 }
 
 int
-cmd_move(char *src, csas *cs)
+cmd_move(int argc, char **argv, csas *cs)
 {
-    uchar flags = MOVE_UP;
-    size_t value=(size_t)atol(cs->typed),pos=0,tab=cs->ctab;
-    size_t size = strlen(src);
+    ret_errno(argc<1,EINVAL,-1);
+    uchar mode = MOVE_UP;
+    size_t value=(size_t)atol(cs->typed),tab=cs->ctab;
     if (value == 0)
         value = 1;
 
@@ -261,37 +281,31 @@ cmd_move(char *src, csas *cs)
     if (dir->size == 0)
         return 0;
 
-    while (pos < size) {
-        if (src[pos] == '-') {
-            do {
-                pos++;
-                switch (src[pos]) {
-                    case 'u': flags = MOVE_UP; break; //up
-                    case 'd': flags = MOVE_DOWN; break; //down
-                    case 's': flags = MOVE_SET; value--; break; //set
-                    case 'w': //tab
-                        pos++;
-                        while (isspace(src[pos]))
-                            pos++;
-                        tab = (size_t)atol(src+pos);
-                        while (isdigit(src[pos]))
-                            pos++;
-                        if (tab < TABS)
-                            dir = &TAB(tab,1);
-                }
-            } while (src[pos] && !isspace(src[pos]));
-        } else if (src[pos] == '$') {
-            value = dir->size-1;
-        } else if (!isspace(src[pos])) {
-            pos += calc(src+pos,(li*)&value,cs->vars);
+    int opt;
+    optind = 0;
+    argc++;
+    argv--;
+    while ((opt = getopt(argc,argv,"udsw:")) != -1) {
+        switch (opt) {
+            case 'u': mode = MOVE_UP; break; //up
+            case 'd': mode = MOVE_DOWN; break; //down
+            case 's': mode = MOVE_SET; value--; break; //set
+            case 'w': //tab
+                tab = (size_t)atol(optarg);
+                if (tab < TABS)
+                    dir = &TAB(tab,1);
+                break;
         }
-        if (src[pos])
-            pos++;
-        while (isspace(src[pos]))
-            pos++;
+    }
+    if (optind < argc) {
+        if (*argv[optind] == '$') {
+            value = dir->size-1;
+        } else {
+            calc(argv[optind],(li*)&value,cs->vars);
+        }
     }
 
-    move_d(dir,value,cs->ctab,flags);
+    move_d(dir,value,cs->ctab,mode);
     if (MultipaneView && dir->size)
         preview_get(&dir->files[dir->sel[cs->ctab]],cs);
     return 0;
@@ -318,67 +332,45 @@ tab_d(size_t t, int sel, csas *cs)
 }
 
 int
-cmd_tab(char *src, csas *cs)
+cmd_tab(int argc, char **argv, csas *cs)
 {
-    size_t pos=0,tabc=cs->ctab;
-    int sel = -1;
-    while (src[pos]) {
-        while (isspace(src[pos]))
-            pos++;
-        if (src[pos] == '-' && src[pos+1] == 'g') {
-            pos += 2;
-            while (isspace(src[pos]))
-                pos++;
-            sel = atoi(src+pos);
-            while (isdigit(src[pos]))
-                pos++;
-            continue;
-        }
-        if (isdigit(src[pos])) {
-            tabc = (size_t)atol(src+pos);
-            while (isdigit(src[pos]))
-                pos++;
-            ret_errno(tabc>=TABS,ERANGE,-1);
-        }
+    ret_errno(argc<1,EINVAL,-1);
+    size_t tabc=cs->ctab;
+    int sel = -1,opt;
+    optind = 0;
+    argc++;
+    argv--;
+    while ((opt = getopt(argc,argv,"g:")) != -1) {
+        if (opt == 'g')
+            sel = atoi(optarg);
+    }
+    if (optind < argc) {
+        tabc = (size_t)atol(argv[optind]);
+        ret_errno(tabc>=TABS,ERANGE,-1);
     }
 
     return tab_d(tabc,sel,cs);
 }
 
 int
-cmd_console(char *src, csas *cs)
+cmd_console(int argc, char **argv, csas *cs)
 {
-    size_t pos = 0,s=strlen(src);
-    char add[PATH_MAX],first[NAME_MAX] = ":",*r;
+    size_t s;
+    char *add="",*first = ":";
+    int opt;
     li offset = -1;
-    add[0] = '\0';
 
-    while (src[pos]) {
-        while (isspace(src[pos]))
-            pos++;
-        if (src[pos] == '-') {
-            pos++;
-            if (src[pos] == 'f') {
-                pos++;
-                while (isspace(src[pos]))
-                    pos++;
-                r = get_path(first,src+pos,' ',s-pos,NAME_MAX,cs);
-                if (r == NULL)
-                    continue;
-                pos = r-src+1;
-            } else if (src[pos] == 'n') {
-                pos++;
-                while (isspace(src[pos]))
-                    pos++;
-                pos += calc(src+pos,&offset,cs->vars);
-            }
-        } else {
-            r = get_path(add,src+pos,' ',s-pos,PATH_MAX,cs);
-            if (r == NULL)
-                continue;
-            pos = r-src+1;
+    optind = 0;
+    argc++;
+    argv--;
+    while ((opt = getopt(argc,argv,"f:n:")) != -1) {
+        switch (opt) {
+            case 'f': first = optarg; break;
+            case 'n': calc(optarg,&offset,cs->vars); break;
         }
     }
+    if (optind < argc)
+        add = argv[optind];
 
     flexarr *history = cs->consoleh;
     if (history->size == HISTORY_MAX) {
@@ -390,9 +382,9 @@ cmd_console(char *src, csas *cs)
         *((char**)flexarr_inc(history)) = malloc(LLINE_MAX);
     ((char**)history->v)[history->size-1][0] = 0;
 
-    console_getline((char**)history->v,history->size,first,add,offset,cs,expand_commands);
+    s = console_getline((char**)history->v,history->size,first,add,offset,cs,expand_commands);
     char *line = ((char**)history->v)[history->size-1];
-    if (command_run(line,cs) != 0)
+    if (command_run(line,s,cs) != 0)
         printmsg(Error_C,"%s: %s",line,strerror(errno));
     size_t empty = 1;
     for (size_t i = 0; line[i]; i++) {
@@ -454,13 +446,13 @@ strtotime(const char *src, ul *num)
 }
 
 int
-cmd_scout(char *src, csas *cs)
+cmd_scout(int argc, char **argv, csas *cs)
 {
-    size_t s=strlen(src),rpathl,sizex,sizey;
+    size_t rpathl,sizex,sizey;
     static char *func_fmod_action_name[]={"delete","move","copy"};
-    char path_tmp[PATH_MAX],rpath[PATH_MAX],pattern[NAME_MAX],func_target[PATH_MAX];
+    char *path_tmp,rpath[PATH_MAX],*pattern,*func_target=NULL;
     uint flags = 0,func_flags=0;
-    int func_target_fd=-1,ret = -1,func_bulk_fd=-1
+    int func_target_fd=-1,ret=-1,func_bulk_fd=-1
     #ifdef REGEX
         ,regflags = 0
     #endif
@@ -472,9 +464,9 @@ cmd_scout(char *src, csas *cs)
     off_t func_fmod_count=0,func_fmod_size=0;
     time_t mtimex,mtimey;
     FILE *func_bulk_file = NULL;
-    char groupx,groupy=-2,tabx=cs->ctab,taby=-2,*func_buffer=NULL,func_bulk_shell[PATH_MAX]="",
-        func_bulk_editor[PATH_MAX]="",func_bulk_begin[PATH_MAX]="",func_bulk_middle[PATH_MAX]="",
-        func_bulk_end[PATH_MAX]="",func_groupx=cs->tabs[cs->ctab].sel,func_groupy=-2,
+    char groupx,groupy=-2,tabx=cs->ctab,taby=-2,*func_buffer=NULL,*func_bulk_shell="/bin/sh",
+        *func_bulk_editor="vim",*func_bulk_begin=NULL,*func_bulk_middle=NULL,
+        *func_bulk_end=NULL,func_groupx=cs->tabs[cs->ctab].sel,func_groupy=-2,
         func_tabx=cs->ctab,func_taby=-2,func_bulk_tfile[PATH_MAX],*func_bulk_filecopy=NULL;
     uchar lflags = DirLoadingMode,func=0,groups=0,func_groups=1<<func_groupx,func_ds_flags=D_S,
           func_fmod_flags = 0,func_bulk_comment_write=0;
@@ -518,24 +510,25 @@ cmd_scout(char *src, csas *cs)
         fufl_full = 0x800
     };
 
-    for (size_t i = 0,j; i < s; i++) {
-        if (src[i] == '-') {
-            i++;
-            if (src[i] == 'f') {
+    int opt;
+    optind = 0;
+    argv--;
+    argc++;
+    REPEAT: ;
+    while ((opt = getopt(argc,argv,"+t:farLPvip:s:m:l:N:G:E:g:T:")) != -1) {
+        switch (opt) {
+            case 'f':
                 flags |= fl_force;
-                i++;
-            } else if (memcmp(src+i,"perm",4) == 0) {
-                i += 4;
-                while_is(isspace,src,i,s);
+                break;
+            case 'p':
                 li t;
-                i += get_oct(src+i,&t);
+                get_oct(optarg,&t);
                 mode &= ~0777;
                 mode |= (mode_t)t&0777;
                 flags |= fl_mode;
-            } else if (memcmp(src+i,"type",4) == 0) {
-                i += 4;
-                while_is(isspace,src,i,s);
-                switch (src[i]) {
+                break;
+            case 't':
+                switch (*optarg) {
                     case 'f': mode |= S_IFREG; break;
                     case 'd': mode |= S_IFDIR; break;
                     case 'l': mode |= S_IFLNK; break;
@@ -544,52 +537,46 @@ cmd_scout(char *src, csas *cs)
                     case 'b': mode |= S_IFBLK; break;
                     case 'c': mode |= S_IFCHR; break;
                 }
-                i++;
                 flags |= fl_type;
-            } else if (memcmp(src+i,"size",4) == 0) {
-                i += 4;
-                while_is(isspace,src,i,s);
-                i += get_range(src+i,&sizex,&sizey,strtosize);
+                break;
+            case 's':
+                get_range(optarg,&sizex,&sizey,strtosize);
                 flags |= fl_size;
-            } else if (memcmp(src+i,"mtime",5) == 0) {
-                i += 5;
-                while_is(isspace,src,i,s);
-                i += get_range(src+i,(ul*)&mtimex,(ul*)&mtimey,strtotime);
+                break;
+            case 'm':
+                get_range(optarg,(ul*)&mtimex,(ul*)&mtimey,strtotime);
                 flags |= fl_mtime;
-            } else if (src[i] == 'a') {
+                break;
+            case 'a':
                 flags |= fl_all;
-                i++;
-            } else if (src[i] == 'r') { //load directories recursively
-                i++;
+                break;
+            case 'r': //load directories recursively
                 lflags |= D_RECURSIVE;
-            } else if (src[i] == 'l') {
+                break;
+            case 'l': {
                 flags |= fl_load;
-                i++;
-                while_is(isspace,src,i,s);
                 li t;
-                i += get_dec(src+i,&t);
+                get_dec(optarg,&t);
                 lflags &= ~(D_MODE_ALWAYS|D_MODE_CHANGE|D_MODE_ONCE);
                 switch (t) {
                     case 0: lflags |= D_MODE_ONCE; break;
                     case 1: lflags |= D_MODE_CHANGE; break;
                     case 2: lflags |= D_MODE_ALWAYS; break;
-                }
-            } else if (src[i] == 'L') { //follow symlinks
+                }}
+                break;
+            case 'L': //follow symlinks
                 lflags |= D_FOLLOW;
-                i++;
-            } else if (src[i] == 'P') { //never follow symlinks
+                break;
+            case 'P': //never follow symlinks
                 lflags &= ~D_FOLLOW;
-                i++;
-            } else if (src[i] == 'g') {
+                break;
+            case 'g':
                 flags |= fl_group;
-                i++;
-                while_is(isspace,src,i,s);
-                if (src[i] == '-') {
-                    i++;
+                if (*optarg == '-') {
                     groupx = cs->tabs[cs->ctab].sel;
                 } else {
                     ul t1,t2;
-                    i += get_range(src+i,&t1,&t2,(size_t(*)(const char*,ul*))get_dec);
+                    get_range(optarg,&t1,&t2,(size_t(*)(const char*,ul*))get_dec);
                     groupx = t1&7;
                     if (t2 == 0)
                         groupy = -2;
@@ -602,218 +589,51 @@ cmd_scout(char *src, csas *cs)
                     if (h > groupy)
                         break;
                 }
-            } else if (src[i] == 't') { //specify tabs to be searched
-                i++;
-                while_is(isspace,src,i,s);
+                break;
+            case 'T': { //specify tabs to be searched
                 ul t1,t2;
-                i += get_range(src+i,&t1,&t2,(size_t(*)(const char*,ul*))get_dec);
+                get_range(optarg,&t1,&t2,(size_t(*)(const char*,ul*))get_dec);
                 tabx = t1;
                 if (tabx >= TABS)
                     tabx = TABS-1;
-                if (t2 == 0)
+                if (t2 == 0) {
                     taby = -2;
-                else {
+                } else {
                     taby = t2;
                     if (taby >= TABS)
                         taby = TABS-1;
-                }
-            } else if (src[i] == 'v') {
-                i++;
+                }}
+                break;
+            case 'v':
                 flags |= fl_invert;
-            } else if (src[i] == 'i') {
-                i++;
+                break;
+            case 'i':
                 flags |= fl_insensitive;
                 #ifdef REGEX
                 regflags |= REG_ICASE;
                 #endif
-            } else if (src[i] == 'N' || src[i] == 'G' || src[i] == 'E') {
-                switch (src[i]) {
+                break;
+            case 'N':
+            case 'G':
+            case 'E':
+                switch (opt) {
                     case 'N': flags |= fl_name; break;
                     #ifdef REGEX
                     case 'E': regflags |= REG_EXTENDED; // fall through
                     case 'G': flags |= fl_regex; break;
                     #endif
                 }
-                i++;
-                while_is(isspace,src,i,s);
-                char *t = get_path(pattern,src+i,' ',s-i,PATH_MAX,cs);
-                i = t-src+1;
-            } else if (src[i] == '-') {
-                i++;
-                while_is(isspace,src,i,s);
-                if (memcmp(src+i,"list",4) == 0) {
-                    i += 4;
-                    func = func_list;
-                } else if (memcmp(src+i,"filter",6) == 0) {
-                    i += 6;
-                    func = func_filter;
-                } else if (memcmp(src+i,"select",6) == 0) {
-                    i += 6;
-                    func = func_select;
-                } else if (memcmp(src+i,"ds",2) == 0) {
-                    i += 2;
-                    func = func_ds;
-                } else if (memcmp(src+i,"bulk",4) == 0) {
-                    i += 4;
-                    func = func_bulk;
-                    strcpy(func_bulk_tfile,TTEMPLATE);
-                } else if (memcmp(src+i,"fmod",4) == 0) {
-                    i += 4;
-                    func = func_fmod;
-                }
-                if (src[i] && !isspace(src[i]))
-                    goto END1;
-                for (; i < s; i++) {
-                    while (i < s && isspace(src[i]))
-                        i++;
-                    if (src[i] == '-') {
-                        i++;
-                        if (src[i] == 'C') {
-                            i++;
-                            func_flags &= ~(fufl_copy|fufl_move|fufl_disable);
-                            func_flags |= fufl_clear|fufl_copy;
-                            func_ds_flags &= ~D_S;
-                            func_ds_flags |= D_C;
-                        } else if (src[i] == 'M') {
-                            i++;
-                            func_flags &= ~(fufl_copy|fufl_move|fufl_disable);
-                            func_flags |= fufl_move;
-                        } else if (src[i] == 'r') {
-                            i++;
-                            func_ds_flags |= D_R;
-                            func_fmod_flags |= M_REPLACE;
-                        } else if (src[i] == 'c') {
-                            i++;
-                            func_fmod_flags |= M_CHNAME;
-                        } else if (src[i] == 'n') {
-                            i++;
-                            func_flags |= fufl_no_comments;
-                        } else if (src[i] == 'N') {
-                            i++;
-                            func_flags &= ~fufl_no_comments;
-                        } else if (src[i] == 'f') {
-                            i++;
-                            func_flags |= fufl_full;
-                        } else if (src[i] == 'm') {
-                            i++;
-                            if (func == func_bulk) {
-                                while_is(isspace,src,i,s);
-                                char *t = get_path(func_bulk_middle,src+i,' ',s-i,PATH_MAX,cs);
-                                i = t-src+1;
-                            }
-                            func_fmod_flags |= M_MERGE;
-                        } else if (src[i] == 'b') {
-                            i++;
-                            while_is(isspace,src,i,s);
-                            char *t = get_path(func_bulk_begin,src+i,' ',s-i,PATH_MAX,cs);
-                            i = t-src+1;
-                        } else if (src[i] == 'e') {
-                            i++;
-                            while_is(isspace,src,i,s);
-                            char *t = get_path(func_bulk_end,src+i,' ',s-i,PATH_MAX,cs);
-                            i = t-src+1;
-                        } else if (src[i] == 'd') {
-                            i++;
-                            func_fmod_flags |= M_DCPY;
-                        } else if (src[i] == 'F') {
-                            i++;
-                            func_ds_flags |= D_F;
-                        } else if (src[i] == 'S') {
-                            i++;
-                            if (func == func_bulk) {
-                                while_is(isspace,src,i,s);
-                                char *t = get_path(func_bulk_shell,src+i,' ',s-i,PATH_MAX,cs);
-                                i = t-src+1;
-                            }
-                            func_ds_flags |= D_S;
-                        } else if (src[i] == 's') {
-                            i++;
-                            func_flags |= fufl_selected;
-                        } else if (src[i] == 'o') {
-                            func_flags |= fufl_target;
-                            i++;
-                            while_is(isspace,src,i,s);
-                            char *t = get_path(func_target,src+i,' ',s-i,PATH_MAX,cs);
-                            i = t-src+1;
-                        } else if (src[i] == 'E') {
-                            i++;
-                            if (func == func_bulk) {
-                                while_is(isspace,src,i,s);
-                                char *t = get_path(func_bulk_editor,src+i,' ',s-i,PATH_MAX,cs);
-                                i = t-src+1;
-                            }
-                            func_flags &= ~(fufl_enable|fufl_disable|fufl_toggle|fufl_set);
-                            func_flags |= fufl_enable;
-                        } else if (src[i] == 'D') {
-                            i++;
-                            func_flags &= ~(fufl_copy|fufl_move|fufl_disable);
-                            func_flags &= ~(fufl_enable|fufl_disable|fufl_toggle|fufl_set);
-                            func_flags |= fufl_disable|fufl_delete;
-                        } else if (src[i] == 'T') {
-                            i++;
-                            func_flags &= ~(fufl_enable|fufl_disable|fufl_toggle|fufl_set);
-                            func_flags |= fufl_toggle;
-                        } else if (src[i] == 'S') {
-                            i++;
-                            func_flags &= ~(fufl_enable|fufl_disable|fufl_toggle|fufl_set);
-                            func_flags |= fufl_set;
-                        } else if (src[i] == 'g') {
-                            i++;
-                            while_is(isspace,src,i,s);
-                            if (src[i] == '-') {
-                                i++;
-                                func_groupx = cs->tabs[cs->ctab].sel;
-                            } else {
-                                ul t1,t2;
-                                i += get_range(src+i,&t1,&t2,(size_t(*)(const char*,ul*))get_dec);
-                                func_groupx = t1&7;
-                                if (t2 == 0)
-                                    func_groupy = -2;
-                                else
-                                    func_groupy = t2&7;
-                            }
-                            func_groups = 0;
-                            for (uchar h = func_groupx; h != func_groupy+1; h++) {
-                                func_groups |= 1<<h;
-                                if (h > func_groupy)
-                                    break;
-                            }
-                        } else if (src[i] == 't') {
-                            i++;
-                            while_is(isspace,src,i,s);
-                            ul t1,t2;
-                            i += get_range(src+i,&t1,&t2,(size_t(*)(const char*,ul*))get_dec);
-                            func_tabx = t1;
-                            if (func_tabx >= TABS)
-                                func_tabx = TABS-1;
-                            if (t2 == 0)
-                                func_taby = -2;
-                            else {
-                                func_taby = t2;
-                                if (func_taby >= TABS)
-                                    func_taby = TABS-1;
-                            }
-                        }
-                    }
-                    while (i < s && !isspace(src[i]))
-                        i++;
-                }
+                pattern = optarg;
                 break;
-            }
-            continue;
         }
-        if (isspace(src[i]))
-            continue;
+    }
 
-
-        char *r = get_path(path_tmp,src+i,' ',s-i,PATH_MAX,cs);
-        i = r-src+1;
-        if (r == NULL)
-            continue;
+    if (optind < argc && (argv[optind-1][0] != '-' || argv[optind-1][1] != '-' || argv[optind-1][2] != 0)) {
+        path_tmp = argv[optind];
         realpath(path_tmp,rpath);
         rpathl = strlen(rpath);
         uchar found = 0;
-        for (j = 0; j < dirs->size; j++) {
+        for (size_t j = 0; j < dirs->size; j++) {
             if (((lflags&D_RECURSIVE) ? (rpathl <= dir[j].plen && (dir[j].path[rpathl] == '/' || dir[j].path[rpathl] == 0)) : rpathl == dir[j].plen) && memcmp(dir[j].path,rpath,rpathl) == 0) {
                 found = 1;
                 *((size_t*)flexarr_inc(dir_list)) = j;
@@ -837,8 +657,149 @@ cmd_scout(char *src, csas *cs)
                 dir = (xdir*)dirs->v;
                 for (size_t n = (size_t)t; n < dirs->size; n++)
                     *((size_t*)flexarr_inc(dir_list)) = n;
-            } else
+            } else {
                 goto END1;
+            }
+        }
+        optind++;
+        if (optind < argc)
+            goto REPEAT;
+    }
+
+    if (optind < argc) {
+        const struct { char *name; uint func; uchar size; } func_names[] = {
+            {"list",func_list,4},{"filter",func_filter,6},
+            {"select",func_select,6},{"ds",func_ds,2},
+            {"bulk",func_bulk,4},{"fmod",func_fmod,4}
+        };
+        size_t s = strlen(argv[optind]);
+        for (size_t j = 0; j < LENGHT(func_names); j++) {
+            if (s == (size_t)func_names[j].size && memcmp(func_names[j].name,argv[optind],s) == 0) {
+                func = func_names[j].func;
+                break;
+            }
+        }
+        if (func == func_bulk)
+            strcpy(func_bulk_tfile,TTEMPLATE);
+        optind++;
+        if (func == func_bulk) {
+            while ((opt = getopt(argc,argv,"nNfS:E:b:m:e:")) != -1) {
+                switch (opt) {
+                    case 'n':
+                        func_flags |= fufl_no_comments;
+                        break;
+                    case 'N':
+                        func_flags &= ~fufl_no_comments;
+                        break;
+                    case 'f':
+                        func_flags |= fufl_full;
+                        break;
+                    case 'm':
+                        func_bulk_middle = optarg;
+                        break;
+                    case 'S':
+                        func_bulk_shell = optarg;
+                        break;
+                    case 'E':
+                        func_bulk_editor = optarg;
+                        break;
+                    case 'b':
+                        func_bulk_begin = optarg;
+                        break;
+                    case 'e':
+                        func_bulk_end = optarg;
+                        break;
+                }
+            }
+        } else {
+            while ((opt = getopt(argc,argv,"CMrcmdFSst:o:EDTsg:T")) != -1) {
+                switch (opt) {
+                    case 'C':
+                        func_flags &= ~(fufl_copy|fufl_move|fufl_disable);
+                        func_flags |= fufl_clear|fufl_copy;
+                        func_ds_flags &= ~D_S;
+                        func_ds_flags |= D_C;
+                        break;
+                    case 'M':
+                        func_flags &= ~(fufl_copy|fufl_move|fufl_disable);
+                        func_flags |= fufl_move;
+                        break;
+                    case 'r':
+                        func_ds_flags |= D_R;
+                        func_fmod_flags |= M_REPLACE;
+                        break;
+                    case 'c':
+                        func_fmod_flags |= M_CHNAME;
+                        break;
+                    case 'm':
+                        func_fmod_flags |= M_MERGE;
+                        break;
+                    case 'd':
+                        func_fmod_flags |= M_DCPY;
+                        break;
+                    case 'F':
+                        func_ds_flags |= D_F;
+                        break;
+                    case 'S':
+                        func_flags &= ~(fufl_enable|fufl_disable|fufl_toggle|fufl_set);
+                        func_flags |= fufl_set;
+                        func_ds_flags |= D_S;
+                        break;
+                    case 's':
+                        func_flags |= fufl_selected;
+                        break;
+                    case 'o':
+                        func_flags |= fufl_target;
+                        func_target = optarg;
+                        break;
+                    case 'E':
+                        func_flags &= ~(fufl_enable|fufl_disable|fufl_toggle|fufl_set);
+                        func_flags |= fufl_enable;
+                        break;
+                    case 'D':
+                        func_flags &= ~(fufl_copy|fufl_move|fufl_disable);
+                        func_flags &= ~(fufl_enable|fufl_disable|fufl_toggle|fufl_set);
+                        func_flags |= fufl_disable|fufl_delete;
+                        break;
+                    case 'T':
+                        func_flags &= ~(fufl_enable|fufl_disable|fufl_toggle|fufl_set);
+                        func_flags |= fufl_toggle;
+                        break;
+                    case 'g':
+                        if (*optarg == '-') {
+                            func_groupx = cs->tabs[cs->ctab].sel;
+                        } else {
+                            ul t1,t2;
+                            get_range(optarg,&t1,&t2,(size_t(*)(const char*,ul*))get_dec);
+                            func_groupx = t1&7;
+                            if (t2 == 0)
+                                func_groupy = -2;
+                            else
+                                func_groupy = t2&7;
+                        }
+                        func_groups = 0;
+                        for (uchar h = func_groupx; h != func_groupy+1; h++) {
+                            func_groups |= 1<<h;
+                            if (h > func_groupy)
+                                break;
+                        }
+                        break;
+                    case 't':
+                        ul t1,t2;
+                        get_range(optarg,&t1,&t2,(size_t(*)(const char*,ul*))get_dec);
+                        func_tabx = t1;
+                        if (func_tabx >= TABS)
+                            func_tabx = TABS-1;
+                        if (t2 == 0) {
+                            func_taby = -2;
+                        } else {
+                            func_taby = t2;
+                            if (func_taby >= TABS)
+                                func_taby = TABS-1;
+                        }
+                        break;
+                }
+            }
         }
     }
 
@@ -1251,14 +1212,19 @@ cmd_scout(char *src, csas *cs)
 
                         char *t = (func_flags&fufl_full) ? mkpath(d->path,f->name) : f->name;
                         if (x > 0 && strcmp(t,func_bulk_path) != 0) {
-                            fprintf(func_bulk_file,"%s ",func_bulk_begin);
+                            if (func_bulk_begin)
+                                fprintf(func_bulk_file,"%s ",func_bulk_begin);
                             if (!(func_flags&fufl_full))
                                 t = mkpath(d->path,t);
                             strtoshellpath(t);
-                            fprintf(func_bulk_file,"%s %s ",t,func_bulk_middle);
+                            fprintf(func_bulk_file,"%s ",t);
+                            if (func_bulk_middle)
+                                fprintf(func_bulk_file,"%s ",t,func_bulk_middle);
                             t = mkpath(d->path,func_bulk_path);
                             strtoshellpath(t);
-                            fprintf(func_bulk_file,"%s %s\n",t,func_bulk_end);
+                            fprintf(func_bulk_file,"%s\n",t);
+                            if (func_bulk_end)
+                                fprintf(func_bulk_file,"%s %s\n",t,func_bulk_end);
                             writed = 1;
                         }
                     }
@@ -1306,158 +1272,107 @@ cmd_scout(char *src, csas *cs)
 }
 
 int
-cmd_source(char *src, csas *cs)
+cmd_source(int argc, char **argv, csas *cs)
 {
-    char path[PATH_MAX];
-    size_t size=strlen(src),pos=0;
-    while_is(isspace,src,pos,size);
-    if (get_path(path,src+pos,' ',size-pos,PATH_MAX,cs) == NULL) {
-        errno = ENOENT;
-        return -1;
-    }
-    
+    ret_errno(argc<1,EINVAL,-1);
     endwin();
-    int r = config_load(path,cs);
-    int e = errno;
+    int r = config_load(argv[0],cs);
     refresh();
+    int e = errno;
     errno = e;
     return r;
 }
 
 int
-cmd_cd(char *src, csas *cs)
+cmd_cd(int argc, char **argv, csas *cs)
 {
-    size_t size=strlen(src),pos = 0;
-    char path[PATH_MAX];
-    while_is(isspace,src,pos,size);
-    if (get_path(path,src+pos,' ',size-pos,PATH_MAX,cs) == NULL) {
-        errno = ENOENT;
-        return -1;
-    }
-
-    return csas_cd(path,cs);
+    ret_errno(argc<1,EINVAL,-1);
+    return csas_cd(argv[0],cs);
 }
 
 int
-cmd_file_run(char *src, csas *cs)
+cmd_file_run(int argc, char **argv, csas *cs)
 {
-    char path[PATH_MAX];
-    size_t size=strlen(src),pos=0;
-    while_is(isspace,src,pos,size);
-    if (get_path(path,src+pos,' ',size-pos,PATH_MAX,cs) == NULL) {
-        errno = ENOENT;
-        return -1;
-    }
-
+    ret_errno(argc<1,EINVAL,-1);
     struct stat statbuf;
-    if (stat(path,&statbuf) != 0)
+    if (stat(argv[0],&statbuf) != 0)
         return -1;
     if ((statbuf.st_mode&S_IFMT) != S_IFDIR)
-        return file_run(path,cs);
+        return file_run(argv[0],cs);
 
-    return csas_cd(path,cs);
+    return csas_cd(argv[0],cs);
 }
 
 int
-cmd_exec(char *src, csas *cs)
+cmd_exec(int argc, char **argv, csas *cs)
 {
-    size_t pos = 0;
+    ret_errno(argc<1,EINVAL,-1);
+    int opt;
     uchar flags = F_MULTI;
-    char line[LLINE_MAX];
 
-    while (src[pos]) {
-        if (src[pos] == '-') {
-            do {
-                pos++;
-                switch (src[pos]) {
-                    case 's': flags |= F_SILENT; break;
-                    case 'n': flags |= F_NORMAL; break;
-                    case 'c': flags |= F_CONFIRM; break;
-                    case 'w': flags |= F_WAIT; break;
-                }
-            } while (src[pos] && !isspace(src[pos]));
-        } else if (!isspace(src[pos])) {
-            char *r = get_path(line,src+pos,'\0',strlen(src+pos),LLINE_MAX,cs);
-            if (r == NULL) {
-                pos++;
-                continue;
-            }
-            pos = r-src+1;
-            break;
+    optind = 0;
+    argc++;
+    argv--;
+    while ((opt = getopt(argc,argv,"+sncw")) != -1) {
+        switch (opt) {
+            case 's': flags |= F_SILENT; break;
+            case 'n': flags |= F_NORMAL; break;
+            case 'c': flags |= F_CONFIRM; break;
+            case 'w': flags |= F_WAIT; break;
         }
-        while (src[pos] && isspace(src[pos]))
-            pos++;
     }
+    char line[LLINE_MAX];
+    size_t s,pos=0;
+    for (int i = optind; i < argc; i++) {
+        s = strlen(argv[i]);
+        memcpy(line+pos,argv[i],s);
+        line[pos+++s] = ' ';
+        pos += s;
+    }
+    line[pos-1] = 0;
     return spawn(line,NULL,NULL,flags);
 }
 
 int
-cmd_alias(char *src, csas *cs)
+cmd_alias(int argc, char **argv, csas *cs)
 {
-    size_t pos=0,s=strlen(src);
-    char name[FUNCTIONS_NAME_MAX],line[LLINE_MAX],*r;
-
-    while (isspace(src[pos]))
-        pos++;
-
-    r = get_path(name,src+pos,' ',s-pos,FUNCTIONS_NAME_MAX,cs);
-    ret_errno(r==NULL,EINVAL,-1);
-    pos = r-src+1;
-
-    while (isspace(src[pos]))
-        pos++;
-
-    r = get_path(line,src+pos,' ',s-pos,LLINE_MAX,cs);
-    ret_errno(r==NULL,EINVAL,-1);
-    return xfunc_add(name,'a',strdup(line),NULL,cs->functions);
+    ret_errno(argc<2,EINVAL,-1);
+    return xfunc_add(argv[0],'a',strdup(argv[1]),NULL,cs->functions);
 }
 
 int
-cmd_map(char *src, csas *cs)
+cmd_map(int argc, char **argv, csas *cs)
 {
-    size_t pos = 0;
-    char keys[BINDING_KEY_MAX],line[PATH_MAX],*r;
-
-    while (isspace(src[pos]))
-        pos++;
-
-    r = get_path(keys,src+pos,' ',strlen(src+pos),BINDING_KEY_MAX,cs);
-    ret_errno(r==NULL,EINVAL,-1);
-    pos = r-src+1;
-
-    while (isspace(src[pos]))
-        pos++;
-
-    r = get_path(line,src+pos,' ',strlen(src+pos),PATH_MAX,cs);
-    ret_errno(r==NULL,EINVAL,-1);
-    pos = r-src+1;
-
-    return xbind_add(keys,line,cs->bindings);
+    ret_errno(argc<2,EINVAL,-1);
+    return xbind_add(argv[0],argv[1],cs->bindings);
 }
 
 int
-cmd_quit(char *src, csas *cs)
+cmd_quit(int argc, char **argv, csas *cs)
 {
-    int n=0;
-    size_t i,pos=0;
-    while (isspace(src[pos]))
-        pos++;
-    if (src[0] == '-' && src[1] == 'f')
-        goto END;
+    size_t i;
+    int n=0,opt;
+    optind = 0;
+    argc++;
+    argv--;
+    while ((opt = getopt(argc,argv,"f")) != -1) {
+        if (opt == 'f')
+            goto END;
+    }
 
     for (i = 0; i < TABS; i++)
-        n += cs->tabs[i].flags&T_EXISTS;
-
-    cs->tabs[cs->ctab].flags &= ~T_EXISTS;
-
-    if (n > 1) {
-        for (i = cs->ctab+1; i < TABS; i++)
-            if (cs->tabs[i].flags&T_EXISTS)
-                return tab_d(i,-1,cs);
-        for (i = 0; i < cs->ctab; i++)
-            if (cs->tabs[i].flags&T_EXISTS)
-                return tab_d(i,-1,cs);
-    }
+         n += cs->tabs[i].flags&T_EXISTS;
+ 
+     cs->tabs[cs->ctab].flags &= ~T_EXISTS;
+ 
+     if (n > 1) {
+         for (i = cs->ctab+1; i < TABS; i++)
+             if (cs->tabs[i].flags&T_EXISTS)
+                 return tab_d(i,-1,cs);
+         for (i = 0; i < cs->ctab; i++)
+             if (cs->tabs[i].flags&T_EXISTS)
+                 return tab_d(i,-1,cs);
+     }
 
     END: ;
     Exit = 1;
@@ -1466,77 +1381,47 @@ cmd_quit(char *src, csas *cs)
 
 
 int
-cmd_set(char *src, csas *cs)
+cmd_set(int argc, char **argv, csas *cs)
 {
-    size_t pos=0,s=strlen(src);
-    char name[VARS_NAME_MAX],val[PATH_MAX],*r;
-    name[0] = 0;
-    val[0] = 0;
+    ret_errno(argc<2,EINVAL,-1);
     uchar string=0;
+    char *name=NULL,*val=NULL;
+    int n=0;
+    if (argv[n][0] == '-' && argv[n][1] == 's')
+        string = 1;
+    name = argv[n++];
+    if (n < argc)
+        val = argv[n];
 
-    while (pos < s) {
-        if (src[pos] == '-' && src[pos+1] == 's') {
-            string = 1;
-            pos += 2;
-        } else {
-            if (name[0] == 0)
-                r = get_path(name,src+pos,' ',s-pos,VARS_NAME_MAX,cs);
-            else
-                r = get_path(val,src+pos,' ',s-pos,PATH_MAX,cs);
-            if (r == NULL)
-                continue;
-            pos = r-src+1;
-        }
-        pos++;
-        while (isspace(src[pos]))
-            pos++;
-    }
-
-    ret_errno(!name[0]||!val[0],EINVAL,-1);
+    ret_errno(!name||!val||!*name||!*val,EINVAL,-1);
     return xvar_add(NULL,name,string == 0 ? 'i' : 's',val,cs->vars);
 }
 
 int
-cmd_rename(char *src, csas *cs)
+cmd_rename(int argc, char **argv, csas *cs)
 {
-    char name[2][NAME_MAX],*n;
-    size_t pos=0;
+    ret_errno(argc<1,EINVAL,-1);
+    char name[NAME_MAX],*n=name;
 
-    while (isspace(src[pos]))
-        pos++;
-    if (get_path(name[0],src+pos,'\0',strlen(src)-pos,NAME_MAX,cs) == NULL)
-        return -1;
-
-    n = name[1];
-    console_getline(&n,1,"rename ",(char*)name[0],-1,cs,NULL);
-    return rename((char*)name[0],(char*)name[1]);
+    console_getline(&n,1,"rename ",argv[0],-1,cs,NULL);
+    return rename(argv[0],n);
 }
 
 int
-cmd_open_with(char *src, csas *cs)
+cmd_open_with(int argc, char **argv, csas *cs)
 {
-    char file[PATH_MAX],path[PATH_MAX],*n;
-    size_t pos=0;
-
-    while (isspace(src[pos]))
-        pos++;
-    if (get_path(file,src+pos,'\0',strlen(src)-pos,PATH_MAX,cs) == NULL)
-        return -1;
-    if (access(file,R_OK) != 0)
+    ret_errno(argc<1,EINVAL,-1);
+    char path[PATH_MAX],*n=path;
+    if (access(argv[0],W_OK) != 0)
         return -1;
 
-    n = path;
-    n[0] = 0;
-    console_getline(&n,1,"open_with ",NULL,-1,cs,expand_shell_commands);
-    pos = 0;
-    while (n[pos] && !isspace(n[pos]))
-        pos++;
-    n[pos] = 0;
-    return spawn(n,file,NULL,F_NORMAL|F_WAIT);
+    size_t r = console_getline(&n,1,"open_with ",NULL,-1,cs,expand_shell_commands);
+    n[r] = 0;
+    return spawn(n,argv[0],NULL,F_NORMAL|F_WAIT);
 }
 
 int
-cmd_sort(char *src, csas *cs)
+cmd_sort(int argc, char **argv, csas *cs)
 {
     xdir *dir = &CTAB(1);
     if (dir->size > 0) {
@@ -1547,39 +1432,35 @@ cmd_sort(char *src, csas *cs)
 }
 
 int
-cmd_lmove(char *src, csas *cs)
+cmd_lmove(int argc, char **argv, csas *cs)
 {
+    ret_errno(argc<1,EINVAL,-1);
     xdir *dir = &CTAB(1);
     if (dir->size == 0)
         return 0;
     xfile *files = dir->files;
-    size_t pos=0,mul=(size_t)atol(cs->typed),ctab=cs->ctab;
+    size_t mul=(size_t)atol(cs->typed),ctab=cs->ctab;
     if (mul == 0)
         mul = 1;
     uchar flags = 0;
     char **searchl = (char**)dir->searchlist->v;
+    int opt;
 
-    while (src[pos]) {
-        if (src[pos] == '-') {
-            do {
-                pos++;
-                switch (src[pos]) {
-                    case 'p': //previous
-                    case 'n': //next
-                        flags = (src[pos] == 'n' ? 0x2 : 0x1);
-                        pos++;
-                        while (isspace(src[pos]))
-                            pos++;
-                        pos += calc(src+pos,(li*)&mul,cs->vars);
-                        break;
-                }
-            } while (src[pos] && !isspace(src[pos]));
+    optind = 0;
+    argc++;
+    argv--;
+    while ((opt = getopt(argc,argv,"n:p:")) != -1) {
+        switch (opt) {
+            case 'n':
+                flags = 0x2;
+                calc(optarg,(li*)&mul,cs->vars);
+                break;
+            case 'p':
+                flags = 0x1;
+                calc(optarg,(li*)&mul,cs->vars);
+                break;
         }
-        pos++;
-        while (isspace(src[pos]))
-            pos++;
     }
-
     if (flags == 0)
         return 0;
 

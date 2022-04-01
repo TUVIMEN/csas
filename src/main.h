@@ -70,6 +70,8 @@
 #define HEIGHT LINES-2
 #define TABS 10
 #define EXEC_ARGS_MAX (1<<7)
+#define ARG_MAX 6144
+#define ARGS_INCR (1<<5)
 #define BUFFER_MAX (1<<16)
 #define SIG_MAX (1<<10)
 
@@ -161,6 +163,7 @@
 #define OP_DOC "zathura"
 #define OP_SVG "eog"
 
+#define LENGHT(x) (sizeof(x)/sizeof(*x))
 #define ret_errno(x,y,z) if (x) { errno = (y); return (z); }
 #define while_is(w,x,y,z) while ((y) < (z) && (w)((x)[(y)])) {(y)++;}
 #define while_isnt(w,x,y,z) while ((y) < (z) && !(w)((x)[(y)])) {(y)++;}
@@ -254,6 +257,7 @@ typedef struct {
     flexarr *functions;
     flexarr *vars;
     flexarr *consoleh;
+    flexarr *args;
     WINDOW *wins[3];
     char typed[NUM_MAX];
     uchar ctab;
