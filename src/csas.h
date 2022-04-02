@@ -21,7 +21,7 @@
 
 csas *csas_init();
 void csas_resize(csas *cs);
-int csas_run(csas *cs, int argc, char **argv);
+void wins_resize(WINDOW **wins);
 int csas_cd(const char *path, csas* cs);
 void csas_draw(csas *cs);
 void csas_free(csas *cs);

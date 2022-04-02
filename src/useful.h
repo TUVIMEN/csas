@@ -37,7 +37,8 @@ int config_load(const char *path, csas *cs);
 void change_keys(wchar_t *dest, const char *src);
 int file_run(char *path, csas *cs);
 pid_t xfork(uchar flag);
-int spawn(char *file, char *arg1, char *arg2, const uchar flags);
+int spawn(char **argv, const uchar flags);
+int spawnp(char *file, char *arg1, char *arg2, const uchar flags);
 int file_rm(const int fd, const char *name);
 int file_cp(const int fd1, const int fd2, const char *name, char *buffer, const mode_t flags);
 int file_mv(const int fd1, const int fd2, const char *name, char *buffer, const mode_t flags);
@@ -51,5 +52,7 @@ char *lsperms(const mode_t mode);
 uchar get_extension_group(const char *name);
 size_t get_range(const char *src, ul *x, ul *y, size_t(handle_number)(const char*,ul*));
 char *strtoshellpath(char *src);
+int alias_run(char *src, size_t size, csas *cs);
+int splitargs(char *src, size_t size, csas *cs);
 
 #endif

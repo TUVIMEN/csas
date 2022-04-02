@@ -21,7 +21,6 @@
 
 void csas_resize(csas *cs);
 uint update_event(csas *cs);
-int alias_run(char *src, size_t size, csas *cs);
 int command_run(char *src, size_t size, csas *cs);
 int cmd_move(int argc, char **argv, csas *cs);
 int cmd_scout(int argc, char **argv, csas *cs);

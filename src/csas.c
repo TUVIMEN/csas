@@ -27,35 +27,6 @@
 #include "expand.h"
 #include "config.h"
 
-static void
-initcurses()
-{
-    setlocale(LC_ALL, "");
-    initscr();
-    cbreak();
-    timeout(IdleDelay);
-    noecho();
-    nonl();
-    intrflush(stdscr, FALSE);
-    keypad(stdscr, TRUE);
-    curs_set(FALSE);
-    if (Color && has_colors()) {
-        short bg;
-        start_color();
-        use_default_colors();
-        bg = -1;
-        init_pair(RED,COLOR_RED,bg);
-        init_pair(GREEN,COLOR_GREEN,bg);
-        init_pair(YELLOW,COLOR_YELLOW,bg);
-        init_pair(BLUE,COLOR_BLUE,bg);
-        init_pair(CYAN,COLOR_CYAN,bg);
-        init_pair(MAGENTA,COLOR_MAGENTA,bg);
-        init_pair(WHITE,COLOR_WHITE,bg);
-        init_pair(BLACK,COLOR_BLACK,bg);
-    }
-    atexit((void (*)(void)) endwin);
-}
-
 int
 xbind_add(const char *keys, const char *value, flexarr *b)
 {
@@ -370,7 +341,7 @@ add_vars(flexarr *v)
     xvar_add(&OpenAllImages,"OpenAllImages",'I',NULL,v);
 }
 
-static void
+void
 wins_resize(WINDOW **wins)
 {
     draw_borders();
@@ -514,132 +485,6 @@ csas_cd(const char *path, csas* cs)
                 searchfor(++search_name,cs->ctab,dir);
         }
     }
-    return 0;
-}
-
-static void
-usage(const char *argv0)
-{
-    fprintf(stderr,"Usage: %s [OPTION]... [PATH]\n\n"\
-      "Options:\n"\
-      "  -f FILE\tuse FILE as configuration file\n" \
-      "  -c\t\tdo not load configuration file\n" \
-      "  -h\t\tshow help\n" \
-      "  -v\t\tshow version\n",argv0);
-    exit(1);
-}
-
-int
-csas_run(csas *cs, int argc, char **argv)
-{
-    char *path = ".", cf[PATH_MAX];
-    char *conf = getenv("CSAS_HOME");
-    opterr = 0;
-    if (!conf) {
-        size_t s;
-        conf = getenv("XDG_CONFIG_HOME");
-        if (conf) {
-            s = strlen(conf);
-            memcpy(cf,conf,s);
-            strcpy(cf+s,"/csasrc");
-            conf = cf;
-        } else {
-            conf = getenv("HOME");
-            if (conf) {
-                s = strlen(conf);
-                memcpy(cf,conf,s);
-                strcpy(cf+s,"/.csasrc");
-                conf = cf;
-            } else {
-                conf = "/etc/csasrc";
-            }
-        }
-    }
-
-    for (int i = 1; i < argc; i++) {
-        if (argv[i][0] == '-') {
-            for (int j=1,brk=0; argv[i][j] && !brk; j++) {
-                switch (argv[i][j]) {
-                    case 'v':
-                        fprintf(stderr,"%s\n",VERSION);
-                        exit(1);
-                        break;
-                    case 'h': usage(argv[0]); break;
-                    case 'c': conf = NULL; break;
-                    case 'f':
-                        if (argv[i][++j]) {
-                            conf = argv[i]+j;
-                        } else if (i < argc) {
-                            conf = argv[++i];
-                            if (i == argc) {
-                                fprintf(stderr,"%s: option requires an argument -- 'f'\n",argv[0]);
-                                exit(1);
-                            }
-                        }
-                        brk = 1;
-                        break;
-                    default:
-                        fprintf(stderr,"%s: invalid option -- '%c'\n",argv[0],argv[i][j]);
-                        exit(1);
-                }
-            }
-        } else {
-            path = argv[i];
-        }
-    }
-
-    config_load(conf,cs);
-    initcurses();
-    wins_resize(cs->wins);
-    if (csas_cd(path,cs) == -1)
-        return -1;
-    cs->tabs[cs->ctab].flags |= T_EXISTS;
-
-    struct timespec timer;
-    int e;
-    time_t t1,t2=0;
-    struct stat statbuf;
-
-    if (FileSystemInfo)
-        statfs(".",&cs->fs);
-
-    while (!Exit) {
-        clock_gettime(1,&timer);
-        t1 = timer.tv_sec;
-
-        csas_draw(cs);
-
-        REPEAT: ;
-        if ((e = update_event(cs)) != -1) {
-            if (alias_run(BINDINGS[e].value,strlen(BINDINGS[e].value),cs) == -1) {
-                printmsg(Error_C,"%s: %s",BINDINGS[e].value,strerror(errno));
-                refresh();
-                goto REPEAT;
-            }
-            if (FileSystemInfo)
-                statfs(".",&cs->fs);
-        }
-
-        if (UpdateFile) {
-            register xdir *d = &CTAB(1);
-            if (d->files)
-                xfile_update(&d->files[d->sel[cs->ctab]]);
-        }
-
-        if (t1 != t2) {
-            register xdir *d = &CTAB(1);
-            t2 = t1;
-            if (lstat(d->path,&statbuf) != 0)
-                continue;
-            if (memcmp(&statbuf.st_ctim,&d->ctime,sizeof(struct timespec)) != 0) {
-                if (DirLoadingMode&D_MODE_ONCE)
-                    d->flags |= S_CHANGED;
-                else
-                    getdir(d->path,cs->dirs,DirLoadingMode);
-            }
-        }
-    }
-    endwin();
     return 0;
 }
 

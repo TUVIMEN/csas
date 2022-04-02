@@ -467,7 +467,7 @@ special_character(const char c)
 }
 
 char *
-get_arg(char *dest, char *src, const char delim, size_t size, size_t *count, const size_t max, csas *cs) //get_arg
+get_arg(char *dest, char *src, const char delim, size_t size, size_t *count, const size_t max, csas *cs)
 {
     size_t pos=0,x=0;
     if (*src == '\'') {
@@ -476,7 +476,7 @@ get_arg(char *dest, char *src, const char delim, size_t size, size_t *count, con
         if (n == NULL)
             return NULL;
         size_t s = n-(src+pos);
-        if (x+s > max || pos+s+1 > size)
+        if (s > max || pos+s+1 > size)
             return NULL;
         memcpy(dest+x,src+pos,s);
         x += s;
@@ -640,13 +640,13 @@ parseargs(char *src, char **dest)
     dest[x++] = src;
 
     while (s) {
-        if (s == '\\') {
+        if (*src == '\\') {
             delchar(src,0,s);
             src++;
             s -= 2;
             continue;
         }
-        if (s == '\'') {
+        if (*src == '\'') {
             delchar(src,0,s);
             src++;
             s -= 2;
@@ -753,7 +753,7 @@ xfork(uchar flags)
 }
 
 int
-spawn(char *file, char *arg1, char *arg2, const uchar flags)
+spawnp(char *file, char *arg1, char *arg2, const uchar flags)
 {
     if (!file || !*file)
         return -1;
@@ -776,6 +776,12 @@ spawn(char *file, char *arg1, char *arg2, const uchar flags)
     argv[x++] = arg1;
     argv[x++] = arg2;
 
+    return spawn(argv,flags);
+}
+
+int
+spawn(char **argv, const uchar flags)
+{
     if (flags&F_NORMAL)
         endwin();
 
@@ -788,7 +794,7 @@ spawn(char *file, char *arg1, char *arg2, const uchar flags)
             dup2(fd,2);
             close(fd);
         }
-        execvp(file,argv);
+        execvp(argv[0],argv);
         _exit(1);
     } else {
         if (flags&F_WAIT)
@@ -816,7 +822,7 @@ openimages(char *name, csas *cs, const uchar flags)
     xdir *d = &CTAB(1);
     xfile *files = d->files;
     flexarr *matched = flexarr_init(sizeof(char*),8*((d->size>>8)+1));
-    *(char**)flexarr_inc(matched) = name;
+    *(char**)flexarr_inc(matched) = OP_IMAGE;
     size_t namel=strlen(name),spos=0;
     char *ext;
     static char *img_ext[] = {
@@ -850,39 +856,9 @@ openimages(char *name, csas *cs, const uchar flags)
     *(char**)flexarr_inc(matched) = tm2;
     *(char**)flexarr_inc(matched) = NULL;
 
-    if (flags&F_NORMAL)
-        endwin();
-
-    pid_t pid = xfork(flags);
-
-    if (pid == 0) {
-        if (flags&F_SILENT) {
-            int fd = open("/dev/null",O_WRONLY);
-            dup2(fd,1);
-            dup2(fd,2);
-            close(fd);
-        }
-        execvp(OP_IMAGE,(char**)matched->v);
-        _exit(1);
-    } else {
-        if (flags&F_WAIT)
-            while (waitpid(pid,NULL,0) == -1);
-
-        sigaction(SIGHUP, &oldsighup, NULL);
-        sigaction(SIGTSTP, &oldsigtstp, NULL);
-
-        if (flags&F_NORMAL) {
-            if (flags&F_CONFIRM) {
-                printf("\nPress ENTER to continue");
-                fflush(stdout);
-                while (getch() != '\n');
-            }
-            refresh();
-        }
-    }
-
+    int r = spawn((char**)matched->v,flags);
     flexarr_free(matched);
-    return 0;
+    return r;
 }
 
 uchar
@@ -898,13 +874,13 @@ int
 file_run(char *path, csas* cs)
 {
     if (*FileOpener)
-        return spawn(FileOpener,path,NULL,F_NORMAL|F_WAIT);
+        return spawnp(FileOpener,path,NULL,F_NORMAL|F_WAIT);
     struct stat sfile;
     if (stat(path,&sfile) == -1)
         return -1;
     ret_errno(!(sfile.st_mode&S_IRUSR),EACCES,-1);
     if (sfile.st_size == 0)
-        return spawn(Editor,path,NULL,F_NORMAL|F_WAIT);
+        return spawnp(Editor,path,NULL,F_NORMAL|F_WAIT);
 
     int fd;
     if ((fd = open(path,O_RDONLY)) == -1)
@@ -925,14 +901,14 @@ file_run(char *path, csas* cs)
                 if (OpenAllImages && strcmp(signatures[i].path,OP_IMAGE) == 0 && strrchr(path,'/') == NULL)
                     return openimages(path,cs,signatures[i].flags);
                 else
-                    return spawn(signatures[i].path,path,NULL,signatures[i].flags);
+                    return spawnp(signatures[i].path,path,NULL,signatures[i].flags);
             }
         }
     }
 
     close(fd);
     if (!bin)
-        return spawn(Editor,path,NULL,F_NORMAL|F_WAIT);
+        return spawnp(Editor,path,NULL,F_NORMAL|F_WAIT);
     return 0;
 }
 
@@ -1270,4 +1246,42 @@ get_extension_group(const char *name)
             return extensions[j].group;
 
     return 0;
+}
+
+int
+alias_run(char *src, size_t size, csas *cs)
+{
+    if (size == 0)
+        return -1;
+
+    char line[LLINE_MAX];
+    size_t s,count;
+    for (size_t i = 0; i < size; i++) {
+        s = get_line(line,src+i,&count,size-i);
+        i += s;
+        command_run(line,count,cs);
+        i++;
+    }
+    return 0;
+}
+
+int
+splitargs(char *src, size_t size, csas *cs)
+{
+    char *r;
+    int argc = 0;
+    size_t count;
+    for (size_t i = 0; i < size; i++) {
+        while (isspace(src[i]) && i < size)
+            i++;
+        if ((int)cs->args->size == argc)
+            *((char**)flexarr_inc(cs->args)) = malloc(ARG_MAX);
+        r = get_arg(((char**)cs->args->v)[argc],src+i,' ',size-i,&count,ARG_MAX-1,cs);
+        if (r == NULL)
+            return argc;
+        ((char**)cs->args->v)[argc][count] = 0;
+        i = r-src;
+        argc++;
+    }
+    return argc;
 }

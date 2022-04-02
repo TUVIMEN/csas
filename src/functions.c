@@ -104,44 +104,6 @@ update_event(csas *cs)
 }
 
 int
-alias_run(char *src, size_t size, csas *cs)
-{
-    if (size == 0)
-        return -1;
-
-    char line[LLINE_MAX];
-    size_t s,count;
-    for (size_t i = 0; i < size; i++) {
-        s = get_line(line,src+i,&count,size-i);
-        i += s;
-        command_run(line,count,cs);
-        i++;
-    }
-    return 0;
-}
-
-int
-splitargs(char *src, size_t size, csas *cs)
-{
-    char *r;
-    int argc = 0;
-    size_t count;
-    for (size_t i = 0; i < size; i++) {
-        while (isspace(src[i]) && i < size)
-            i++;
-        if ((int)cs->args->size == argc)
-            *((char**)flexarr_inc(cs->args)) = malloc(ARG_MAX);
-        r = get_arg(((char**)cs->args->v)[argc],src+i,' ',size-i,&count,ARG_MAX-1,cs);
-        if (r == NULL)
-            return argc;
-        ((char**)cs->args->v)[argc][count] = 0;
-        i = r-src;
-        argc++;
-    }
-    return argc;
-}
-
-int
 command_run(char *src, size_t size, csas *cs)
 {
     size_t pos=0,t,s;
@@ -450,7 +412,7 @@ cmd_scout(int argc, char **argv, csas *cs)
 {
     size_t rpathl,sizex,sizey;
     static char *func_fmod_action_name[]={"delete","move","copy"};
-    char *path_tmp,rpath[PATH_MAX],*pattern,*func_target=NULL;
+    char *path_tmp,rpath[PATH_MAX],*pattern=NULL,*func_target=NULL;
     uint flags = 0,func_flags=0;
     int func_target_fd=-1,ret=-1,func_bulk_fd=-1
     #ifdef REGEX
@@ -1121,7 +1083,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                 ret = 0;
                 goto END1;
             }
-            if (spawn(func_bulk_editor,func_bulk_tfile,NULL,F_NORMAL|F_WAIT) != 0)
+            if (spawnp(func_bulk_editor,func_bulk_tfile,NULL,F_NORMAL|F_WAIT) != 0)
                 goto END1;
             if (fstat(func_bulk_fd,&statbuf) != 0)
                 goto END1;
@@ -1219,7 +1181,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                             strtoshellpath(t);
                             fprintf(func_bulk_file,"%s ",t);
                             if (func_bulk_middle)
-                                fprintf(func_bulk_file,"%s ",t,func_bulk_middle);
+                                fprintf(func_bulk_file,"%s ",t);
                             t = mkpath(d->path,func_bulk_path);
                             strtoshellpath(t);
                             fprintf(func_bulk_file,"%s\n",t);
@@ -1244,8 +1206,8 @@ cmd_scout(int argc, char **argv, csas *cs)
                 goto END1;
             }
 
-        if (spawn(func_bulk_editor,func_bulk_tfile,NULL,F_NORMAL|F_WAIT) != 0 ||
-            spawn(func_bulk_shell,func_bulk_tfile,NULL,F_NORMAL|F_WAIT|F_CONFIRM) != 0)
+        if (spawnp(func_bulk_editor,func_bulk_tfile,NULL,F_NORMAL|F_WAIT) != 0 ||
+            spawnp(func_bulk_shell,func_bulk_tfile,NULL,F_NORMAL|F_WAIT|F_CONFIRM) != 0)
             goto END1;
         }
     }
@@ -1321,16 +1283,30 @@ cmd_exec(int argc, char **argv, csas *cs)
             case 'w': flags |= F_WAIT; break;
         }
     }
-    char line[LLINE_MAX];
-    size_t s,pos=0;
+    if (optind >= argc)
+        return 0;
     for (int i = optind; i < argc; i++) {
-        s = strlen(argv[i]);
-        memcpy(line+pos,argv[i],s);
-        line[pos+++s] = ' ';
-        pos += s;
+        if (argv[i][0] == '$' && argv[i][1] == '$' && argv[i][2] == 0) {
+            char *arg = argv[i];
+            size_t s,pos=0,end=i+1;
+            i++;
+            for (; i < argc; i++) {
+                s = strlen(argv[i]);
+                memcpy(arg+pos,argv[i],s);
+                arg[pos+++s] = ' ';
+                pos += s;
+            }
+            arg[pos] = 0;
+            argc = end;
+            break;
+        }
     }
-    line[pos-1] = 0;
-    return spawn(line,NULL,NULL,flags);
+    char *t = argv[argc];
+    argv[argc] = NULL;
+    argv += optind;
+    opt = spawn(argv,flags);
+    argv[argc-optind] = t;
+    return opt;
 }
 
 int
@@ -1417,7 +1393,7 @@ cmd_open_with(int argc, char **argv, csas *cs)
 
     size_t r = console_getline(&n,1,"open_with ",NULL,-1,cs,expand_shell_commands);
     n[r] = 0;
-    return spawn(n,argv[0],NULL,F_NORMAL|F_WAIT);
+    return spawnp(n,argv[0],NULL,F_NORMAL|F_WAIT);
 }
 
 int

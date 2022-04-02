@@ -625,5 +625,16 @@ with program specified in console
 .IP sort
  Sort current directory
 
+.SH FILES
+csas reads only one configuration file and finds it in the following order:
+.TP
+.I $CSAS_CONFIG
+.TP
+.I $XDG_CONFIG_HOME/csasrc
+.TP
+.I $HOME/.csasrc
+.TP
+.I /etc/csasrc
+
 .SH AUTHOR
 TUVIMEN <suchora.dominik7@gmail.com>
