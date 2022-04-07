@@ -43,17 +43,42 @@ extern li MultipaneView;
 uint
 update_event(csas *cs)
 {
-    int event;
-    size_t i,j,size = cs->bindings->size%BINDINGS_QUANTITY,n=0;
+    #define add_to_typed(x) cs->typed[n++] = (char)x; \
+        cs->typed[n] = 0; \
+        if (n >= NUM_MAX || x == ESC) \
+            goto EXIT;
+    #define finalize(x,y) x = y; \
+        if (x == 0) \
+            goto EXIT; \
+        if (x == 1) \
+            goto END; \
+        i++;
+    int event=0;
+    size_t i=0,j,n=0;
+    const size_t size = cs->bindings->size%BINDINGS_QUANTITY;
     xbind *b = BINDINGS;
-    uint passedl=size,tmp_passedl,
+    ushort passedl=0,tmp_passedl=0,
          passed[BINDINGS_QUANTITY*sizeof(uint)];
 
-    for (i = 0; i < size; i++)
-        passed[i] = i;
-    i = 0;
+    while (true) { //handle first character
+        event = getinput(cs);
+        add_to_typed(event);
+        if (isdigit(event)) {
+            draw_bbar(LINES-1,cs);
+            continue;
+        }
+        break;
+    }
+    for (j = 0; j < size; j++) {
+        if (event == b[j].keys[i]) {
+            passed[tmp_passedl] = j;
+            tmp_passedl++;
+        }
+    }
+    finalize(passedl,tmp_passedl);
+
     while (true) {
-        if (ShowKeyBindings && i > 0) {
+        if (ShowKeyBindings) {
             if (i > 1) {
                 draw_borders();
                 csas_draw(cs);
@@ -63,27 +88,16 @@ update_event(csas *cs)
                 mvprintw(LINES-2-j,0," %c\t%s",b[passed[j]].keys[i],b[passed[j]].value);
             }
         }
-        event = getinput(cs);
-        cs->typed[n++] = (char)event;
-        cs->typed[n] = 0;
-        if (n >= NUM_MAX || event == ESC)
-            goto EXIT;
+        add_to_typed(event);
         draw_bbar(LINES-1,cs);
-        if (i == 0 && isdigit(event))
-            continue;
-        tmp_passedl = 0;
-        for (j = 0; j < passedl; j++) {
+        event = getinput(cs);
+        for (j=0,tmp_passedl=0; j < passedl; j++) {
             if (event == b[passed[j]].keys[i]) {
                 passed[tmp_passedl] = passed[j];
                 tmp_passedl++;
             }
         }
-        passedl = tmp_passedl;
-        if (passedl == 0)
-            goto EXIT;
-        if (passedl == 1)
-            goto END;
-        i++;
+        finalize(passedl,tmp_passedl);
     }
 
     END: ;
