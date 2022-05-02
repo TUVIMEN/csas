@@ -1008,8 +1008,8 @@ cmd_scout(int argc, char **argv, csas *cs)
                         continue;
                     }
                     char t[sizeof(xfile)];
-                    memcpy(t,&d->files[dir->size],sizeof(xfile));
-                    memcpy(&d->files[dir->size],f,sizeof(xfile));
+                    memcpy(t,&d->files[d->size],sizeof(xfile));
+                    memcpy(&d->files[d->size],f,sizeof(xfile));
                     memcpy(f,t,sizeof(xfile));
                     d->size++;
                     }
