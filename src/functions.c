@@ -1374,17 +1374,8 @@ int
 cmd_set(int argc, char **argv, csas *cs)
 {
     ret_errno(argc<2,EINVAL,-1);
-    uchar string=0;
-    char *name=NULL,*val=NULL;
-    int n=0;
-    if (argv[n][0] == '-' && argv[n][1] == 's')
-        string = 1;
-    name = argv[n++];
-    if (n < argc)
-        val = argv[n];
-
-    ret_errno(!name||!val||!*name||!*val,EINVAL,-1);
-    return xvar_add(NULL,name,string == 0 ? 'i' : 's',val,cs->vars);
+    uchar type = (*argv[1] == '"') ? 's' : 'i';
+    return xvar_add(NULL,argv[0],type,argv[1],cs->vars);
 }
 
 int
