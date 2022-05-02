@@ -88,9 +88,9 @@ update_event(csas *cs)
                 mvprintw(LINES-2-j,0," %c\t%s",b[passed[j]].keys[i],b[passed[j]].value);
             }
         }
-        add_to_typed(event);
         draw_bbar(LINES-1,cs);
         event = getinput(cs);
+        add_to_typed(event);
         for (j=0,tmp_passedl=0; j < passedl; j++) {
             if (event == b[passed[j]].keys[i]) {
                 passed[tmp_passedl] = passed[j];
