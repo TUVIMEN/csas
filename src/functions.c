@@ -1392,6 +1392,7 @@ cmd_rename(int argc, char **argv, csas *cs)
 {
     ret_errno(argc<1,EINVAL,-1);
     char name[NAME_MAX],*n=name;
+    name[0] = 0;
 
     console_getline(&n,1,"rename ",argv[0],-1,cs,NULL);
     return rename(argv[0],n);
@@ -1405,6 +1406,7 @@ cmd_open_with(int argc, char **argv, csas *cs)
     if (access(argv[0],W_OK) != 0)
         return -1;
 
+    path[0] = 0;
     size_t r = console_getline(&n,1,"open_with ",NULL,-1,cs,expand_shell_commands);
     n[r] = 0;
     return spawnp(n,argv[0],NULL,F_NORMAL|F_WAIT);
