@@ -94,7 +94,7 @@ const fext extensions[] = {
     {"tiff",'I'},{"bmp",'I'},{"tga",'I'},{"gvs",'I'},{"webp",'I'},
     {"svg",'I'},
     //Archives
-    {"tar",'A'},{"jar",'A'},{"rar",'A'},{"bz2",'A'},{"exe",'A'},
+    {"tar",'A'},{"lz",'A'},{"jar",'A'},{"rar",'A'},{"bz2",'A'},{"exe",'A'},
     {"gz",'A'},{"img",'A'},{"iso",'A'},{"lzma",'A'},{"tbz2",'A'},
     {"tgz",'A'},{"z",'A'},{"zx",'A'},{"zip",'A'},{"7z",'A'},
     {"xz",'A'},{"lz4",'A'},
@@ -125,6 +125,7 @@ const fsig signatures[] = {
     { F_NORMAL|F_WAIT|F_BIN,    0,      SEEK_SET,       "\xFF\xFB",2,OP_VIDEO},
     { F_NORMAL|F_WAIT|F_BIN,    0,      SEEK_SET,       "\xFF\xF2",2,OP_VIDEO},
     { F_NORMAL|F_WAIT|F_BIN,    0,      SEEK_SET,       "\xFF\xF3",2,OP_VIDEO},
+    { F_NORMAL|F_WAIT|F_BIN,    0,      SEEK_SET,       "ID3",3,OP_VIDEO},
     { F_NORMAL|F_WAIT|F_BIN,    0,      SEEK_SET,       "WAVEfmt ",8,OP_VIDEO},
     { F_NORMAL|F_WAIT|F_BIN,    0,      SEEK_SET,       "fLaC\0\0\0\"",8,OP_VIDEO},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "\x1A\x45\xDF\xA3",4,OP_VIDEO},
