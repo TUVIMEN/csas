@@ -110,7 +110,7 @@ get_num(const char *v, li *n, flexarr *vars)
                 break;
             }
         }
-        if (!found || var[i].type == 's' || var[i].type == 'S') {
+        if (!found || var[i].type&XVAR_STRING) {
             *n = 0;
             return pos;
         }

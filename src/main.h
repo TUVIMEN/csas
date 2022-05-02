@@ -116,6 +116,14 @@
 #define D_C 0x4 //count files
 #define D_S 0x8 //size
 
+#define XVAR_INT 0x1
+#define XVAR_STRING 0x2
+#define XVAR_POINTER 0x40
+#define XVAR_CONST 0x80
+
+#define TRAP_MAX (1<<5)
+#define TRAP_INCR (1<<4)
+
 #define S_CHANGED 0x1
 
 //flags for xfile_sort()
@@ -156,6 +164,7 @@
 #define P_FILE 0x2
 #define P_BFILE 0x4
 #define P_WRAP 0x8
+#define P_TRAP 0x10
 
 #define OP_IMAGE "sxiv"
 #define OP_VIDEO "mpv"

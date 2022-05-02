@@ -341,7 +341,7 @@ addvar(char *dest, char *src, size_t *x, size_t *y, const size_t max, size_t siz
     v = &v[i];
     *y += s;
 
-    if (v->type == 'i' || v->type == 'I') {
+    if (v->type&XVAR_INT) {
         ltoa(*(li*)v->v,name);
         t = name;
     } else {

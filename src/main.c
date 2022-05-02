@@ -30,6 +30,7 @@ extern li Error_C;
 extern li Exit;
 extern li UpdateFile;
 extern li DirLoadingMode;
+extern flexarr *trap_exit;
 
 static void
 initcurses()
@@ -172,14 +173,17 @@ main(int argc, char **argv)
             if (lstat(d->path,&statbuf) != 0)
                 continue;
             if (memcmp(&statbuf.st_ctim,&d->ctime,sizeof(struct timespec)) != 0) {
-                if (DirLoadingMode&D_MODE_ONCE)
+                if (DirLoadingMode&D_MODE_ONCE) {
                     d->flags |= S_CHANGED;
-                else
+                } else {
                     getdir(d->path,cs->dirs,DirLoadingMode);
+                }
             }
         }
     }
     endwin();
+    for (size_t i = 0; i < trap_exit->size; i++)
+        alias_run(((char**)trap_exit->v)[i],strlen(((char**)trap_exit->v)[i]),cs);
     csas_free(cs);
 
     return 0;

@@ -32,6 +32,7 @@ int cmd_file_run(int argc, char **argv, csas *cs);
 int cmd_exec(int argc, char **argv, csas *cs);
 int cmd_rename(int argc, char **argv, csas *cs);
 int cmd_map(int argc, char **argv, csas *cs);
+int cmd_trap(int argc, char **argv, csas *cs);
 int cmd_open_with(int argc, char **argv, csas *cs);
 int cmd_sort(int argc, char **argv, csas *cs);
 int cmd_set(int argc, char **argv, csas *cs);

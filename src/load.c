@@ -24,6 +24,8 @@
 
 extern li SortMethod;
 extern li DirSizeMethod;
+extern flexarr *trap_newdir;
+extern flexarr *trap_chdir;
 
 int
 xfile_update(xfile *f)
@@ -263,19 +265,5 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         getdir(rpath,dirs,flags);
     }
     
-    /*struct dirent *dir;
-    DIR *dirp = opendir(rpath);
-    if (dirp == NULL)
-        return -1;
-    rpath[rpathl++] = '/';
-    while ((dir = readdir(dirp))) {
-        if (dir->d_name[0] == '.' && (dir->d_name[1] == '\0' || (dir->d_name[1] == '.' && dir->d_name[2] == '\0')))
-            continue;
-        if (dir->d_type != DT_DIR)
-            continue;
-        memcpy(rpath+rpathl,dir->d_name,strlen(dir->d_name)+1);
-        getdir(rpath,dirs,flags);
-    }
-    closedir(dirp);*/
     return ret;
 }

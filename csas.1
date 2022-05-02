@@ -256,9 +256,22 @@ Manipulate preview. Possible values are:
     p_file - preview of files
     p_bfile - preview of binary files
     p_wrap - wrap lines of preview
+    p_trap - use trap for preview instead of p_bfile
 .TP
 OpenAllImages [bool]
 When image is opened all images in directory will be opened along with it
+.TP
+PreviewWidth [int]
+Width of preview field
+.TP
+PreviewHeight [int]
+Height of preview field
+.TP
+PreviewPosx [int]
+Posx of preview field
+.TP
+PreviewPosy [int]
+Posy of preview field
 .TP
 BinaryPreview [string]
 Specify program used for preview on binary files
@@ -589,6 +602,16 @@ as a configuration file
 .IP "file_run [\fIFILE\fR]"
  Run
 .I FILE
+.IP "trap [\fICOMMAND\fR] [\fIACTION\fR]"
+ Add
+.I COMMAND
+to be executed at
+.IR ACTION ,
+which can be:
+    EXIT    at exit
+    NEWDIR  when new directory is loaded
+    CHDIR   when path is changed
+    PREVIEW at getting preview for binary files (p_trap must be set)
 .IP "exec [\fICOMMAND\fR]"
  Execute \fICOMMAND\fR.
  After '$$' everything will be treated as one argument
@@ -610,9 +633,6 @@ to
  Set or creates
 .I VARIABLE
 to
-.I VALUE
- flags:
-    \-s    use string as
 .I VALUE
 .IP "rename [\fIFILE\fR]"
  Rename

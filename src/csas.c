@@ -143,6 +143,7 @@ add_functions(flexarr *f)
     xfunc_add("tab",'f',cmd_tab,NULL,f);
     xfunc_add("exec",'f',cmd_exec,expand_shell,f);
     xfunc_add("open_with",'f',cmd_open_with,NULL,f);
+    xfunc_add("trap",'f',cmd_trap,NULL,f);
     xfunc_add("sort",'f',cmd_sort,NULL,f);
     xfunc_add("rename",'f',cmd_rename,expand_file,f);
     xfunc_add("lmove",'f',cmd_lmove,NULL,f);
@@ -174,16 +175,16 @@ xvar_add(void *addr, const char *name, const uchar type, void *val, flexarr *v)
         vars->v = NULL;
     } else {
         vars = &vars[i];
-        if ((vars->type == 's' || vars->type == 'i') && vars->type != type) {
+        if ((vars->type == XVAR_STRING || vars->type == XVAR_INT) && vars->type != type) {
             free(vars->v);
             vars->v = NULL;
         }
-        if (vars->type == 'S') {
+        if (vars->type == (XVAR_STRING|XVAR_POINTER)) {
             strcpy(vars->v,val);
             return 0;
         }
-        if (vars->type == 'I') {
-            if (type&0x80)
+        if (vars->type == (XVAR_INT|XVAR_POINTER)) {
+            if (type&XVAR_CONST)
                 *(li*)vars->v = (li)val;
             else
                 calc(val,vars->v,v);
@@ -191,154 +192,159 @@ xvar_add(void *addr, const char *name, const uchar type, void *val, flexarr *v)
         }
     }
 
-    switch (type&~0x80) {
-        case 's':
+    switch (type&~XVAR_CONST) {
+        case XVAR_STRING:
             if (!vars->v && val)
                 vars->v = strndup(val,LLINE_MAX);
             break;
-        case 'S':
+        case XVAR_STRING|XVAR_POINTER:
             vars->v = addr;
             if (val)
                 strcpy(vars->v,val);
             break;
-        case 'i':
+        case XVAR_INT:
             if (!vars->v)
                 addr = malloc(sizeof(li));
             else
                 addr = vars->v;
             // fall through
-        case 'I':
+        case XVAR_INT|XVAR_POINTER:
             vars->v = addr;
-            if (type&0x80)
+            if (type&XVAR_CONST)
                 *(li*)vars->v = (li)val;
             else if (val)
                 calc(val,vars->v,v);
             break;
     }
 
-    vars->type = type&~0x80;
+    vars->type = type&~XVAR_CONST;
     return 0;
 }
 
 static void
 add_vars(flexarr *v)
 {
-    xvar_add(&BufferSize,"BufferSize",'I',NULL,v);
-    xvar_add(&COLS,"COLS",'I',NULL,v);
-    xvar_add(&LINES,"LINES",'I',NULL,v);
-    xvar_add(&SortMethod,"SortMethod",'I',NULL,v);
-    xvar_add(NULL,"s_none",'i'|0x80,(void*)SORT_NONE,v);
-    xvar_add(NULL,"s_name",'i'|0x80,(void*)SORT_NAME,v);
-    xvar_add(NULL,"s_cname",'i'|0x80,(void*)SORT_CNAME,v);
-    xvar_add(NULL,"s_vcname",'i'|0x80,(void*)SORT_VCNAME,v);
-    xvar_add(NULL,"s_size",'i'|0x80,(void*)SORT_SIZE,v);
-    xvar_add(NULL,"s_mtime",'i'|0x80,(void*)SORT_MTIME,v);
-    xvar_add(NULL,"s_type",'i'|0x80,(void*)SORT_TYPE,v);
-    xvar_add(NULL,"s_reverse",'i'|0x80,(void*)SORT_REVERSE,v);
-    xvar_add(NULL,"s_ddist",'i'|0x80,(void*)SORT_DIR_DISTINCTION,v);
-    xvar_add(NULL,"s_lddist",'i'|0x80,(void*)SORT_LDIR_DISTINCTION,v);
-    xvar_add(NULL,"s_rddist",'i'|0x80,(void*)SORT_REVERSE_DIR_DISTINCTIONS,v);
-    xvar_add(&Visual,"Visual",'I',NULL,v);
-    xvar_add(&MoveOffset,"MoveOffset",'I',NULL,v);
-    xvar_add(&WrapScroll,"WrapScroll",'I',NULL,v);
-    xvar_add(&JumpScroll,"JumpScroll",'I',NULL,v);
-    xvar_add(&JumpScrollValue,"JumpScrollValue",'I',NULL,v);
-    xvar_add(FileOpener,"FileOpener",'S',NULL,v);
-    xvar_add(Editor,"Editor",'S',NULL,v);
-    xvar_add(&DirLoadingMode,"DirLoadingMode",'I',NULL,v);
-    xvar_add(NULL,"dm_always",'i'|0x80,(void*)D_MODE_ALWAYS,v);
-    xvar_add(NULL,"dm_once",'i'|0x80,(void*)D_MODE_ONCE,v);
-    xvar_add(NULL,"dm_change",'i'|0x80,(void*)D_MODE_CHANGE,v);
-    xvar_add(NULL,"d_recursive",'i'|0x80,(void*)D_RECURSIVE,v);
-    xvar_add(NULL,"d_follow",'i'|0x80,(void*)D_FOLLOW,v);
-    xvar_add(NULL,"d_chdir",'i'|0x80,(void*)D_CHDIR,v);
-    xvar_add(&Color,"Color",'I',NULL,v);
-    xvar_add(&HostnameInTitlebar,"HostnameInTitlebar",'I',NULL,v);
-    xvar_add(&NumberLines,"NumberLines",'I',NULL,v);
-    xvar_add(&NumberLinesOffset,"NumberLinesOffset",'I',NULL,v);
-    xvar_add(&NumberLinesStartFrom,"NumberLinesStartFrom",'I',NULL,v);
-    xvar_add(&IdleDelay,"IdleDelay",'I',NULL,v);
-    xvar_add(&DirSizeMethod,"DirSizeMethod",'I',NULL,v);
-    xvar_add(NULL,"d_f",'i'|0x80,(void*)D_F,v);
-    xvar_add(NULL,"d_r",'i'|0x80,(void*)D_R,v);
-    xvar_add(NULL,"d_c",'i'|0x80,(void*)D_C,v);
-    xvar_add(NULL,"d_s",'i'|0x80,(void*)D_S,v);
-    xvar_add(&Sel_C,"Sel_C",'I',NULL,v);
-    xvar_add(&Reg_C,"Reg_C",'I',NULL,v);
-    xvar_add(&Exec_C,"Exec_C",'I',NULL,v);
-    xvar_add(&Dir_C,"Dir_C",'I',NULL,v);
-    xvar_add(&Link_C,"Link_C",'I',NULL,v);
-    xvar_add(&Chr_C,"Chr_C",'I',NULL,v);
-    xvar_add(&Blk_C,"Blk_C",'I',NULL,v);
-    xvar_add(&Fifo_C,"Fifo_C",'I',NULL,v);
-    xvar_add(&Sock_C,"Sock_C",'I',NULL,v);
-    xvar_add(&Missing_C,"Missing_C",'I',NULL,v);
-    xvar_add(&Other_C,"Other_C",'I',NULL,v);
-    xvar_add(&Error_C,"Error_C",'I',NULL,v);
-    xvar_add(&Bar_C,"Bar_C",'I',NULL,v);
-    xvar_add(&Host_C,"Host_C",'I',NULL,v);
-    xvar_add(NULL,"DEFAULT",'i'|0x80,(void*)COLOR_PAIR(DEFAULT),v);
-    xvar_add(NULL,"RED",'i'|0x80,(void*)COLOR_PAIR(RED),v);
-    xvar_add(NULL,"GREEN",'i'|0x80,(void*)COLOR_PAIR(GREEN),v);
-    xvar_add(NULL,"YELLOW",'i'|0x80,(void*)COLOR_PAIR(YELLOW),v);
-    xvar_add(NULL,"BLUE",'i'|0x80,(void*)COLOR_PAIR(BLUE),v);
-    xvar_add(NULL,"CYAN",'i'|0x80,(void*)COLOR_PAIR(CYAN),v);
-    xvar_add(NULL,"MAGENTA",'i'|0x80,(void*)COLOR_PAIR(MAGENTA),v);
-    xvar_add(NULL,"WHITE",'i'|0x80,(void*)COLOR_PAIR(WHITE),v);
-    xvar_add(NULL,"BLACK",'i'|0x80,(void*)COLOR_PAIR(BLACK),v);
-    xvar_add(NULL,"A_NORMAL",'i'|0x80,(void*)A_NORMAL,v);
-    xvar_add(NULL,"A_STANDOUT",'i'|0x80,(void*)A_STANDOUT,v);
-    xvar_add(NULL,"A_UNDERLINE",'i'|0x80,(void*)A_UNDERLINE,v);
-    xvar_add(NULL,"A_REVERSE",'i'|0x80,(void*)A_REVERSE,v);
-    xvar_add(NULL,"A_BLINK",'i'|0x80,(void*)A_BLINK,v);
-    xvar_add(NULL,"A_DIM",'i'|0x80,(void*)A_DIM,v);
-    xvar_add(NULL,"A_BOLD",'i'|0x80,(void*)A_BOLD,v);
-    xvar_add(NULL,"A_PROTECT",'i'|0x80,(void*)A_PROTECT,v);
-    xvar_add(NULL,"A_INVIS",'i'|0x80,(void*)A_INVIS,v);
-    xvar_add(NULL,"A_ALTCHARSET",'i'|0x80,(void*)A_ALTCHARSET,v);
-    xvar_add(NULL,"A_ITALIC",'i'|0x80,(void*)A_ITALIC,v);
-    xvar_add(NULL,"A_CHARTEXT",'i'|0x80,(void*)A_CHARTEXT,v);
-    xvar_add(NULL,"A_COLOR",'i'|0x80,(void*)A_COLOR,v);
-    xvar_add(NULL,"WA_HORIZONTAL",'i'|0x80,(void*)WA_HORIZONTAL,v);
-    xvar_add(NULL,"WA_LEFT",'i'|0x80,(void*)WA_LEFT,v);
-    xvar_add(NULL,"WA_LOW",'i'|0x80,(void*)WA_LOW,v);
-    xvar_add(NULL,"WA_RIGHT",'i'|0x80,(void*)WA_RIGHT,v);
-    xvar_add(NULL,"WA_TOP",'i'|0x80,(void*)WA_TOP,v);
-    xvar_add(NULL,"WA_VERTICAL",'i'|0x80,(void*)WA_VERTICAL,v);
-    xvar_add(&Linemode,"Linemode",'I',NULL,v);
-    xvar_add(NULL,"l_size",'i'|0x80,(void*)L_SIZE,v);
-    xvar_add(NULL,"l_mtime",'i'|0x80,(void*)L_MTIME,v);
-    xvar_add(NULL,"l_perms",'i'|0x80,(void*)L_PERMS,v);
-    xvar_add(&ColorByExtension,"ColorByExtension",'I',NULL,v);
-    xvar_add(&Archive_C,"Archive_C",'I',NULL,v);
-    xvar_add(&Image_C,"Image_C",'I',NULL,v);
-    xvar_add(&Video_C,"Video_C",'I',NULL,v);
-    xvar_add(&UpdateFile,"UpdateFile",'I',NULL,v);
-    xvar_add(&SizeInBytes,"SizeInBytes",'I',NULL,v);
-    xvar_add(&FileSystemInfo,"FileSystemInfo",'I',NULL,v);
-    xvar_add(NULL,"fs_free",'i'|0x80,(void*)FS_FREE,v);
-    xvar_add(NULL,"fs_avail",'i'|0x80,(void*)FS_AVAIL,v);
-    xvar_add(NULL,"fs_all",'i'|0x80,(void*)FS_ALL,v);
-    xvar_add(NULL,"fs_files",'i'|0x80,(void*)FS_FILES,v);
-    xvar_add(&MultipaneView,"MultipaneView",'I',NULL,v);
-    xvar_add(&FollowParentDir,"FollowParentDir",'I',NULL,v);
-    xvar_add(&LeftWindowSize,"LeftWindowSize",'I',NULL,v);
-    xvar_add(&CenterWindowSize,"CenterWindowSize",'I',NULL,v);
-    xvar_add(&RightWindowSize,"RightWindowSize",'I',NULL,v);
-    xvar_add(&Border_C,"Border_C",'I',NULL,v);
-    xvar_add(&Borders,"Borders",'I',NULL,v);
-    xvar_add(NULL,"b_none",'i'|0x80,(void*)B_NONE,v);
-    xvar_add(NULL,"b_separators",'i'|0x80,(void*)B_SEPARATORS,v);
-    xvar_add(NULL,"b_outline",'i'|0x80,(void*)B_OUTLINE,v);
-    xvar_add(NULL,"b_all",'i'|0x80,(void*)B_ALL,v);
-    xvar_add(&ShowKeyBindings,"ShowKeyBindings",'I',NULL,v);
-    xvar_add(&PreviewSettings,"PreviewSettings",'I',NULL,v);
-    xvar_add(NULL,"p_dir",'i'|0x80,(void*)P_DIR,v);
-    xvar_add(NULL,"p_file",'i'|0x80,(void*)P_FILE,v);
-    xvar_add(NULL,"p_bfile",'i'|0x80,(void*)P_BFILE,v);
-    xvar_add(NULL,"p_wrap",'i'|0x80,(void*)P_WRAP,v);
-    xvar_add(BinaryPreview,"BinaryPreview",'S',NULL,v);
-    xvar_add(&OpenAllImages,"OpenAllImages",'I',NULL,v);
+    xvar_add(&BufferSize,"BufferSize",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&COLS,"COLS",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&LINES,"LINES",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&SortMethod,"SortMethod",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(NULL,"s_none",XVAR_INT|XVAR_CONST,(void*)SORT_NONE,v);
+    xvar_add(NULL,"s_name",XVAR_INT|XVAR_CONST,(void*)SORT_NAME,v);
+    xvar_add(NULL,"s_cname",XVAR_INT|XVAR_CONST,(void*)SORT_CNAME,v);
+    xvar_add(NULL,"s_vcname",XVAR_INT|XVAR_CONST,(void*)SORT_VCNAME,v);
+    xvar_add(NULL,"s_size",XVAR_INT|XVAR_CONST,(void*)SORT_SIZE,v);
+    xvar_add(NULL,"s_mtime",XVAR_INT|XVAR_CONST,(void*)SORT_MTIME,v);
+    xvar_add(NULL,"s_type",XVAR_INT|XVAR_CONST,(void*)SORT_TYPE,v);
+    xvar_add(NULL,"s_reverse",XVAR_INT|XVAR_CONST,(void*)SORT_REVERSE,v);
+    xvar_add(NULL,"s_ddist",XVAR_INT|XVAR_CONST,(void*)SORT_DIR_DISTINCTION,v);
+    xvar_add(NULL,"s_lddist",XVAR_INT|XVAR_CONST,(void*)SORT_LDIR_DISTINCTION,v);
+    xvar_add(NULL,"s_rddist",XVAR_INT|XVAR_CONST,(void*)SORT_REVERSE_DIR_DISTINCTIONS,v);
+    xvar_add(&Visual,"Visual",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&MoveOffset,"MoveOffset",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&WrapScroll,"WrapScroll",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&JumpScroll,"JumpScroll",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&JumpScrollValue,"JumpScrollValue",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(FileOpener,"FileOpener",XVAR_STRING|XVAR_POINTER,NULL,v);
+    xvar_add(Editor,"Editor",XVAR_STRING|XVAR_POINTER,NULL,v);
+    xvar_add(&DirLoadingMode,"DirLoadingMode",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(NULL,"dm_always",XVAR_INT|XVAR_CONST,(void*)D_MODE_ALWAYS,v);
+    xvar_add(NULL,"dm_once",XVAR_INT|XVAR_CONST,(void*)D_MODE_ONCE,v);
+    xvar_add(NULL,"dm_change",XVAR_INT|XVAR_CONST,(void*)D_MODE_CHANGE,v);
+    xvar_add(NULL,"d_recursive",XVAR_INT|XVAR_CONST,(void*)D_RECURSIVE,v);
+    xvar_add(NULL,"d_follow",XVAR_INT|XVAR_CONST,(void*)D_FOLLOW,v);
+    xvar_add(NULL,"d_chdir",XVAR_INT|XVAR_CONST,(void*)D_CHDIR,v);
+    xvar_add(&Color,"Color",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&HostnameInTitlebar,"HostnameInTitlebar",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&NumberLines,"NumberLines",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&NumberLinesOffset,"NumberLinesOffset",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&NumberLinesStartFrom,"NumberLinesStartFrom",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&IdleDelay,"IdleDelay",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&DirSizeMethod,"DirSizeMethod",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(NULL,"d_f",XVAR_INT|XVAR_CONST,(void*)D_F,v);
+    xvar_add(NULL,"d_r",XVAR_INT|XVAR_CONST,(void*)D_R,v);
+    xvar_add(NULL,"d_c",XVAR_INT|XVAR_CONST,(void*)D_C,v);
+    xvar_add(NULL,"d_s",XVAR_INT|XVAR_CONST,(void*)D_S,v);
+    xvar_add(&Sel_C,"Sel_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Reg_C,"Reg_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Exec_C,"Exec_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Dir_C,"Dir_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Link_C,"Link_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Chr_C,"Chr_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Blk_C,"Blk_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Fifo_C,"Fifo_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Sock_C,"Sock_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Missing_C,"Missing_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Other_C,"Other_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Error_C,"Error_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Bar_C,"Bar_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Host_C,"Host_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(NULL,"DEFAULT",XVAR_INT|XVAR_CONST,(void*)COLOR_PAIR(DEFAULT),v);
+    xvar_add(NULL,"RED",XVAR_INT|XVAR_CONST,(void*)COLOR_PAIR(RED),v);
+    xvar_add(NULL,"GREEN",XVAR_INT|XVAR_CONST,(void*)COLOR_PAIR(GREEN),v);
+    xvar_add(NULL,"YELLOW",XVAR_INT|XVAR_CONST,(void*)COLOR_PAIR(YELLOW),v);
+    xvar_add(NULL,"BLUE",XVAR_INT|XVAR_CONST,(void*)COLOR_PAIR(BLUE),v);
+    xvar_add(NULL,"CYAN",XVAR_INT|XVAR_CONST,(void*)COLOR_PAIR(CYAN),v);
+    xvar_add(NULL,"MAGENTA",XVAR_INT|XVAR_CONST,(void*)COLOR_PAIR(MAGENTA),v);
+    xvar_add(NULL,"WHITE",XVAR_INT|XVAR_CONST,(void*)COLOR_PAIR(WHITE),v);
+    xvar_add(NULL,"BLACK",XVAR_INT|XVAR_CONST,(void*)COLOR_PAIR(BLACK),v);
+    xvar_add(NULL,"A_NORMAL",XVAR_INT|XVAR_CONST,(void*)A_NORMAL,v);
+    xvar_add(NULL,"A_STANDOUT",XVAR_INT|XVAR_CONST,(void*)A_STANDOUT,v);
+    xvar_add(NULL,"A_UNDERLINE",XVAR_INT|XVAR_CONST,(void*)A_UNDERLINE,v);
+    xvar_add(NULL,"A_REVERSE",XVAR_INT|XVAR_CONST,(void*)A_REVERSE,v);
+    xvar_add(NULL,"A_BLINK",XVAR_INT|XVAR_CONST,(void*)A_BLINK,v);
+    xvar_add(NULL,"A_DIM",XVAR_INT|XVAR_CONST,(void*)A_DIM,v);
+    xvar_add(NULL,"A_BOLD",XVAR_INT|XVAR_CONST,(void*)A_BOLD,v);
+    xvar_add(NULL,"A_PROTECT",XVAR_INT|XVAR_CONST,(void*)A_PROTECT,v);
+    xvar_add(NULL,"A_INVIS",XVAR_INT|XVAR_CONST,(void*)A_INVIS,v);
+    xvar_add(NULL,"A_ALTCHARSET",XVAR_INT|XVAR_CONST,(void*)A_ALTCHARSET,v);
+    xvar_add(NULL,"A_ITALIC",XVAR_INT|XVAR_CONST,(void*)A_ITALIC,v);
+    xvar_add(NULL,"A_CHARTEXT",XVAR_INT|XVAR_CONST,(void*)A_CHARTEXT,v);
+    xvar_add(NULL,"A_COLOR",XVAR_INT|XVAR_CONST,(void*)A_COLOR,v);
+    xvar_add(NULL,"WA_HORIZONTAL",XVAR_INT|XVAR_CONST,(void*)WA_HORIZONTAL,v);
+    xvar_add(NULL,"WA_LEFT",XVAR_INT|XVAR_CONST,(void*)WA_LEFT,v);
+    xvar_add(NULL,"WA_LOW",XVAR_INT|XVAR_CONST,(void*)WA_LOW,v);
+    xvar_add(NULL,"WA_RIGHT",XVAR_INT|XVAR_CONST,(void*)WA_RIGHT,v);
+    xvar_add(NULL,"WA_TOP",XVAR_INT|XVAR_CONST,(void*)WA_TOP,v);
+    xvar_add(NULL,"WA_VERTICAL",XVAR_INT|XVAR_CONST,(void*)WA_VERTICAL,v);
+    xvar_add(&Linemode,"Linemode",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(NULL,"l_size",XVAR_INT|XVAR_CONST,(void*)L_SIZE,v);
+    xvar_add(NULL,"l_mtime",XVAR_INT|XVAR_CONST,(void*)L_MTIME,v);
+    xvar_add(NULL,"l_perms",XVAR_INT|XVAR_CONST,(void*)L_PERMS,v);
+    xvar_add(&ColorByExtension,"ColorByExtension",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Archive_C,"Archive_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Image_C,"Image_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Video_C,"Video_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&UpdateFile,"UpdateFile",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&SizeInBytes,"SizeInBytes",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&FileSystemInfo,"FileSystemInfo",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(NULL,"fs_free",XVAR_INT|XVAR_CONST,(void*)FS_FREE,v);
+    xvar_add(NULL,"fs_avail",XVAR_INT|XVAR_CONST,(void*)FS_AVAIL,v);
+    xvar_add(NULL,"fs_all",XVAR_INT|XVAR_CONST,(void*)FS_ALL,v);
+    xvar_add(NULL,"fs_files",XVAR_INT|XVAR_CONST,(void*)FS_FILES,v);
+    xvar_add(&MultipaneView,"MultipaneView",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&FollowParentDir,"FollowParentDir",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&LeftWindowSize,"LeftWindowSize",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&CenterWindowSize,"CenterWindowSize",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&RightWindowSize,"RightWindowSize",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Border_C,"Border_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Borders,"Borders",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(NULL,"b_none",XVAR_INT|XVAR_CONST,(void*)B_NONE,v);
+    xvar_add(NULL,"b_separators",XVAR_INT|XVAR_CONST,(void*)B_SEPARATORS,v);
+    xvar_add(NULL,"b_outline",XVAR_INT|XVAR_CONST,(void*)B_OUTLINE,v);
+    xvar_add(NULL,"b_all",XVAR_INT|XVAR_CONST,(void*)B_ALL,v);
+    xvar_add(&ShowKeyBindings,"ShowKeyBindings",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&PreviewSettings,"PreviewSettings",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(NULL,"p_dir",XVAR_INT|XVAR_CONST,(void*)P_DIR,v);
+    xvar_add(NULL,"p_file",XVAR_INT|XVAR_CONST,(void*)P_FILE,v);
+    xvar_add(NULL,"p_bfile",XVAR_INT|XVAR_CONST,(void*)P_BFILE,v);
+    xvar_add(NULL,"p_wrap",XVAR_INT|XVAR_CONST,(void*)P_WRAP,v);
+    xvar_add(NULL,"p_trap",XVAR_INT|XVAR_CONST,(void*)P_TRAP,v);
+    xvar_add(BinaryPreview,"BinaryPreview",XVAR_STRING|XVAR_POINTER,NULL,v);
+    xvar_add(&OpenAllImages,"OpenAllImages",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&PreviewWidth,"PreviewWidth",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&PreviewHeight,"PreviewHeight",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&PreviewPosx,"PreviewPosx",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&PreviewPosy,"PreviewPosy",XVAR_INT|XVAR_POINTER,NULL,v);
 }
 
 void
@@ -364,7 +370,11 @@ wins_resize(WINDOW **wins)
     t1 = (COLS/sum)*CenterWindowSize;
     wins[1] = subwin(stdscr,LINES-2-(outline<<1),t1,1+outline,t2);
     t2 += t1+1;
-    wins[2] = subwin(stdscr,LINES-2-(outline<<1),COLS-t2-outline,1+outline,t2);
+    PreviewHeight = LINES-2-(outline<<1);
+    PreviewWidth = COLS-t2-outline;
+    PreviewPosy = 1+outline;
+    PreviewPosx = t2;
+    wins[2] = subwin(stdscr,PreviewHeight,PreviewWidth,PreviewPosy,PreviewPosx);
 }
 
 csas *
@@ -383,6 +393,11 @@ csas_init()
     add_functions(ret->functions);
     add_bindings(ret->bindings);
     add_vars(ret->vars);
+
+    trap_exit = flexarr_init(sizeof(char**),TRAP_INCR);
+    trap_preview = flexarr_init(sizeof(char**),TRAP_INCR);
+    trap_chdir = flexarr_init(sizeof(char**),TRAP_INCR);
+    trap_newdir = flexarr_init(sizeof(char**),TRAP_INCR);
 
     gethostname(hostname,NAME_MAX);
     username = getenv("USER");
@@ -460,23 +475,39 @@ int
 csas_cd(const char *path, csas* cs)
 {
     char *search_name = NULL;
+    size_t size;
     xdir *dir = &CTAB(1);
     if (FollowParentDir && cs->dirs->size && path[0] == '.' && path[1] == '.' && path[2] == 0)
         search_name = memrchr(dir->path,'/',dir->plen);
 
+    size = cs->dirs->size;
     li n = getdir(path,cs->dirs,DirLoadingMode|D_CHDIR);
     if (n == -1)
         return -1;
+    if ((size_t)n == size)
+        for (size_t i = 0; i < trap_newdir->size; i++)
+            alias_run(((char**)trap_newdir->v)[i],strlen(((char**)trap_newdir->v)[i]),cs);
+    for (size_t i = 0; i < trap_chdir->size; i++)
+        alias_run(((char**)trap_chdir->v)[i],strlen(((char**)trap_chdir->v)[i]),cs);
     cs->tabs[cs->ctab].wins[1] = (size_t)n;
     dir = &CTAB(1);
     if (search_name)
         searchfor(++search_name,cs->ctab,dir);
-    if (MultipaneView && dir->size)
+    if (MultipaneView && dir->size) {
+        size = cs->dirs->size;
         preview_get(&dir->files[dir->sel[cs->ctab]],cs);
+        if (cs->dirs->size > size)
+            for (size_t i = 0; i < trap_newdir->size; i++)
+                alias_run(((char**)trap_newdir->v)[i],strlen(((char**)trap_newdir->v)[i]),cs);
+    }
     if (MultipaneView && (dir->path[0] != '/' || dir->path[1] != 0)) {
+        size = cs->dirs->size;
         n = getdir("..",cs->dirs,DirLoadingMode);
         if (n == -1)
             return -1;
+        if ((size_t)n == size)
+            for (size_t i = 0; i < trap_newdir->size; i++)
+                alias_run(((char**)trap_newdir->v)[i],strlen(((char**)trap_newdir->v)[i]),cs);
         cs->tabs[cs->ctab].wins[0] = (size_t)n;
         if (FollowParentDir) {
             search_name = memrchr(dir->path,'/',dir->plen);
@@ -529,23 +560,24 @@ csas_free(csas *cs)
     delwin(cs->wins[0]);
     delwin(cs->wins[1]);
     delwin(cs->wins[2]);
-    for (i = 0; i < cs->vars->size; i++)
-        xvar_free(&(((xvar*)cs->vars->v)[i]));
-    flexarr_free(cs->vars);
-    for (i = 0; i < cs->functions->size; i++)
-        xfunc_free(&(((xfunc*)cs->functions->v)[i]));
-    flexarr_free(cs->functions);
-    for (i = 0; i < cs->bindings->size; i++)
-        xbind_free(&(((xbind*)cs->bindings->v)[i]));
-    flexarr_free(cs->bindings);
-    for (i = 0; i < cs->args->size; i++)
-        free((((char**)cs->args->v)[i]));
-    flexarr_free(cs->args);
-    for (i = 0; i < cs->consoleh->size; i++)
-        free(((char**)cs->consoleh->v)[i]);
-    flexarr_free(cs->consoleh);
-    for (i = 0; i < cs->dirs->size; i++)
-        xdir_free(&(((xdir*)cs->dirs->v)[i]));
-    flexarr_free(cs->dirs);
+
+    #define xfree(x,y,z)  for (i = 0; i < (x)->size; i++) \
+            (y)(&(((z)(x)->v)[i])); \
+        flexarr_free(x);
+    #define xfree_(x,y)  for (i = 0; i < (x)->size; i++) \
+            (y)((((char**)(x)->v)[i])); \
+        flexarr_free(x);
+
+    xfree_(trap_exit,free);
+    xfree_(trap_preview,free);
+    xfree_(trap_chdir,free);
+    xfree_(trap_newdir,free);
+
+    xfree(cs->vars,xvar_free,xvar*);
+    xfree(cs->functions,xfunc_free,xfunc*);
+    xfree(cs->bindings,xbind_free,xbind*);
+    xfree_(cs->args,free);
+    xfree_(cs->consoleh,free);
+    xfree(cs->dirs,xdir_free,xdir*);
     free(cs);
 }

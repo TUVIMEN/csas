@@ -25,6 +25,7 @@
 extern li DirLoadingMode;
 extern li PreviewSettings;
 extern char BinaryPreview[];
+extern flexarr *trap_preview;
 
 int
 preview_get(xfile *f, csas *cs)
@@ -50,6 +51,8 @@ preview_get(xfile *f, csas *cs)
     ssize_t r = read(fd,cs->preview,2048);
     if (isbinfile(cs->preview,r)) {
         cs->preview[0] = 0;
+        if (PreviewSettings&P_TRAP)
+            return 0;
         if (!(PreviewSettings&P_BFILE)) {
             close(fd);
             return 0;
@@ -93,6 +96,10 @@ preview_draw(WINDOW *win, csas *cs)
         draw_dir(win,&CTAB(2),cs);
         return;
     }
+
+    if (!cs->preview[0])
+        for (size_t i = 0; i < trap_preview->size; i++)
+            alias_run(((char**)trap_preview->v)[i],strlen(((char**)trap_preview->v)[i]),cs);
     
     int posy=0,posx=1;
     mvwhline(win,posy,0,' ',win->_maxx+1);

@@ -71,7 +71,15 @@ li RightWindowSize = 4;
 li ShowKeyBindings = 0;
 li PreviewSettings = P_DIR;
 li OpenAllImages = 0;
+li PreviewWidth = 0;
+li PreviewHeight = 0;
+li PreviewPosx = 0;
+li PreviewPosy = 0;
 char BinaryPreview[PATH_MAX] = "";
+flexarr *trap_exit = NULL;
+flexarr *trap_preview = NULL;
+flexarr *trap_newdir = NULL;
+flexarr *trap_chdir = NULL;
 
 int sel_colors[] = {
     YELLOW,GREEN,RED,BLUE,

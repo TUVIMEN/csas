@@ -39,6 +39,10 @@ extern li Borders;
 extern li SortMethod;
 extern li ShowKeyBindings;
 extern li MultipaneView;
+extern flexarr *trap_exit;
+extern flexarr *trap_preview;
+extern flexarr *trap_newdir;
+extern flexarr *trap_chdir;
 
 uint
 update_event(csas *cs)
@@ -1376,6 +1380,38 @@ cmd_set(int argc, char **argv, csas *cs)
     ret_errno(argc<2,EINVAL,-1);
     uchar type = (*argv[1] == '"') ? 's' : 'i';
     return xvar_add(NULL,argv[0],type,argv[1],cs->vars);
+}
+
+int
+cmd_trap(int argc, char **argv, csas *cs)
+{
+    ret_errno(argc<2,EINVAL,-1);
+    flexarr *dest = NULL;
+
+    static struct {
+        char *b;
+        uchar s;
+        flexarr **v;
+    } traps[] = {
+        {"EXIT",4,&trap_exit},
+        {"PREVIEW",7,&trap_preview},
+        {"CHDIR",5,&trap_chdir},
+        {"NEWDIR",6,&trap_newdir}
+    };
+
+    char found=0;
+    size_t s = strlen(argv[1]);
+    for (size_t i = 0; i < LENGHT(traps); i++) {
+        if(s == traps[i].s && memcmp(traps[i].b,argv[1],s) == 0) {
+            dest = *traps[i].v;
+            found = 1;
+            break;
+        }
+    }
+    if (!found || dest->size >= TRAP_MAX)
+        return 0;
+    *(char **)flexarr_inc(dest) = strdup(argv[0]);
+    return 0;
 }
 
 int
