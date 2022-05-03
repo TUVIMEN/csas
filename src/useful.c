@@ -191,27 +191,6 @@ size_shrink(size_t size)
     return ret;
 }
 
-char *
-seek_end_of_dquote(char *src, size_t size)
-{
-    char *t1=src,*t2;
-    size_t s,t;
-    while ((t2 = memchr(t1,'"',size))) {
-        s = t2-t1;
-        t1 = t2;
-        while (*(t1-1) == '\\')
-            t1--;
-        t = t2-t1;
-        if (t%2 == 0)
-            return t2+1;
-        size -= s;
-        t2++;
-        t1 = t2;
-    }
-
-    return NULL;
-}
-
 int
 addenv(char *dest, char *src, size_t *x, size_t *y, const size_t max, size_t size)
 {
@@ -470,7 +449,10 @@ char *
 get_arg(char *dest, char *src, const char delim, size_t size, size_t *count, const size_t max, csas *cs)
 {
     size_t pos=0,x=0;
-    if (*src == '\'') {
+    char first;
+    REPEAT: ;
+    first = src[pos];
+    if (first == '\'') {
         pos++;
         char *n = memchr(src+pos,'\'',size);
         if (n == NULL)
@@ -483,22 +465,45 @@ get_arg(char *dest, char *src, const char delim, size_t size, size_t *count, con
         dest[x] = 0;
         pos += s+1;
     } else {
-        if (*src == '"')
+        if (first == '"') {
             pos++;
-        if (src[pos] == '~' && (src[pos+1] == '/' || src[pos+1] == 0)) {
-            pos++;
+        } else if (pos == 0 && first == '~' && (src[pos+1] == '/' || src[pos+1] == 0 || src[pos+1] == delim || pos == size-1)) {
             char *r = getenv("HOME");
             size_t s = strlen(r);
-            memcpy(dest,r,s);
+            memcpy(dest+x,r,s);
             x += s;
-            dest[x++] = src[pos++];
+            pos++;
         }
 
-        for (; x < max && pos < size && (*src == '"' ? src[pos] != '"' : src[pos] != delim); x++, pos++) {
+        for (; x < max && pos < size && (first == '"' ? src[pos] != '"' : src[pos] != delim); x++, pos++) {
             if (src[pos] == '\\') {
-                dest[x] = special_character(src[++pos]);
-                continue;
+                char t = special_character(src[pos+1]);
+                if (first == '"') {
+                    if (t == src[pos+1]) {
+                        if (t == '"' || t == '\\') {
+                            dest[x] = src[++pos];
+                            continue;
+                        }
+                    } else {
+                        pos++;
+                        dest[x] = t;
+                        continue;
+                    }
+                } else {
+                    if (t == src[pos+1]) {
+                        if (isspace(t) || t == '"' || t == '\'' || t == '\\') {
+                            dest[x] = src[++pos];
+                            continue;
+                        }
+                    } else {
+                        pos++;
+                        dest[x] = t;
+                        continue;
+                    }
+                }
             }
+            if (first != '"' && (src[pos] == '"' || src[pos] == '\''))
+                break;
             if (src[pos] == '$') {
                 if (addenv(dest,src,&x,&pos,max,size) == 0)
                     continue;
@@ -511,11 +516,13 @@ get_arg(char *dest, char *src, const char delim, size_t size, size_t *count, con
             dest[x] = src[pos];
         }
         dest[x] = 0;
-        if (src[pos] != '"')
-            pos--;
-        if (x > max || pos > size)
-            return NULL;
+        if (src[pos] == '"')
+            pos++;
+        if (x > max)
+            x = max;
     }
+    if (pos < size && x < max && src[pos] != delim)
+        goto REPEAT;
     if (count)
         *count = x;
     return src+pos;
@@ -530,18 +537,24 @@ get_line(char *dest, char *src, size_t *count, size_t size)
     size_t x = 0;
 
     while (pos < size && x < LLINE_MAX) {
-        if (src[pos] == '\\')
-            pos += 2;
+        if (src[pos] == '\\') {
+            if (src[pos+1] == '\n' || src[pos+1] == '\r' || src[pos+1] == ';') {
+                pos++;
+            } else if ((src[pos+1] == '/' && (src[pos+2] == '*' || src[pos+2] == '/')) || src[pos+1] == '\\') {
+                dest[x++] = src[pos++];
+            }
+            dest[x++] = src[pos++];
+            continue;
+        }
 
         if (src[pos] == '\n' || src[pos] == '\r' || src[pos] == ';') {
             dest[x] = '\0';
             break;
         }
 
-        if (src[pos] == '\'' || src[pos] == '"') {
+        if (src[pos] == '\'') {
             dest[x++] = src[pos++];
-            char *t = (src[pos-1] == '\'' ? seek_end_of_squote(src+pos,size-pos) :
-                seek_end_of_dquote(src+pos,size-pos));
+            char *t = seek_end_of_squote(src+pos,size-pos);
             if (t == NULL)
                 goto END;
             size_t s = t-(src+pos);
@@ -553,6 +566,18 @@ get_line(char *dest, char *src, size_t *count, size_t size)
             memcpy(dest+x,src+pos,s);
             x += s;
             pos += s;
+            continue;
+        }
+
+        if (src[pos] == '"') {
+            dest[x++] = src[pos++];
+            while (src[pos] != '"' && pos < size) {
+                if (src[pos] == '\\' && (src[pos+1] == '"' || src[pos+1] == '\\'))
+                    dest[x++] = src[pos++];
+                dest[x++] = src[pos++];
+            }
+            if (pos < size && src[pos] == '"')
+                dest[x++] = src[pos++];
             continue;
         }
 
@@ -666,11 +691,10 @@ parseargs(char *src, char **dest)
             src++;
             s -= 2;
             while (s && *src != '"') {
-                if (*src == '\\') {
+                if (*src == '\\' && (src[1] == '\\' || src[1] == '"')) {
                     delchar(src,0,s);
                     src++;
                     s -= 2;
-                    continue;
                 }
                 src++;
                 s--;

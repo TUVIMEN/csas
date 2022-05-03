@@ -1378,7 +1378,7 @@ int
 cmd_set(int argc, char **argv, csas *cs)
 {
     ret_errno(argc<2,EINVAL,-1);
-    uchar type = (*argv[1] == '"') ? 's' : 'i';
+    uchar type = (*argv[1] == '"') ? XVAR_STRING : XVAR_INT;
     return xvar_add(NULL,argv[0],type,argv[1],cs->vars);
 }
 
