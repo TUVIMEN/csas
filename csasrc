@@ -79,7 +79,7 @@ map f 'console -n 9 "scout -G  -- filter"'
 map F 'scout -- filter -C; sort'
 map <space> 'scout -- select -s -T; move -u'
 
-set Editor ${EDITOR}
+set -s Editor ${EDITOR}
 set BufferSize 1<<18
 set MoveOffset 3
 set WrapScroll 0
@@ -106,7 +106,7 @@ set RightWindowSize 4
 set Borders b_none
 set ShowKeyBindings 1
 set PreviewSettings p_dir|p_file
-set BinaryPreview "file"
+set -s BinaryPreview "file"
 set OpenAllImages 1
 
 source ~/.config/csasrc
