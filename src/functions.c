@@ -437,7 +437,7 @@ cmd_scout(int argc, char **argv, csas *cs)
         ,regflags = 0
     #endif
     ;
-    flexarr *dir_list = flexarr_init(sizeof(size_t),8);
+    flexarr *dir_list = flexarr_init(sizeof(size_t),16);
     flexarr *dirs = cs->dirs;
     xdir *dir = (xdir*)dirs->v;
     mode_t mode = 0;
@@ -610,7 +610,8 @@ cmd_scout(int argc, char **argv, csas *cs)
 
     if (optind < argc && (argv[optind-1][0] != '-' || argv[optind-1][1] != '-' || argv[optind-1][2] != 0)) {
         path_tmp = argv[optind];
-        realpath(path_tmp,rpath);
+        if (realpath(path_tmp,rpath) == NULL)
+            goto END1;
         rpathl = strlen(rpath);
         uchar found = 0;
         for (size_t j = 0; j < dirs->size; j++) {
@@ -902,8 +903,10 @@ cmd_scout(int argc, char **argv, csas *cs)
                 *((size_t*)flexarr_inc(dir_list)) = j;
                 if (flags&fl_load) {
                     li t = dirs->size;
-                    if (getdir(path,dirs,lflags) == -1)
+                    if (getdir(path,dirs,lflags) == -1) {
+                        flexarr_free(dir_list);
                         return -1;
+                    }
                     dir = (xdir*)dirs->v;
                     for (size_t n = (size_t)t; n < dirs->size; n++)
                         *((size_t*)flexarr_inc(dir_list)) = n;

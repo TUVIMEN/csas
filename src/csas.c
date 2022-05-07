@@ -28,7 +28,7 @@
 #include "config.h"
 
 int
-xbind_add(const char *keys, const char *value, flexarr *b)
+xbind_add(char *keys, const char *value, flexarr *b)
 {
     size_t i,size;
     ret_errno(keys==NULL||value==NULL||b==NULL,EINVAL,-1);

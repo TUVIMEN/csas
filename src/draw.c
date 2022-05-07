@@ -341,7 +341,7 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
     scroll = dir->scroll[ctab];
 
     size_t offt=0,off1=0,off2,endl=0;
-    char tmp[32],*end;
+    char tmp[32],*end=NULL;
     if (NumberLinesOffset) {
         off1 = 0;
         register size_t c = (dir->size-1)+NumberLinesStartFrom;

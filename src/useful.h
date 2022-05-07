@@ -33,7 +33,7 @@ char special_character(const char c);
 char *get_arg(char *dest, char *src, const char delim, size_t size, size_t *count, const size_t max, csas *cs);
 size_t get_line(char *dest, char *src, size_t *count, size_t size);
 int config_load(const char *path, csas *cs);
-void change_keys(wchar_t *dest, const char *src);
+void change_keys(wchar_t *dest, char *src);
 int file_run(char *path, csas *cs);
 pid_t xfork(uchar flag);
 int spawn(char **argv, const uchar flags);

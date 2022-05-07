@@ -86,8 +86,98 @@ delwc(wchar_t *src, const size_t pos, const size_t size)
   return src;
 }
 
+uint
+enc16utf8(const short c)
+{
+    uint d = 0;
+    char bcount = 15;
+    while (bcount != -1 && ((c>>bcount)&1) == 0)
+        bcount--;
+    bcount++;
+    if (bcount < 8) {
+        d = c;
+    } else if (bcount < 12) {
+        d |= 0xc080|(c&0x3f)|((c&0x7c0)<<2);
+    } else {
+        d |= 0xe08080|(c&0x3f)|((c&0xfc0)<<2)|((c&0xf000)<<4);
+    }
+    return d;
+}
+
+ul
+enc32utf8(const int c)
+{
+    char msf = 31;
+    while (msf != -1 && ((c>>msf)&1) == 0)
+        msf--;
+    msf++;
+    if (msf < 8) {
+        return c;
+    } else if (msf < 12) {
+        return 0xc081|(c&0x3f)|((c&0x7c0)<<2);
+    } else if (msf < 17){
+        return 0xe08080|(c&0x3f)|((c&0xfc0)<<2)|((c&0xf000)<<4);
+    } else if (msf < 22){
+        return 0xf0808080|(c&0x3f)|((c&0xfc0)<<2)|((c&0x3f000)<<4)|((c&0x1c0000)<<6);
+    } else if (msf < 27){
+        return 0xf480808080|(c&0x3f)|((c&0xfc0)<<2)|((c&0x3f000)<<4)|((c&0xfc0000)<<6)|((c&0x3000000)<<8);
+    }
+    return 0xf68080808080|(c&0x3f)|((c&0xfc0)<<2)|((c&0x3f000)<<4)|((c&0xfc0000)<<6)|((c&0xcf000000)<<8)|((c&400000000)<<10);
+}
+
+size_t
+escape_character(char *c, ul *d)
+{
+    size_t pos = 1;
+    switch (*c) {
+        case '0': *d = '\0'; break;
+        case 'a': *d = '\a'; break;
+        case 'b': *d = '\b'; break;
+        case 't': *d = '\t'; break;
+        case 'n': *d = '\n'; break;
+        case 'v': *d = '\v'; break;
+        case 'f': *d = '\f'; break;
+        case 'r': *d = '\r'; break;
+        case 'x': {
+            li t;
+            size_t s = 0;
+            while (isxdigit(c[pos+s]) && s < 2)
+                s++;
+            char u = c[pos+s];
+            c[pos+s] = 0;
+            pos += get_hex(c+pos,&t);
+            c[pos] = u;
+            *d = t;
+            } break;
+        case 'u': {
+            li t;
+            size_t s = 0;
+            while (isxdigit(c[pos+s]) && s < 4)
+                s++;
+            char u = c[pos+s];
+            c[pos+s] = 0;
+            pos += get_hex(c+pos,&t);
+            c[pos] = u;
+            *d = enc16utf8((short)t);
+            } break;
+        case 'U': {
+            li t;
+            size_t s = 0;
+            while (isxdigit(c[pos+s]) && s < 8)
+                s++;
+            char u = c[pos+s];
+            c[pos+s] = 0;
+            pos += get_hex(c+pos,&t);
+            c[pos] = u;
+            *d = enc32utf8((int)t);
+            } break;
+        default: *d = *c;
+    }
+    return pos;
+}
+
 void
-change_keys(wchar_t *dest, const char *src)
+change_keys(wchar_t *dest, char *src)
 {
     size_t h,i;
     for (i = 0, h = 0; h < BINDING_KEY_MAX && src[i]; i++, h++) {
@@ -117,7 +207,10 @@ change_keys(wchar_t *dest, const char *src)
             i += 3;
             dest[h] = KEY_ENTER;
         } else if (src[i] == '\\' && src[i+1]) {
-            dest[h] = special_character(src[i++]);
+            i++;
+            ul t;
+            i += escape_character(src+i,&t);
+            dest[h] = t&0xffffffff;
         } else
             dest[h] = btowc(src[i]);
     }
@@ -427,24 +520,6 @@ handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xd
     return 0;
 }
 
-char
-special_character(const char c)
-{
-    char r;
-    switch (c) {
-        case '0': r = '\0'; break;
-        case 'a': r = '\a'; break;
-        case 'b': r = '\b'; break;
-        case 't': r = '\t'; break;
-        case 'n': r = '\n'; break;
-        case 'v': r = '\v'; break;
-        case 'f': r = '\f'; break;
-        case 'r': r = '\r'; break;
-        default: r = c;
-    }
-    return r;
-}
-
 char *
 get_arg(char *dest, char *src, const char delim, size_t size, size_t *count, const size_t max, csas *cs)
 {
@@ -477,30 +552,21 @@ get_arg(char *dest, char *src, const char delim, size_t size, size_t *count, con
 
         for (; x < max && pos < size && (first == '"' ? src[pos] != '"' : src[pos] != delim); x++, pos++) {
             if (src[pos] == '\\') {
-                char t = special_character(src[pos+1]);
-                if (first == '"') {
-                    if (t == src[pos+1]) {
-                        if (t == '"' || t == '\\') {
-                            dest[x] = src[++pos];
-                            continue;
-                        }
-                    } else {
-                        pos++;
-                        dest[x] = t;
-                        continue;
-                    }
-                } else {
-                    if (t == src[pos+1]) {
-                        if (isspace(t) || t == '"' || t == '\'' || t == '\\') {
-                            dest[x] = src[++pos];
-                            continue;
-                        }
-                    } else {
-                        pos++;
-                        dest[x] = t;
-                        continue;
-                    }
-                }
+                pos++;
+                ul t;
+                pos += escape_character(src+pos,&t)-1;
+                if (t&0xff00000000)
+                    dest[x++] = (t&0xff00000000)>>32;
+                if (t&0xff000000)
+                    dest[x++] = (t&0xff000000)>>24;
+                if (t&0xff0000)
+                    dest[x++] = (t&0xff0000)>>16;
+                if (t&0xff00)
+                    dest[x++] = (t&0xff00)>>8;
+                if (t&0xff || !t)
+                    dest[x++] = t&0xff;
+                x--;
+                continue;
             }
             if (first != '"' && (src[pos] == '"' || src[pos] == '\''))
                 break;
@@ -845,7 +911,7 @@ openimages(char *name, csas *cs, const uchar flags)
 {
     xdir *d = &CTAB(1);
     xfile *files = d->files;
-    flexarr *matched = flexarr_init(sizeof(char*),8*((d->size>>8)+1));
+    flexarr *matched = flexarr_init(sizeof(char*),((d->size>>9)+32));
     *(char**)flexarr_inc(matched) = OP_IMAGE;
     size_t namel=strlen(name),spos=0;
     char *ext;
