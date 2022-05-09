@@ -1390,6 +1390,32 @@ cmd_map(int argc, char **argv, csas *cs)
 }
 
 int
+cmd_unmap(int argc, char **argv, csas *cs)
+{
+    if (argc < 1) {
+        printerr("unmap [BINDING...]\n");
+        return -1;
+    }
+
+    xbind *binds = (xbind*)cs->bindings->v;
+    wchar_t k[BINDING_KEY_MAX];
+    for (int i = 0; i < argc; i++) {
+        for (size_t j = 0; j < cs->bindings->size; j++) {
+            change_keys(k,argv[i]);
+            if (wcscmp(k,binds[j].keys) == 0) {
+                free(binds[j].keys);
+                free(binds[j].value);
+                if (j != cs->bindings->size-1)
+                    memcpy(binds+j,binds+(cs->bindings->size-1),sizeof(xbind));
+                flexarr_dec(cs->bindings);
+            }
+        }
+    }
+
+    return 0;
+}
+
+int
 cmd_quit(int argc, char **argv, csas *cs)
 {
     size_t i;
@@ -1450,6 +1476,30 @@ cmd_set(int argc, char **argv, csas *cs)
     if (r == -1)
         printerr("set: %s\n",strerror(errno));
     return r;
+}
+
+int
+cmd_unset(int argc, char **argv, csas *cs)
+{
+    if (argc < 1) {
+        printerr("unset [VAR...]\n");
+        return -1;
+    }
+
+    xvar *vars = (xvar*)cs->vars->v;
+    for (int i = 0; i < argc; i++) {
+        for (volatile size_t j = 0; j < cs->vars->size; j++) {
+            if (strcmp(argv[i],vars[j].name) == 0) {
+                if (!(vars[j].type&XVAR_POINTER))
+                    free(vars[j].v);
+                if (j != cs->vars->size-1)
+                    memcpy(vars+j,vars+(cs->vars->size-1),sizeof(xvar));
+                flexarr_dec(cs->vars);
+            }
+        }
+    }
+
+    return 0;
 }
 
 int

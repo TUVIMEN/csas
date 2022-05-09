@@ -148,7 +148,9 @@ add_functions(flexarr *f)
     xfunc_add("rename",'f',cmd_rename,expand_file,f);
     xfunc_add("lmove",'f',cmd_lmove,NULL,f);
     xfunc_add("map",'f',cmd_map,NULL,f);
+    xfunc_add("unmap",'f',cmd_unmap,NULL,f);
     xfunc_add("set",'f',cmd_set,expand_vars,f);
+    xfunc_add("unset",'f',cmd_unset,expand_vars,f);
     xfunc_add("alias",'f',cmd_alias,NULL,f);
     xfunc_add("quit",'f',cmd_quit,NULL,f);
 }
@@ -203,10 +205,7 @@ xvar_add(void *addr, const char *name, const uchar type, void *val, flexarr *v)
                 strcpy(vars->v,val);
             break;
         case XVAR_INT:
-            if (!vars->v)
-                addr = malloc(sizeof(li));
-            else
-                addr = vars->v;
+            addr = (vars->v) ? vars->v : malloc(sizeof(li));
             // fall through
         case XVAR_INT|XVAR_POINTER:
             vars->v = addr;
