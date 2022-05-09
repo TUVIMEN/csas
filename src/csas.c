@@ -345,6 +345,7 @@ add_vars(flexarr *v)
     xvar_add(&PreviewHeight,"PreviewHeight",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(&PreviewPosx,"PreviewPosx",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(&PreviewPosy,"PreviewPosy",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Verbose,"Verbose",XVAR_INT|XVAR_POINTER,NULL,v);
 }
 
 void

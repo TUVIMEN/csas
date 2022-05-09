@@ -21,6 +21,7 @@
 #include "functions.h"
 #include "calc.h"
 #include "csas.h"
+#include "draw.h"
 
 static struct sigaction oldsighup;
 static struct sigaction oldsigtstp;
@@ -698,12 +699,16 @@ config_load(const char *path, csas *cs)
         return -1;
     }
 
-    char *file = mmap(NULL,statbuf.st_size,PROT_READ,MAP_PRIVATE,fd,0);
-    if (file == MAP_FAILED) {
+    if ((statbuf.st_mode&S_IFMT) == S_IFDIR) {
         close(fd);
+        errno = EISDIR;
         return -1;
     }
+
+    char *file = mmap(NULL,statbuf.st_size,PROT_READ,MAP_PRIVATE,fd,0);
     close(fd);
+    if (file == MAP_FAILED)
+        return -1;
 
     char line[LLINE_MAX];
     int r;
@@ -715,7 +720,7 @@ config_load(const char *path, csas *cs)
         pos += s;
         r = command_run(line,count,cs);
         if (r != 0)
-            fprintf(stderr,"%s: %s\n%lu:\t%s\n",path,strerror(errno),i+1,line);
+            printerr("%s: line %lu: %.*s\n",path,i+1,(int)(memchr(line,' ',s)-(void*)line),line);
         pos++;
     }
 
@@ -1251,9 +1256,11 @@ mkpath(const char *dir, const char *name)
 {
     static char path[PATH_MAX];
     size_t dlen = strlen(dir);
-    memcpy(path,dir,dlen+1);
-    if (path[0] == '/' && path[1] != '\0')
-        path[dlen++] = '/';
+    if (dlen) {
+        memcpy(path,dir,dlen);
+        if (path[dlen-1] != '/')
+            path[dlen++] = '/';
+    }
     strcpy(path+dlen,name);
     return path;
 }

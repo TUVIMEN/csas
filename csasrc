@@ -1,3 +1,5 @@
+set Verbose 0
+
 alias shell 'exec -ncw ${SHELL} -c $$'
 alias bulkrename 'scout -g - -- bulk -n -S /bin/sh -E ${EDITOR} -b mv'
 alias bulkrename_r 'scout -r -g - -- bulk -S /bin/sh -E ${EDITOR} -b mv'
@@ -108,5 +110,7 @@ set ShowKeyBindings 1
 set PreviewSettings p_dir|p_file
 set -s BinaryPreview "file"
 set OpenAllImages 1
+
+//trap 'scout -vG "^\\." -- filter' NEWDIR //hide "hidden" files
 
 source ~/.config/csasrc

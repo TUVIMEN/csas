@@ -82,10 +82,10 @@ get_conf_path()
 
     t = getenv("XDG_CONFIG_HOME");
     if (t) {
-        conf = mkpath(t,"/csasrc");
+        conf = mkpath(t,"csasrc");
     } else {
         t = getenv("HOME");
-        conf = (t) ? mkpath(t,"/.csasrc") : "/etc/csasrc";
+        conf = (t) ? mkpath(t,".csasrc") : "/etc/csasrc";
     }
     return conf;
 }
@@ -120,9 +120,11 @@ main(int argc, char **argv)
         conf = get_conf_path();
 
     csas *cs = csas_init();
-    config_load(conf,cs);
-
     initcurses();
+    endwin();
+    config_load(conf,cs);
+    refresh();
+
     wins_resize(cs->wins);
     if (csas_cd(path,cs) == -1)
         return -1;

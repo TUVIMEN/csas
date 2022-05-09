@@ -59,17 +59,39 @@ extern li MultipaneView;
 extern li LeftWindowSize;
 extern li CenterWindowSize;
 extern li RightWindowSize;
+extern li Verbose;
+
+void
+printerr(const char *fmt, ...)
+{
+    if (!Verbose)
+        return;
+    va_list va_args;
+    va_start(va_args,fmt);
+    if (isendwin()) {
+        vfprintf(stderr,fmt,va_args);
+    } else {
+        endwin();
+        vfprintf(stderr,fmt,va_args);
+        refresh();
+    }
+    va_end(va_args);
+}
 
 void
 printmsg(const int attr, const char *fmt, ...)
 {
     va_list va_args;
     va_start(va_args,fmt);
-    mvhline(LINES-1,0,' ',COLS);
-    attron(attr);
-    move(LINES,0);
-    vw_printw(stdscr,fmt,va_args);
-    attroff(attr);
+    if (isendwin()) {
+        vfprintf(stderr,fmt,va_args);
+    } else {
+        mvhline(LINES-1,0,' ',COLS);
+        attron(attr);
+        move(LINES,0);
+        vw_printw(stdscr,fmt,va_args);
+        attroff(attr);
+    }
     va_end(va_args);
 }
 

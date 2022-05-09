@@ -131,6 +131,8 @@ command_run(char *src, size_t size, csas *cs)
     while_isnt(isspace,src,pos,size);
     s = pos-t;
     while_is(isspace,src,pos,size);
+    if (!s)
+        return 0;
 
     xfunc *functions = FUNCTIONS;
 
@@ -250,7 +252,10 @@ move_d(xdir *dir, size_t value, const size_t tab, const uchar flags)
 int
 cmd_move(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<1,EINVAL,-1);
+    if (argc < 1) {
+        printerr("move [-udsw] VALUE\n");
+        return -1;
+    }
     uchar mode = MOVE_UP;
     size_t value=(size_t)atol(cs->typed),tab=cs->ctab;
     if (value == 0)
@@ -314,7 +319,10 @@ tab_d(size_t t, int sel, csas *cs)
 int
 cmd_tab(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<1,EINVAL,-1);
+    if (argc < 1) {
+        printerr("tab [-g] \n");
+        return -1;
+    }
     size_t tabc=cs->ctab;
     int sel = -1,opt;
     optind = 0;
@@ -326,10 +334,16 @@ cmd_tab(int argc, char **argv, csas *cs)
     }
     if (optind < argc) {
         tabc = (size_t)atol(argv[optind]);
-        ret_errno(tabc>=TABS,ERANGE,-1);
+        if (tabc >= TABS) {
+            printerr("tab: %s\n",strerror(ERANGE));
+            return -1;
+        }
     }
 
-    return tab_d(tabc,sel,cs);
+    int r = tab_d(tabc,sel,cs);
+    if (r == -1)
+        printerr("tab: %lu: %s\n",tabc,strerror(errno));
+    return r;
 }
 
 int
@@ -364,8 +378,7 @@ cmd_console(int argc, char **argv, csas *cs)
 
     s = console_getline((char**)history->v,history->size,first,add,offset,cs,expand_commands);
     char *line = ((char**)history->v)[history->size-1];
-    if (command_run(line,s,cs) != 0)
-        printmsg(Error_C,"%s: %s",line,strerror(errno));
+    command_run(line,s,cs);
     size_t empty = 1;
     for (size_t i = 0; line[i]; i++) {
         if (!isspace(line[i])) {
@@ -1257,39 +1270,53 @@ cmd_scout(int argc, char **argv, csas *cs)
 int
 cmd_source(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<1,EINVAL,-1);
-    endwin();
+    if (argc < 1) {
+        printerr("source FILE\n");
+        return -1;
+    }
     int r = config_load(argv[0],cs);
-    refresh();
-    int e = errno;
-    errno = e;
+    if (r == -1)
+        printerr("source: %s: %s\n",argv[0],strerror(errno));
     return r;
 }
 
 int
 cmd_cd(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<1,EINVAL,-1);
-    return csas_cd(argv[0],cs);
+    if (argc < 1) {
+        printerr("cd DIR\n");
+        return -1;
+    }
+    int r = csas_cd(argv[0],cs);
+    if (r == -1)
+        printerr("cd: %s: %s\n",argv[0],strerror(errno));
+    return r;
 }
 
 int
 cmd_file_run(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<1,EINVAL,-1);
+    if (argc < 1) {
+        printerr("file_run FILE\n");
+        return -1;
+    }
     struct stat statbuf;
     if (stat(argv[0],&statbuf) != 0)
         return -1;
-    if ((statbuf.st_mode&S_IFMT) != S_IFDIR)
-        return file_run(argv[0],cs);
-
-    return csas_cd(argv[0],cs);
+    int r = ((statbuf.st_mode&S_IFMT) == S_IFDIR) ? csas_cd(argv[0],cs)
+        : file_run(argv[0],cs);
+    if (r == -1)
+        printerr("file_run: %s: %s\n",argv[0],strerror(errno));
+    return r;
 }
 
 int
 cmd_exec(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<1,EINVAL,-1);
+    if (argc < 1) {
+        printerr("exec -[sncw] program arg1 arg2\n");
+        return -1;
+    }
     int opt;
     uchar flags = F_MULTI;
 
@@ -1327,28 +1354,46 @@ cmd_exec(int argc, char **argv, csas *cs)
     argv += optind;
     opt = spawn(argv,flags);
     argv[argc-optind] = t;
+    if (opt == -1) {
+        printerr("exec: ");
+        for (int i = 0; i < argc; i++)
+            printerr("%s",argv[i]);
+        printerr(": %s\n",strerror(errno));
+    }
     return opt;
 }
 
 int
 cmd_alias(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<2,EINVAL,-1);
-    return xfunc_add(argv[0],'a',strdup(argv[1]),NULL,cs->functions);
+    if (argc < 2) {
+        printerr("alias NAME VALUE\n");
+        return -1;
+    }
+    int r = xfunc_add(argv[0],'a',strdup(argv[1]),NULL,cs->functions);
+    if (r == -1)
+        printerr("alias: %s\n",strerror(errno));
+    return r;
 }
 
 int
 cmd_map(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<2,EINVAL,-1);
-    return xbind_add(argv[0],argv[1],cs->bindings);
+    if (argc < 2) {
+        printerr("map KEYS VALUE\n");
+        return -1;
+    }
+    int r = xbind_add(argv[0],argv[1],cs->bindings);
+    if (r == -1)
+        printerr("map: %s\n",strerror(errno));
+    return r;
 }
 
 int
 cmd_quit(int argc, char **argv, csas *cs)
 {
     size_t i;
-    int n=0,opt;
+    int n=0,opt,r=0;
     optind = 0;
     argc++;
     argv--;
@@ -1363,24 +1408,35 @@ cmd_quit(int argc, char **argv, csas *cs)
      cs->tabs[cs->ctab].flags &= ~T_EXISTS;
  
      if (n > 1) {
-         for (i = cs->ctab+1; i < TABS; i++)
-             if (cs->tabs[i].flags&T_EXISTS)
-                 return tab_d(i,-1,cs);
-         for (i = 0; i < cs->ctab; i++)
-             if (cs->tabs[i].flags&T_EXISTS)
-                 return tab_d(i,-1,cs);
+         for (i = cs->ctab+1; i < TABS; i++) {
+             if (cs->tabs[i].flags&T_EXISTS) {
+                 r = tab_d(i,-1,cs);
+                 break;
+             }
+         }
+         for (i = 0; i < cs->ctab; i++) {
+             if (cs->tabs[i].flags&T_EXISTS) {
+                 r = tab_d(i,-1,cs);
+                 break;
+             }
+         }
      }
+
+    if (r == -1)
+        printerr("quit: %s\n",strerror(errno));
 
     END: ;
     Exit = 1;
-    return 0;
+    return r;
 }
-
 
 int
 cmd_set(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<2,EINVAL,-1);
+    if (argc < 2) {
+        printerr("set VAR VALUE\n");
+        return -1;
+    }
     uchar type = XVAR_INT;
     char *name=NULL,*val=NULL;
     int n=0;
@@ -1390,14 +1446,19 @@ cmd_set(int argc, char **argv, csas *cs)
     if (n < argc)
         val = argv[n];
 
-    ret_errno(!name||!val||!*name||!*val,EINVAL,-1);
-    return xvar_add(NULL,name,type,val,cs->vars);
+    int r = xvar_add(NULL,name,type,val,cs->vars);
+    if (r == -1)
+        printerr("set: %s\n",strerror(errno));
+    return r;
 }
 
 int
 cmd_trap(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<2,EINVAL,-1);
+    if (argc < 2) {
+        printerr("trap COMMAND EVENT\n");
+        return -1;
+    }
     flexarr *dest = NULL;
 
     static struct {
@@ -1420,8 +1481,15 @@ cmd_trap(int argc, char **argv, csas *cs)
             break;
         }
     }
-    if (!found || dest->size >= TRAP_MAX)
-        return 0;
+    if (!found) {
+        printerr("trap: EVENT not found\n");
+        return -1;
+    }
+
+    if (dest->size >= TRAP_MAX) {
+        printerr("trap: couldn't add as limit of traps has been already reached\n");
+        return -1;
+    }
     *(char **)flexarr_inc(dest) = strdup(argv[0]);
     return 0;
 }
@@ -1429,26 +1497,40 @@ cmd_trap(int argc, char **argv, csas *cs)
 int
 cmd_rename(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<1,EINVAL,-1);
+    if (argc < 1) {
+        printerr("rename FILE\n");
+        return -1;
+    }
     char name[NAME_MAX],*n=name;
     name[0] = 0;
 
     console_getline(&n,1,"rename ",argv[0],-1,cs,NULL);
-    return rename(argv[0],n);
+    int r = rename(argv[0],n);
+    if (r == -1)
+        printerr("rename: %s: %s\n",argv[0],strerror(errno));
+    return r;
 }
 
 int
 cmd_open_with(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<1,EINVAL,-1);
-    char path[PATH_MAX],*n=path;
-    if (access(argv[0],W_OK) != 0)
+    if (argc < 1) {
+        printerr("open_with FILE\n");
         return -1;
+    }
+    char path[PATH_MAX],*n=path;
+    if (access(argv[0],W_OK) != 0) {
+        printerr("open_with: %s: %s\n",argv[0],strerror(errno));
+        return -1;
+    }
 
     path[0] = 0;
-    size_t r = console_getline(&n,1,"open_with ",NULL,-1,cs,expand_shell_commands);
-    n[r] = 0;
-    return spawnp(n,argv[0],NULL,F_NORMAL|F_WAIT);
+    size_t s = console_getline(&n,1,"open_with ",NULL,-1,cs,expand_shell_commands);
+    n[s] = 0;
+    int r = spawnp(n,argv[0],NULL,F_NORMAL|F_WAIT);
+    if (r == -1)
+        printerr("open_with: %s: %s\n",argv[0],strerror(errno));
+    return r;
 }
 
 int
@@ -1465,7 +1547,10 @@ cmd_sort(int argc, char **argv, csas *cs)
 int
 cmd_lmove(int argc, char **argv, csas *cs)
 {
-    ret_errno(argc<1,EINVAL,-1);
+    if (argc < 1) {
+        printerr("lmove VALUE\n");
+        return -1;
+    }
     xdir *dir = &CTAB(1);
     if (dir->size == 0)
         return 0;

@@ -75,6 +75,7 @@ li PreviewWidth = 0;
 li PreviewHeight = 0;
 li PreviewPosx = 0;
 li PreviewPosy = 0;
+li Verbose = 1;
 char BinaryPreview[PATH_MAX] = "";
 flexarr *trap_exit = NULL;
 flexarr *trap_preview = NULL;
