@@ -981,7 +981,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                     continue;
                 break;
             case func_bulk:
-                func_bulk_comment_write = (func_flags&fufl_no_comments)>>6;
+                func_bulk_comment_write = (func_flags&fufl_no_comments) ? 1 : 0;
                 break;
         }
         for (size_t j = 0; j < size; j++) {
@@ -1216,7 +1216,8 @@ cmd_scout(int argc, char **argv, csas *cs)
                             fprintf(func_bulk_file,"%s ",t);
                             if (func_bulk_middle)
                                 fprintf(func_bulk_file,"%s ",t);
-                            t = mkpath(d->path,func_bulk_path);
+                            t = (func_flags&fufl_full) ? func_bulk_path :
+                                mkpath(d->path,func_bulk_path);
                             strtoshellpath(t);
                             fprintf(func_bulk_file,"%s\n",t);
                             if (func_bulk_end)
