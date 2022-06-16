@@ -22,31 +22,20 @@
 size_t
 get_bin(const char *v, li *n)
 {
-    size_t pos=0,end=0;
-    while (v[end] == '0' || v[end] == '1')
-        end++;
-    int num=0;
-    for (; pos != end; pos++)
-        num |= (v[(end-1)-pos]-48)<<pos;
-    *n = num;
+    size_t pos=0;
+    *n = 0;
+    while (v[pos] == '0' || v[pos] == '1')
+        *n = (*n<<1)|(v[pos++]-48);
     return pos;
 }
 
 size_t
 get_oct(const char *v, li *n)
 {
-    size_t pos=0,end=0;
-    while (v[end] >= '0' && v[end] <= '7')
-        end++;
-    int num=0;
-    if (!end)
-        goto END;
-    num |= v[--end]-48;
-    pos++;
-    for (size_t i=pos-1; i != end; i++,pos++)
-        num |= (v[(end-1)-i]-48)<<(3*pos);
-    END: ;
-    *n = num;
+    size_t pos=0;
+    *n = 0;
+    while (v[pos] >= '0' && v[pos] <= '7')
+        *n = (*n<<3)|(v[pos++]-48);
     return pos;
 }
 
@@ -54,15 +43,10 @@ get_oct(const char *v, li *n)
 size_t
 get_dec(const char *v, li *n)
 {
-    size_t pos=0,end=0;
-    while (isdigit(v[end]))
-        end++;
-    li num=0,c=1;
-    for (; pos != end; pos++) {
-        num += (v[(end-1)-pos]-48)*c;
-        c *= 10;
-    }
-    *n = num;
+    size_t pos=0;
+    *n = 0;
+    while (isdigit(v[pos]))
+        *n = (*n*10)+(v[pos++]-48);
     return pos;
 }
 
@@ -81,13 +65,10 @@ hextodec(int n)
 size_t
 get_hex(const char *v, li *n)
 {
-    size_t pos=0,end=0;
-    while (isxdigit(v[end]))
-        end++;
-    li num=0;
-    for (; pos != end; pos++)
-        num |= hextodec(v[(end-1)-pos])<<(pos<<2);
-    *n = num;
+    size_t pos=0;
+    *n = 0;
+    while (isxdigit(v[pos]))
+        *n = (*n<<4)|hextodec(v[pos++]);
     return pos;
 }
 
@@ -97,15 +78,20 @@ get_num(const char *v, li *n, flexarr *vars)
     size_t pos=0;
     char c=0;
 
-    if (isalpha(*v) || *v == '_') {
+    if (*v == '-' || *v == '~') {
+        c = *v;
         pos++;
+    }
+
+    if (isalpha(v[pos]) || v[pos] == '_') {
+        size_t begin = pos;
         while (isalnum(v[pos]) || v[pos] == '_')
             pos++;
         size_t i;
         uchar found = 0;
         xvar *var = (xvar*)vars->v;
         for (i = 0; i < vars->size; i++) {
-            if (pos == strlen(var[i].name) && memcmp(v,var[i].name,pos) == 0) {
+            if (pos-begin == strlen(var[i].name) && memcmp(v+begin,var[i].name,pos-begin) == 0) {
                 found = 1;
                 break;
             }
@@ -115,12 +101,7 @@ get_num(const char *v, li *n, flexarr *vars)
             return pos;
         }
         *n = *(li*)var[i].v;
-        return pos;
-    }
-
-    if (*v == '-' || *v == '~') {
-        c = *v;
-        pos++;
+        goto END;
     }
 
     if (v[pos] == '0' && v[pos+1] && v[pos+1] != '.') {
