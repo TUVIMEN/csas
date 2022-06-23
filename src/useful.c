@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020-2022 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2022 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ getinput(csas *cs)
     while ((ret = getch()) == KEY_RESIZE && ret != OK)
         csas_resize(cs);
     if (ret == ERR)
-        exit(1);
+        ret = ESC;
     timeout(IdleDelay);
     return ret;
 }
@@ -62,7 +62,7 @@ getinput_wch(wint_t *wch, csas *cs)
     while ((ret = get_wch(wch)) == KEY_RESIZE && ret != OK)
         csas_resize(cs);
     if (ret == ERR)
-        exit(1);
+        ret = ESC;
     timeout(IdleDelay);
     return ret;
 }
@@ -578,7 +578,7 @@ get_arg(char *dest, char *src, const char delim, size_t size, size_t *count, con
                     continue;
                 if (addcalc(dest,src,&x,&pos,max,size,cs->vars) == 0)
                     continue;
-            } else if (handle_percent(dest,src,&x,&pos,max,&CTAB(1),cs->ctab,cs->tabs[cs->ctab].sel) == 0)
+            } else if (handle_percent(dest,src,&x,&pos,max,cs->dirs->size ? &CTAB(1) : NULL,cs->ctab,cs->tabs[cs->ctab].sel) == 0)
                 continue;
             dest[x] = src[pos];
         }

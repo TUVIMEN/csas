@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020-2022 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2022 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -476,7 +476,7 @@ csas_cd(const char *path, csas* cs)
 {
     char *search_name = NULL;
     size_t size;
-    xdir *dir = &CTAB(1);
+    xdir *dir = cs->dirs->size ? &CTAB(1) : NULL;
     if (FollowParentDir && cs->dirs->size && path[0] == '.' && path[1] == '.' && path[2] == 0)
         search_name = memrchr(dir->path,'/',dir->plen);
 
