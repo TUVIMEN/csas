@@ -621,10 +621,10 @@ cmd_scout(int argc, char **argv, csas *cs)
         }
     }
 
-    if (optind < argc && (argv[optind-1][0] != '-' || argv[optind-1][1] != '-' || argv[optind-1][2] != 0)) {
+    if (optind < argc && (optind == 1 || (argv[optind-1][0] != '-' || argv[optind-1][1] != '-' || argv[optind-1][2] != 0))) {
         path_tmp = argv[optind];
         if (realpath(path_tmp,rpath) == NULL)
-            goto END1;
+            goto END_premature;
         rpathl = strlen(rpath);
         uchar found = 0;
         for (size_t j = 0; j < dirs->size; j++) {
@@ -634,7 +634,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                 if (flags&fl_load) {
                     li t = dirs->size;
                     if (getdir(rpath,dirs,lflags) == -1)
-                        goto END1;
+                        goto END_premature;
                     dir = (xdir*)dirs->v;
                     for (size_t n = (size_t)t; n < dirs->size; n++)
                         *((size_t*)flexarr_inc(dir_list)) = n;
@@ -652,7 +652,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                 for (size_t n = (size_t)t; n < dirs->size; n++)
                     *((size_t*)flexarr_inc(dir_list)) = n;
             } else {
-                goto END1;
+                goto END_premature;
             }
         }
         optind++;
@@ -857,15 +857,15 @@ cmd_scout(int argc, char **argv, csas *cs)
                 int fd3,fd2=-1;
                 if (d->size == 0) {
                     ret = 0;
-                    goto END2;
+                    goto END_fmod;
                 }
                 if ((fd2 = open(d->path,O_DIRECTORY)) == -1)
-                    goto END2;
+                    goto END_fmod;
                 
                 func_fmod_count = 1;
                 if ((f->mode&S_IFMT) == S_IFDIR) {
                     if ((fd3 = openat(fd2,f->name,O_DIRECTORY)) == -1)
-                        goto END2;
+                        goto END_fmod;
                     if (get_dirsize(fd3,&func_fmod_count,&func_fmod_size,D_R|D_C|D_S) == -1)
                         close(fd3);
                 }
@@ -874,7 +874,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                     case fufl_delete: act = 0; break;
                     case fufl_move: act = 1; break;
                     case fufl_copy: act = 2; break;
-                    default: goto END2;
+                    default: goto END_fmod;
                 }
                 do {
                     if ((f->mode&S_IFMT) == S_IFDIR)
@@ -885,7 +885,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                     if (ev == 'y' || ev == 'Y')
                         break;
                     if (ev != -1)
-                        goto END2;
+                        goto END_fmod;
                     ev = getinput(cs);
                 } while (1);
                 
@@ -895,7 +895,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                     case fufl_copy: file_cp(func_target_fd,fd2,f->name,func_buffer,func_fmod_flags); break;
                 }
                 ret = 0;
-                END2: ;
+                END_fmod: ;
                 if (func_flags&(fufl_copy|fufl_move)) {
                     close(func_target_fd);
                     free(func_buffer);
@@ -1191,7 +1191,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                 }
                 if (func == func_bulk) {
                     if (!func_bulk_filecopy[pos])
-                        goto END3;
+                        goto END_last_loop;
                     while (func_bulk_filecopy[pos] == '\n') {
                         pos++;
                         j--;
@@ -1231,7 +1231,7 @@ cmd_scout(int argc, char **argv, csas *cs)
             if (func == func_fmod)
                 close(dfd);
         }
-        END3: ;
+        END_last_loop: ;
 
         if (func == func_bulk) {
             fflush(func_bulk_file);
@@ -1249,7 +1249,6 @@ cmd_scout(int argc, char **argv, csas *cs)
 
     ret = 0;
     END1: ;
-    flexarr_free(dir_list);
     #ifdef REGEX
     if (flags&fl_regex)
         regfree(&regex);
@@ -1264,7 +1263,9 @@ cmd_scout(int argc, char **argv, csas *cs)
         unlink(func_bulk_tfile);
         fclose(func_bulk_file);
     }
-    
+
+    END_premature: ;
+    flexarr_free(dir_list);
     return ret;
 }
 
