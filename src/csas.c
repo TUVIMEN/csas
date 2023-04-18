@@ -245,6 +245,7 @@ add_vars(flexarr *v)
     xvar_add(&JumpScrollValue,"JumpScrollValue",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(FileOpener,"FileOpener",XVAR_STRING|XVAR_POINTER,NULL,v);
     xvar_add(Editor,"Editor",XVAR_STRING|XVAR_POINTER,NULL,v);
+    xvar_add(Shell,"Shell",XVAR_STRING|XVAR_POINTER,NULL,v);
     xvar_add(&DirLoadingMode,"DirLoadingMode",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(NULL,"dm_always",XVAR_INT|XVAR_CONST,(void*)D_MODE_ALWAYS,v);
     xvar_add(NULL,"dm_once",XVAR_INT|XVAR_CONST,(void*)D_MODE_ONCE,v);

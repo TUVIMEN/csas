@@ -21,6 +21,7 @@
 
 char FileOpener[PATH_MAX] = "";
 char Editor[PATH_MAX] = "vim";
+char Shell[PATH_MAX] = "/bin/sh";
 li Exit = 0;
 size_t BufferSize = (1<<16);
 li DirLoadingMode = D_MODE_ONCE|D_FOLLOW;

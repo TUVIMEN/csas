@@ -43,6 +43,8 @@ extern flexarr *trap_exit;
 extern flexarr *trap_preview;
 extern flexarr *trap_newdir;
 extern flexarr *trap_chdir;
+extern char *Editor;
+extern char *Shell;
 
 uint
 update_event(csas *cs)
@@ -441,7 +443,7 @@ strtotime(const char *src, ul *num)
 int
 cmd_scout(int argc, char **argv, csas *cs)
 {
-    size_t rpathl,sizex,sizey;
+    size_t rpathl,sizex,sizey,limit=-1,matched=0;
     static char *func_fmod_action_name[]={"delete","move","copy"};
     char *path_tmp,rpath[PATH_MAX],*pattern=NULL,*func_target=NULL;
     uint flags = 0,func_flags=0;
@@ -457,8 +459,8 @@ cmd_scout(int argc, char **argv, csas *cs)
     off_t func_fmod_count=0,func_fmod_size=0;
     time_t mtimex,mtimey;
     FILE *func_bulk_file = NULL;
-    char groupx,groupy=-2,tabx=cs->ctab,taby=-2,*func_buffer=NULL,*func_bulk_shell="/bin/sh",
-        *func_bulk_editor="vim",*func_bulk_begin=NULL,*func_bulk_middle=NULL,
+    char groupx,groupy=-2,tabx=cs->ctab,taby=-2,*func_buffer=NULL,*func_bulk_shell=Shell,
+        *func_bulk_editor=Editor,*func_bulk_begin=NULL,*func_bulk_middle=NULL,
         *func_bulk_end=NULL,func_groupx=cs->tabs[cs->ctab].sel,func_groupy=-2,
         func_tabx=cs->ctab,func_taby=-2,func_bulk_tfile[PATH_MAX],*func_bulk_filecopy=NULL;
     uchar lflags = DirLoadingMode,func=0,groups=0,func_groups=1<<func_groupx,func_ds_flags=D_S,
@@ -476,7 +478,8 @@ cmd_scout(int argc, char **argv, csas *cs)
         fl_insensitive = 0x100, //case insensitive
         fl_name = 0x200, //check for name
         fl_regex = 0x400, //check for regex
-        fl_invert = 0x800 //select non-matching
+        fl_invert = 0x800, //select non-matching
+        fl_limit = 0x1000 //limit count of selected
     };
 
     enum Functions {
@@ -508,7 +511,7 @@ cmd_scout(int argc, char **argv, csas *cs)
     argv--;
     argc++;
     REPEAT: ;
-    while ((opt = getopt(argc,argv,"+t:farLPvip:s:m:l:N:G:E:g:T:")) != -1) {
+    while ((opt = getopt(argc,argv,"+t:farLPvip:s:m:l:N:G:E:g:T:y:")) != -1) {
         switch (opt) {
             case 'f':
                 flags |= fl_force;
@@ -618,6 +621,9 @@ cmd_scout(int argc, char **argv, csas *cs)
                 }
                 pattern = optarg;
                 break;
+            case 'y':
+                get_dec(optarg,(li*)&limit);
+                flags |= fl_limit;
         }
     }
 
@@ -1017,6 +1023,10 @@ cmd_scout(int argc, char **argv, csas *cs)
 
             if ((flags&fl_invert) ? pass : !pass)
                 continue;
+
+            matched++;
+            if (matched > limit)
+                break;
 
             switch (func) {
                 case func_list:
