@@ -51,9 +51,7 @@ preview_get(xfile *f, csas *cs)
     ssize_t r = read(fd,cs->preview,2048);
     if (isbinfile(cs->preview,r)) {
         cs->preview[0] = 0;
-        if (PreviewSettings&P_TRAP)
-            return 0;
-        if (!(PreviewSettings&P_BFILE)) {
+        if (PreviewSettings&P_TRAP || !(PreviewSettings&P_BFILE)) {
             close(fd);
             return 0;
         }
