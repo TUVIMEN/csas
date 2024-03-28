@@ -107,7 +107,7 @@ const fext extensions[] = {
     {"tar",'A'},{"lz",'A'},{"jar",'A'},{"rar",'A'},{"bz2",'A'},{"exe",'A'},
     {"gz",'A'},{"img",'A'},{"iso",'A'},{"lzma",'A'},{"tbz2",'A'},
     {"tgz",'A'},{"z",'A'},{"zx",'A'},{"zip",'A'},{"7z",'A'},
-    {"xz",'A'},{"lz4",'A'},
+    {"xz",'A'},{"lz4",'A'},{"zst",'A'},
     {NULL,'\0'}
 };
 
