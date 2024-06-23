@@ -78,7 +78,7 @@ preview_get(xfile *f, csas *cs)
         close(fd);
         return 0;
     }
-    
+
     cs->preview[r] = 0;
     r = read(fd,cs->preview+r,PREVIEW_MAX-r);
     if (r)
@@ -98,23 +98,24 @@ preview_draw(WINDOW *win, csas *cs)
     if (!cs->preview[0])
         for (size_t i = 0; i < trap_preview->size; i++)
             alias_run(((char**)trap_preview->v)[i],strlen(((char**)trap_preview->v)[i]),cs);
-    
-    int posy=0,posx=1;
-    mvwhline(win,posy,0,' ',win->_maxx+1);
-    for (register ssize_t i = 0; cs->preview[i] && posy <= win->_maxy; i++) {
-        if (PreviewSettings&P_WRAP && win->_maxx <= posx) {
+
+    int posy=0,posx=1,maxx,maxy;
+    getmaxyx(win,maxy,maxx);
+    mvwhline(win,posy,0,' ',maxx);
+    for (register ssize_t i = 0; cs->preview[i] && posy <= maxy-1; i++) {
+        if (PreviewSettings&P_WRAP && maxx-1 <= posx) {
             posy++;
-            mvwhline(win,posy,0,' ',win->_maxx+1);
+            mvwhline(win,posy,0,' ',maxx);
             posx = 1;
         } else if (cs->preview[i] == '\n') {
             posy++;
-            mvwhline(win,posy,0,' ',win->_maxx+1);
+            mvwhline(win,posy,0,' ',maxx);
             posx = 1;
             continue;
         }
         mvwaddch(win,posy,posx++,cs->preview[i]);
     }
-    for (; posy < win->_maxy+1; posy++)
-        mvwhline(win,posy,0,' ',win->_maxx+1);
+    for (; posy < maxy; posy++)
+        mvwhline(win,posy,0,' ',maxx);
     wrefresh(win);
 }

@@ -98,7 +98,7 @@ const fext extensions[] = {
     {"mov",'V'},{"webm",'V'},{"rvi",'V'},{"3g2",'V'},{"3gp",'V'},
     {"aa",'V'},{"ac3",'V'},{"mj2",'V'},{"mpc",'V'},{"mpc8",'V'},
     {"m4v",'V'},{"oga",'V'},{"ogv",'V'},{"rvi",'V'},{"alac",'V'},
-    {"rmvb",'V'},
+    {"rmvb",'V'},{"opus",'V'},
     //Images
     {"gif",'I'},{"jpeg",'I'},{"jpg",'I'},{"png",'I'},{"raw",'I'},
     {"tiff",'I'},{"bmp",'I'},{"tga",'I'},{"gvs",'I'},{"webp",'I'},

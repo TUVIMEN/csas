@@ -237,7 +237,7 @@ draw_bbar(int y, csas *cs)
                 addstr(t);
             }
         }
-        
+
         if (dir->size > 0) {
             i = snprintf(tmp,16,"%lu/%lu",sel+1,dir->size);
             if (i)
@@ -251,7 +251,7 @@ draw_bbar(int y, csas *cs)
     j = strlen(cs->typed);
     i += j;
     mvaddnstr(LINES-1,COLS-i-1,cs->typed,j);
-    
+
     j = 0;
     if (Visual) {
         tmp[j++] = 'V';
@@ -330,8 +330,9 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
 
     size_t i,j,ctab=cs->ctab,scroll=dir->scroll[ctab],sel=dir->sel[ctab];
     xfile *file = dir->files;
-    int color,maxx=win->_maxx+1,maxy=win->_maxy+1,offset=maxy>>MoveOffset,
-        jumpvalue=maxy>>JumpScrollValue;
+    int color,maxx,maxy;
+    getmaxyx(win,maxy,maxx);
+    int offset=maxy>>MoveOffset,jumpvalue=maxy>>JumpScrollValue;
 
     if ((size_t)maxy > dir->size) {
         dir->scroll[ctab] = 0;
@@ -400,7 +401,7 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
                 mvwaddstr(win,i,2+offt,tmp);
                 offt += strlen(tmp)+1;
             }
-            
+
             switch (Linemode) {
                 case L_SIZE:
                     if (SizeInBytes) {

@@ -23,7 +23,7 @@
 flexarr *
 flexarr_init(const size_t nmemb, const size_t inc_r)
 {
-  flexarr *ret = calloc(sizeof(flexarr),1);
+  flexarr *ret = calloc(1,sizeof(flexarr));
   ret->inc_r = inc_r;
   ret->nmemb = nmemb;
   return ret;
