@@ -1,7 +1,7 @@
 VERSION = 2.0.2
 CC = gcc -std=c99
 CFLAGS = -O3 -pipe -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
-LDFLAGS = 
+LDFLAGS =
 TARGET = csas
 
 PKG_CONFIG ?= pkg-config

@@ -36,7 +36,7 @@ xbind_add(char *keys, const char *value, flexarr *b)
 
     wchar_t k[BINDING_KEY_MAX];
     change_keys(k,keys);
-    
+
     xbind *bind = (xbind*)b->v;
     uchar found = 0;
     for (i = 0; i < b->size; i++) {
@@ -45,7 +45,7 @@ xbind_add(char *keys, const char *value, flexarr *b)
             break;
         }
     }
-    
+
     if (found == 0) {
         bind = (xbind*)flexarr_inc(b);
         bind->keys = wcsdup(k);
@@ -277,6 +277,7 @@ add_vars(flexarr *v)
     xvar_add(&Other_C,"Other_C",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(&Error_C,"Error_C",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(&Bar_C,"Bar_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Path_C,"Path_C",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(&Host_C,"Host_C",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(NULL,"DEFAULT",XVAR_INT|XVAR_CONST,(void*)COLOR_PAIR(DEFAULT),v);
     xvar_add(NULL,"RED",XVAR_INT|XVAR_CONST,(void*)COLOR_PAIR(RED),v);

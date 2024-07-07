@@ -43,6 +43,7 @@ extern li Sock_C;
 extern li Missing_C;
 extern li Other_C;
 extern li Bar_C;
+extern li Path_C;
 extern li Host_C;
 extern li Error_C;
 extern li NumberLines;
@@ -143,7 +144,7 @@ draw_path(csas *cs)
     xdir *dir = &CTAB(1);
     xfile *file = dir->files;
     size_t i=0,ctab=cs->ctab,sel=dir->sel[ctab];
-    attron(Dir_C);
+    attron(Dir_C|Path_C);
     if (dir->size > 0) {
         if (dir->path[0] == '/' && dir->path[1])
             i++;
@@ -159,7 +160,7 @@ draw_path(csas *cs)
         path_space = COLS-getcurx(stdscr)-1;
         pmax_size = (file[sel].nlen > path_space+1) ? path_space : file[sel].nlen;
         if (pmax_size) {
-            attron(Reg_C|A_BOLD);
+            attron(Reg_C|Path_C);
             addnstr(file[sel].name,pmax_size);
         }
     }
@@ -182,7 +183,7 @@ draw_tabs(int y, csas *cs)
     for (uint i = 0; i < TABS; i++) {
         if (tabs[i].flags&T_EXISTS) {
             if (i == cs->ctab)
-                attron(A_BOLD|A_REVERSE|Bar_C);
+                attron(Bar_C);
             else
                 attron(A_BOLD);
             str[1] = i+48;
@@ -318,12 +319,12 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
 {
     if (dir->size == 0) {
         werase(win);
-        wattron(win,Error_C|A_REVERSE);
+        wattron(win,Error_C);
         if (dir->flags&SEACCES)
             mvwaddstr(win,0,1,"NOT ACCESSIBLE");
         else
             mvwaddstr(win,0,1,"EMPTY");
-        wattroff(win,Error_C|A_REVERSE);
+        wattroff(win,Error_C);
         wrefresh(win);
         return;
     }
