@@ -434,7 +434,7 @@ strtotime(const char *src, ul *num)
         }
         pos++;
     }
-    
+
     END: ;
     *num += r;
     return pos;
@@ -867,7 +867,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                 }
                 if ((fd2 = open(d->path,O_DIRECTORY)) == -1)
                     goto END_fmod;
-                
+
                 func_fmod_count = 1;
                 if ((f->mode&S_IFMT) == S_IFDIR) {
                     if ((fd3 = openat(fd2,f->name,O_DIRECTORY)) == -1)
@@ -894,7 +894,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                         goto END_fmod;
                     ev = getinput(cs);
                 } while (1);
-                
+
                 switch (func_flags&(fufl_delete|fufl_move|fufl_copy)) {
                     case fufl_delete: file_rm(fd2,f->name); break;
                     case fufl_move: file_mv(func_target_fd,fd2,f->name,func_buffer,func_fmod_flags); break;
@@ -935,14 +935,14 @@ cmd_scout(int argc, char **argv, csas *cs)
             }
         }
     }
-    
+
     xdir *d;
     xfile *f;
     time_t date = time(NULL);
     size_t size;
     register uchar pass;
     int dfd=0,fd;
-    
+
     char *(*cmp)(const char*,const char*)=(flags&fl_insensitive ? strcasestr : strstr);
     #ifdef REGEX
     regex_t regex;
@@ -1154,7 +1154,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                     break;
                 d = &((xdir*)dirs->v)[((size_t*)dir_list->v)[i]];
             }
-        
+
             if (func == func_fmod && (dfd = open(d->path,O_DIRECTORY)) == -1)
                 continue;
             size = d->size;
@@ -1188,10 +1188,10 @@ cmd_scout(int argc, char **argv, csas *cs)
                 if (flags&fl_regex && regexec(&regex,f->name,0,NULL,0) != 0)
                     pass = 0;
                 #endif
-        
+
                 if ((flags&fl_invert) ? pass : !pass)
                     continue;
-        
+
                 if (func == func_fmod) {
                     switch (func_flags&(fufl_delete|fufl_move|fufl_copy)) {
                         case fufl_delete: file_rm(dfd,f->name); break;
@@ -1245,7 +1245,7 @@ cmd_scout(int argc, char **argv, csas *cs)
 
         if (func == func_bulk) {
             fflush(func_bulk_file);
-        
+
             if (writed == 0) {
                 ret = 0;
                 goto END1;
@@ -1442,9 +1442,9 @@ cmd_quit(int argc, char **argv, csas *cs)
 
     for (i = 0; i < TABS; i++)
          n += cs->tabs[i].flags&T_EXISTS;
- 
+
      cs->tabs[cs->ctab].flags &= ~T_EXISTS;
- 
+
      if (n > 1) {
          for (i = cs->ctab+1; i < TABS; i++) {
              if (cs->tabs[i].flags&T_EXISTS) {

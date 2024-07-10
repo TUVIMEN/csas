@@ -52,6 +52,7 @@ uchar get_extension_group(const char *name);
 size_t get_range(const char *src, ul *x, ul *y, size_t(handle_number)(const char*,ul*));
 char *strtoshellpath(char *src);
 int alias_run(char *src, size_t size, csas *cs);
+void trap_run(flexarr *trap, csas *cs);
 int splitargs(char *src, size_t size, csas *cs);
 
 #endif

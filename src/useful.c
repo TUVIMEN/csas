@@ -223,7 +223,7 @@ path_shrink(const char *path, size_t size, const size_t max_size)
 {
     if (size <= 2)
         return path;
-    
+
     static char ret[PATH_MAX];
     size_t x=0,pos,s=size;
 
@@ -268,7 +268,7 @@ size_shrink(size_t size)
         size >>= 10;
         t++;
     }
-    
+
     r *= 1000;
     r >>= 10;
 
@@ -481,7 +481,7 @@ handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xd
         if (n < TABS)
             num = n;
     }
-    
+
     switch (src[posy]) {
         case 'd':
            if (posx+dir->plen > max)
@@ -676,7 +676,7 @@ get_line(char *dest, char *src, size_t *count, size_t size)
 
         dest[x++] = src[pos++];
     }
-    
+
     END: ;
     if (x >= LLINE_MAX)
         x = LLINE_MAX-1;
@@ -692,7 +692,7 @@ config_load(const char *path, csas *cs)
     int fd;
     if ((fd = open(path,O_RDONLY)) == -1)
         return -1;
-    
+
     struct stat statbuf;
     if (fstat(fd,&statbuf) == -1) {
         close(fd);
@@ -1075,7 +1075,7 @@ file_cp(const int fd1, const int fd2, const char *name, char *buffer, const mode
             errno = e;
             return -1;
         }
-            
+
         if (mkdirat(fd1,t,statbuf.st_mode) != 0
             || (fd4 = openat(fd1,t,O_DIRECTORY)) == -1) {
             int e = errno;
@@ -1161,7 +1161,7 @@ file_mv(const int fd1, const int fd2, const char *name, char *buffer, const mode
             errno = e;
             return -1;
         }
-            
+
         if (mkdirat(fd1,t,statbuf.st_mode) != 0
             || (fd4 = openat(fd1,t,O_DIRECTORY)) == -1) {
             int e = errno;
@@ -1360,6 +1360,14 @@ alias_run(char *src, size_t size, csas *cs)
         i++;
     }
     return 0;
+}
+
+void
+trap_run(flexarr *trap, csas *cs)
+{
+    char **trapv = (char**)trap->v;
+    for (size_t i = 0; i < trap->size; i++)
+        alias_run(trapv[i],strlen(trapv[i]),cs);
 }
 
 int

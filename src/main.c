@@ -30,7 +30,6 @@ extern li Error_C;
 extern li Exit;
 extern li UpdateFile;
 extern li DirLoadingMode;
-extern flexarr *trap_exit;
 
 static void
 initcurses()
@@ -120,10 +119,8 @@ main(int argc, char **argv)
         conf = get_conf_path();
 
     csas *cs = csas_init();
-    initcurses();
-    endwin();
     config_load(conf,cs);
-    refresh();
+    initcurses();
 
     wins_resize(cs->wins);
     if (csas_cd(path,cs) == -1)
@@ -176,8 +173,6 @@ main(int argc, char **argv)
         }
     }
     endwin();
-    for (size_t i = 0; i < trap_exit->size; i++)
-        alias_run(((char**)trap_exit->v)[i],strlen(((char**)trap_exit->v)[i]),cs);
     csas_free(cs);
 
     return 0;

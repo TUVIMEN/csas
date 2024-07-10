@@ -229,7 +229,7 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         }
     }
     d->ctime = statbuf.st_ctim;
-    
+
     if (d->files != NULL) {
         free(d->names);
         d->names = NULL;
@@ -250,7 +250,7 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     d->asize = d->size;
     xfile_sort(d->files,d->size,SortMethod);
     d->sort = SortMethod;
-    
+
     END:
     if (!(flags&D_RECURSIVE))
         return ret;
@@ -264,6 +264,6 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
         rpath[rpathl+files[i].nlen] = 0;
         getdir(rpath,dirs,flags);
     }
-    
+
     return ret;
 }

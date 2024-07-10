@@ -486,11 +486,11 @@ csas_cd(const char *path, csas* cs)
     li n = getdir(path,cs->dirs,DirLoadingMode|D_CHDIR);
     if (n == -1)
         return -1;
+
     if ((size_t)n == size)
-        for (size_t i = 0; i < trap_newdir->size; i++)
-            alias_run(((char**)trap_newdir->v)[i],strlen(((char**)trap_newdir->v)[i]),cs);
-    for (size_t i = 0; i < trap_chdir->size; i++)
-        alias_run(((char**)trap_chdir->v)[i],strlen(((char**)trap_chdir->v)[i]),cs);
+        trap_run(trap_newdir,cs);
+    trap_run(trap_chdir,cs);
+
     cs->tabs[cs->ctab].wins[1] = (size_t)n;
     dir = &CTAB(1);
     if (search_name)
@@ -499,8 +499,7 @@ csas_cd(const char *path, csas* cs)
         size = cs->dirs->size;
         preview_get(&dir->files[dir->sel[cs->ctab]],cs);
         if (cs->dirs->size > size)
-            for (size_t i = 0; i < trap_newdir->size; i++)
-                alias_run(((char**)trap_newdir->v)[i],strlen(((char**)trap_newdir->v)[i]),cs);
+            trap_run(trap_newdir,cs);
     }
     if (MultipaneView && (dir->path[0] != '/' || dir->path[1] != 0)) {
         size = cs->dirs->size;
@@ -508,8 +507,7 @@ csas_cd(const char *path, csas* cs)
         if (n == -1)
             return -1;
         if ((size_t)n == size)
-            for (size_t i = 0; i < trap_newdir->size; i++)
-                alias_run(((char**)trap_newdir->v)[i],strlen(((char**)trap_newdir->v)[i]),cs);
+            trap_run(trap_newdir,cs);
         cs->tabs[cs->ctab].wins[0] = (size_t)n;
         if (FollowParentDir) {
             search_name = memrchr(dir->path,'/',dir->plen);
@@ -558,6 +556,8 @@ xdir_free(xdir *dir)
 void
 csas_free(csas *cs)
 {
+    trap_run(trap_exit,cs);
+
     size_t i;
     delwin(cs->wins[0]);
     delwin(cs->wins[1]);
