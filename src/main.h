@@ -51,19 +51,21 @@
 
 #pragma pack(1)
 
-#define DIR_INCR 32
-#define FILE_INCR 128
-#define NAMES_INCR 32
+#define DIR_INCR 64
+#define FILE_INCR 1024
+#define NAMES_INCR 1
+#define NAMES_INSIDE_INCR (1<<17)
+#define NAMES_INSIDE_MAX (1<<20)
 #define FUNCTIONS_INCR 8
-#define VARS_INCR 8
-#define HISTORY_INCR 8
-#define SEARCHLIST_INCR 32
+#define VARS_INCR 32
+#define HISTORY_INCR 16
+#define SEARCHLIST_INCR 128
 #define BINDING_KEY_MAX 26
-#define BINDINGS_QUANTITY (1<<12)
-#define BINDINGS_INCR 8
+#define BINDINGS_MAX_QUANTITY (1<<12)
+#define BINDINGS_INCR 32
 #define FUNCTIONS_NAME_MAX 256
 #define VARS_NAME_MAX 256
-#define LLINE_MAX (1<<12)
+#define LLINE_MAX (1<<13)
 #define PREVIEW_MAX (1<<15)
 #define NUM_MAX 32
 #define HISTORY_MAX 32
@@ -71,9 +73,9 @@
 #define TABS 10
 #define EXEC_ARGS_MAX (1<<7)
 #define ARG_MAX 6144
-#define ARGS_INCR (1<<5)
+#define ARGS_INCR (1<<5) //max length of argument
 #define BUFFER_MAX (1<<16)
-#define SIG_MAX (1<<10)
+#define SIG_MAX (1<<10) //size to be read for checking signature
 
 #define TAB(x,y) ((xdir*)cs->dirs->v)[cs->tabs[x].wins[y]]
 #define CTAB(x) TAB(cs->ctab,x)
@@ -242,10 +244,9 @@ typedef struct {
     size_t searchlist_pos;
     struct timespec ctime;
     char *path;
-    char *names;
-    xfile *files;
-    size_t size;
-    size_t asize;
+    flexarr *names;
+    flexarr *files;
+    size_t namesl;
     ushort plen;
     uchar sort;
     uchar flags;

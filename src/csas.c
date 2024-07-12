@@ -205,7 +205,7 @@ xvar_add(void *addr, const char *name, const uchar type, void *val, flexarr *v)
                 strcpy(vars->v,val);
             break;
         case XVAR_INT:
-            addr = (vars->v) ? vars->v : malloc(sizeof(li));
+            addr = (vars->v) ? vars->v : xmalloc(sizeof(li));
             // fall through
         case XVAR_INT|XVAR_POINTER:
             vars->v = addr;
@@ -382,7 +382,7 @@ wins_resize(WINDOW **wins)
 csas *
 csas_init()
 {
-    csas *ret = malloc(sizeof(csas));
+    csas *ret = xmalloc(sizeof(csas));
     memset(ret->tabs,0,sizeof(xtab)*TABS);
     ret->ctab = 0;
     ret->dirs = flexarr_init(sizeof(xdir),DIR_INCR);
@@ -419,8 +419,8 @@ csas_draw(csas *cs)
     draw_tbar(0,cs);
     draw_bbar(LINES-1,cs);
     xdir *d = &CTAB(1);
-    if (Visual && d->size)
-        d->files[d->sel[cs->ctab]].sel[cs->ctab] |= 1<<cs->tabs[cs->ctab].sel;
+    if (Visual && d->files->size)
+        ((xfile*)d->files->v)[d->sel[cs->ctab]].sel[cs->ctab] |= 1<<cs->tabs[cs->ctab].sel;
     draw_dir(cs->wins[1],d,cs);
     if (MultipaneView) {
         if (d->path[0] == '/' && d->path[1] == 0) {
@@ -429,7 +429,7 @@ csas_draw(csas *cs)
         } else {
             draw_dir(cs->wins[0],&CTAB(0),cs);
         }
-        if (CTAB(1).size == 0) {
+        if (CTAB(1).files->size == 0) {
             werase(cs->wins[2]);
             wrefresh(cs->wins[2]);
         } else {
@@ -459,12 +459,13 @@ searchfor(const char *name, const size_t tab, xdir *d)
     size_t nlen = strlen(name),i;
     if (nlen == 0)
         return;
-    xfile *files = d->files;
+    xfile *files = (xfile*)d->files->v;
+    size_t filesl = d->files->size;
     i = d->sel[tab];
     if (i != 0 && nlen == files[i].nlen
         && memcmp(name,files[i].name,nlen) == 0)
         return;
-    for (i = 0; i < d->size; i++) {
+    for (i = 0; i < filesl; i++) {
         if (nlen == files[i].nlen
             && memcmp(name,files[i].name,nlen) == 0) {
             d->sel[tab] = i;
@@ -477,15 +478,15 @@ int
 csas_cd(const char *path, csas* cs)
 {
     char *search_name = NULL;
-    size_t size;
-    xdir *dir = cs->dirs->size ? &CTAB(1) : NULL;
-    if (FollowParentDir && cs->dirs->size && path[0] == '.' && path[1] == '.' && path[2] == 0)
-        search_name = memrchr(dir->path,'/',dir->plen);
-
-    size = cs->dirs->size;
     li n = getdir(path,cs->dirs,DirLoadingMode|D_CHDIR);
     if (n == -1)
         return -1;
+
+    xdir *dir = cs->dirs->size ? &CTAB(1) : NULL;
+    size_t size = cs->dirs->size;
+
+    if (FollowParentDir && size && path[0] == '.' && path[1] == '.' && path[2] == 0)
+        search_name = memrchr(dir->path,'/',dir->plen);
 
     if ((size_t)n == size)
         trap_run(trap_newdir,cs);
@@ -493,11 +494,14 @@ csas_cd(const char *path, csas* cs)
 
     cs->tabs[cs->ctab].wins[1] = (size_t)n;
     dir = &CTAB(1);
+    xfile *files = (xfile*)dir->files->v;
+    size_t filesl = dir->files->size;
+
     if (search_name)
         searchfor(++search_name,cs->ctab,dir);
-    if (MultipaneView && dir->size) {
+    if (MultipaneView && filesl) {
         size = cs->dirs->size;
-        preview_get(&dir->files[dir->sel[cs->ctab]],cs);
+        preview_get(&files[dir->sel[cs->ctab]],cs);
         if (cs->dirs->size > size)
             trap_run(trap_newdir,cs);
     }
@@ -547,10 +551,14 @@ xdir_free(xdir *dir)
 {
     flexarr_free(dir->searchlist);
     free(dir->path);
-    if (dir->asize)
-        free(dir->names);
-    if (dir->files)
-        free(dir->files);
+    flexarr_free(dir->files);
+    if (dir->names) {
+        flexarr *names = dir->names;
+        flexarr **namesv = (flexarr**)names->v;
+        for (size_t i = 0; i < names->size; i++)
+            flexarr_free(namesv[i]);
+        flexarr_free(names);
+    }
 }
 
 void

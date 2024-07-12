@@ -52,51 +52,83 @@ xfile_update(xfile *f)
 int
 load_dir(xdir *dir)
 {
-    dir->size = 0;
     ret_errno(dir==NULL,EINVAL,-1);
+
+    flexarr *files = dir->files;
+    files->size = 0;
+
     char *path = dir->path;
     ret_errno(path==NULL,EINVAL,-1);
-    ret_errno(dir->files!=NULL,EINVAL,-1);
     DIR *dp;
     if (!(dp = opendir(path)))
         return -1;
+
+    flexarr *names = dir->names;
+    size_t names_index=0,
+           names_declared_size=0;
+
+    if (!names) {
+        names = flexarr_init(sizeof(flexarr*),NAMES_INCR);
+    } else {
+        names_declared_size = names->size;
+        names->size = 0;
+    }
+
+    flexarr *ninside = NULL;
+    char *ninsidev = NULL;
+    size_t nfiles_start = 0;
+
     int fd = dirfd(dp),t;
     struct dirent *ep;
-    size_t size=0,asize=0,names_size=0,names_asize=0,nlen;
-    xfile *files = NULL;
-    char *names = NULL,*dname;
+    size_t nlen;
+    char *dname;
     struct stat statbuf;
 
     while ((ep = readdir(dp))) {
         dname = ep->d_name;
         if (dname[0] == '.' && (dname[1] == 0 || (dname[1] == '.' && dname[2] == 0)))
             continue;
-        if (size == asize) {
-            asize += FILE_INCR;
-            void *pmem = realloc(files,asize*sizeof(xfile));
-            if (pmem == NULL) {
-                if (files)
-                    free(files);
-                return -1;
-            }
-            files = pmem;
-        }
-        xfile *f = &files[size];
-        if (names_size+NAME_MAX >= names_asize) {
-            names_asize += NAMES_INCR*NAME_MAX;
-            void *pmem = realloc(names,names_asize);
-            if (pmem == NULL) {
-                if (names)
-                    free(names);
-                return -1;
-            }
-            names = pmem;
-        }
+
+        xfile *f = (xfile*)flexarr_inc(files);
         nlen = strlen(dname);
         f->nlen = nlen++;
-        memcpy(names+names_size,dname,nlen);
-        f->name = (void*)names_size;
-        names_size += nlen;
+
+        if (!names->size || ninside->size+nlen > ninside->asize) {
+            if (!ninside || ninside->asize >= NAMES_INSIDE_MAX) {
+                if (ninside) {
+                    if (ninside->size != ninside->asize) {
+                        ninside = ((flexarr**)names->v)[names_index];
+                        flexarr_clearb(ninside);
+                        ninsidev = ninside->v;
+                    }
+
+                    xfile *filesv = (xfile*)files->v;
+                    for (size_t i = nfiles_start; i < files->size-1; i++)
+                        filesv[i].name += (size_t)ninsidev;
+                    nfiles_start = files->size-1;
+                }
+
+                flexarr **x = (flexarr**)flexarr_inc(names);
+                size_t diff = (void*)x-(void*)names->v;
+                names_index = diff ? diff/names->elsize : 0;
+
+                if (names_index < names_declared_size) {
+                    (*x)->size = 0;
+                } else
+                    *x = flexarr_init(sizeof(char),NAMES_INSIDE_INCR);
+            }
+
+            ninside = ((flexarr**)names->v)[names_index];
+            size_t size_temp = ninside->size;
+            ninside->size = ninside->asize;
+            flexarr_inc(ninside);
+            ninside->size = size_temp;
+            ninsidev = (char*)ninside->v;
+        }
+
+        memcpy(ninsidev+ninside->size,dname,nlen);
+        f->name = (void*)ninside->size;
+        ninside->size += nlen;
 
         fstatat(fd,dname,&statbuf,AT_SYMLINK_NOFOLLOW);
         memset(f->sel,0,TABS);
@@ -117,31 +149,35 @@ load_dir(xdir *dir)
                 close(t);
             }
         }
-        size++;
     }
     closedir(dp);
-    if (size != asize) {
-        void *pmem = realloc(files,size*sizeof(xfile));
-        if (pmem == NULL) {
-            free(files);
-            return -1;
+
+    flexarr_clearb(files);
+
+    if (names->asize) {
+        names->size = names_index+1;
+
+        if (names_index < names_declared_size) {
+            flexarr **namesv = (flexarr**)names->v;
+            for (size_t i = names_index+1; i < names_declared_size; i++)
+                flexarr_free(namesv[i]);
         }
-        files = pmem;
+
+        flexarr_clearb(names);
+        ninside = ((flexarr**)names->v)[names_index];
+
+        if (ninside->size != ninside->asize)
+            flexarr_clearb(ninside);
+        ninsidev = ninside->v;
     }
-    if (names_size != names_asize) {
-        void *pmem = realloc(names,names_size);
-        if (pmem == NULL) {
-            free(files);
-            return -1;
-        }
-        names = pmem;
-    }
-    if (size)
-        for (size_t i = 0; i < size; i++)
-            files[i].name += (size_t)names;
-    dir->size = size;
+
+    xfile *filesv = (xfile*)files->v;
+    for (size_t i = nfiles_start; i < files->size; i++)
+        filesv[i].name += (size_t)ninsidev;
+
     dir->files = files;
     dir->names = names;
+
     return 0;
 }
 
@@ -171,6 +207,7 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     }
 
     xdir *d = (xdir*)dirs->v;
+    size_t dsize = 0;
     uchar found = 0;
     for (i = 0; i < dirs->size; i++) {
         if (rpathl == d[i].plen && memcmp(d[i].path,rpath,rpathl) == 0) {
@@ -181,9 +218,10 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
 
     if (found) {
         d = &d[i];
+        dsize = d->files->size;
         if (flags&D_MODE_ONCE) {
             if (d->sort != SortMethod) {
-                xfile_sort(d->files,d->size,SortMethod);
+                xfile_sort((xfile*)d->files->v,dsize,SortMethod);
                 d->sort = SortMethod;
             }
             if (flags&D_CHDIR)
@@ -196,19 +234,12 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     } else {
         d = flexarr_inc(dirs);
         ret = dirs->size-1;
-        d->path = malloc(PATH_MAX);
+
+        memset(d,0,sizeof(xdir));
+        d->path = xmalloc(PATH_MAX);
         memcpy(d->path,rpath,rpathl+1);
         d->plen = rpathl;
-        d->files = NULL;
-        d->size = 0;
-        d->asize = 0;
-        memset(d->sel,0,TABS*sizeof(size_t));
-        memset(d->scroll,0,TABS*sizeof(size_t));
-        memset(&d->ctime,0,sizeof(struct timespec));
-        d->searchlist = flexarr_init(sizeof(char*),SEARCHLIST_INCR);
-        d->searchlist_pos = 0;
-        d->sort = 0;
-        d->flags = 0;
+        d->files = flexarr_init(sizeof(xfile),FILE_INCR);
     }
 
     if (access(path,R_OK) != 0) {
@@ -219,45 +250,39 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     if (flags&D_CHDIR)
         if (chdir(path) != 0)
             return -1;
-    if (flags&D_MODE_CHANGE) {
-        if (memcmp(&d->ctime,&statbuf.st_ctim,sizeof(struct timespec)) == 0) {
-            if (d->sort != SortMethod) {
-                xfile_sort(d->files,d->size,SortMethod);
-                d->sort = SortMethod;
-            }
-            goto END;
-        }
-    }
+    if (flags&D_MODE_CHANGE &&
+        memcmp(&d->ctime,&statbuf.st_ctim,sizeof(struct timespec)) == 0)
+        goto END;
+
     d->ctime = statbuf.st_ctim;
 
-    if (d->files != NULL) {
-        free(d->names);
-        d->names = NULL;
-        free(d->files);
-        d->files = NULL;
-        d->size = 0;
-        d->asize = 0;
-    }
-    if (load_dir(d) != 0)
-        return -1;
-    if (d->size) {
-        for (size_t i = 0; i < TABS; i++) {
-            if (d->sel[i] >= d->size)
-                d->sel[i] = d->size-1;
-        }
-    }
-    d->flags &= ~S_CHANGED;
-    d->asize = d->size;
-    xfile_sort(d->files,d->size,SortMethod);
-    d->sort = SortMethod;
+    int ld_ret = load_dir(d);
 
-    END:
+    dsize = d->files->size;
+    for (size_t i = 0; i < TABS; i++) {
+        if (d->sel[i] >= dsize)
+            d->sel[i] = dsize-1;
+    }
+
+    if (ld_ret != 0)
+        return -1;
+
+    d->flags &= ~S_CHANGED;
+
+    END: ;
+    xfile *files = (xfile*)d->files->v;
+    size_t filesl = d->files->size;
+
+    if (d->sort != SortMethod) {
+        xfile_sort(files,filesl,SortMethod);
+        d->sort = SortMethod;
+    }
+
     if (!(flags&D_RECURSIVE))
         return ret;
 
-    xfile *files = d->files;
     rpath[rpathl++] = '/';
-    for (size_t i = 0; i < ((xdir*)dirs->v)[ret].asize; i++) {
+    for (size_t i = 0; i < filesl; i++) {
         if ((files[i].mode&S_IFMT) != S_IFDIR && (flags&D_FOLLOW && !(files[i].flags&SLINK_TO_DIR)))
             continue;
         memcpy(rpath+rpathl,files[i].name,files[i].nlen);

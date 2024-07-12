@@ -18,13 +18,47 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <err.h>
 
 #include "flexarr.h"
+
+static void
+alloc_error()
+{
+    err(69,"could not allocate");
+}
+
+void *
+xmalloc(size_t size)
+{
+    void *ret = malloc(size);
+    if (ret == NULL)
+        alloc_error();
+    return ret;
+}
+
+void *
+xcalloc(size_t nmemb, size_t size)
+{
+    void *ret = calloc(nmemb,size);
+    if (ret == NULL)
+        alloc_error();
+    return ret;
+}
+
+void *
+xrealloc(void *ptr,size_t size)
+{
+    void *ret = realloc(ptr,size);
+    if (size && ret == NULL)
+        alloc_error();
+    return ret;
+}
 
 flexarr *
 flexarr_init(const size_t elsize, const size_t inc_r)
 {
-  flexarr *ret = calloc(1,sizeof(flexarr));
+  flexarr *ret = xcalloc(1,sizeof(flexarr));
   ret->inc_r = inc_r;
   ret->elsize = elsize;
   return ret;
@@ -33,12 +67,8 @@ flexarr_init(const size_t elsize, const size_t inc_r)
 void *
 flexarr_inc(flexarr *f)
 {
-  if (f->size == f->asize) {
-    void *v = realloc(f->v,(f->asize+=f->inc_r)*f->elsize);
-    if (v == NULL)
-      return NULL;
-    f->v = v;
-  }
+  if (f->size == f->asize)
+    f->v = xrealloc(f->v,(f->asize+=f->inc_r)*f->elsize);
   return f->v+(f->size++*f->elsize);
 }
 
@@ -55,11 +85,8 @@ flexarr_set(flexarr *f, const size_t s) //set number of allocated elements to s
 {
   if (f->size >= s || f->asize >= s)
     return NULL;
-  void *v = realloc(f->v,s*f->elsize);
-  if (v == NULL)
-    return NULL;
   f->asize = s;
-  return f->v = v;
+  return f->v = xrealloc(f->v,s*f->elsize);;
 }
 
 void *
@@ -67,11 +94,8 @@ flexarr_alloc(flexarr *f, const size_t s) //allocate additional s amount of elem
 {
   if (s == 0 || f->asize-f->size >= s)
     return f->v;
-  void *v = realloc(f->v,(f->size+s)*f->elsize);
-  if (v == NULL)
-    return NULL;
   f->asize = f->size+s;
-  return f->v = v;
+  return f->v = xrealloc(f->v,(f->size+s)*f->elsize);
 }
 
 void *
@@ -90,10 +114,8 @@ flexarr_clearb(flexarr *f) //clear buffer
 {
   if (f->size == f->asize || !f->v)
       return NULL;
-  void *v = realloc(f->v,f->size*f->elsize);
-  if (v == NULL)
-    return NULL;
-  return f->v = v;
+  f->asize = f->size;
+  return f->v = xrealloc(f->v,f->size*f->elsize);
 }
 
 void
@@ -112,6 +134,8 @@ flexarr_conv(flexarr *f, void **v, size_t *s) //convert from flexarr to normal a
 void
 flexarr_free(flexarr *f)
 {
+  if (!f)
+      return;
   if (f->asize)
     free(f->v);
   f->v = NULL;

@@ -142,26 +142,28 @@ static void
 draw_path(csas *cs)
 {
     xdir *dir = &CTAB(1);
-    xfile *file = dir->files;
+    xfile *files = (xfile*)dir->files->v;
+    size_t filesl = dir->files->size;
+
     size_t i=0,ctab=cs->ctab,sel=dir->sel[ctab];
     attron(Dir_C|Path_C);
-    if (dir->size > 0) {
+    if (filesl > 0) {
         if (dir->path[0] == '/' && dir->path[1])
             i++;
-        i = file[sel].nlen;
+        i = files[sel].nlen;
     }
     size_t path_space = COLS-getcurx(stdscr)-1,pmax_size;
     pmax_size = (i > path_space) ? 1 : path_space-i;
     addnstr(path_shrink(dir->path,dir->plen,pmax_size),dir->plen);
-    if (dir->size > 0) {
+    if (filesl > 0) {
         if (dir->path[0] == '/' && dir->path[1])
             addch('/');
         attroff(-1);
         path_space = COLS-getcurx(stdscr)-1;
-        pmax_size = (file[sel].nlen > path_space+1) ? path_space : file[sel].nlen;
+        pmax_size = (files[sel].nlen > path_space+1) ? path_space : files[sel].nlen;
         if (pmax_size) {
             attron(Reg_C|Path_C);
-            addnstr(file[sel].name,pmax_size);
+            addnstr(files[sel].name,pmax_size);
         }
     }
     attroff(-1);
@@ -209,10 +211,13 @@ draw_bbar(int y, csas *cs)
     char tmp[PATH_MAX],*t;
     xdir *dir = &CTAB(1);
     size_t i=0,j,ctab=cs->ctab,sel=dir->sel[ctab];
+    xfile *files = (xfile*)dir->files->v;
+    size_t filesl = dir->files->size;
+
     mvhline(y,0,' ',COLS);
 
-    if (dir->size) {
-        xfile *file = &dir->files[sel];
+    if (filesl) {
+        xfile *file = &files[sel];
         t = lsperms(file->mode);
         addstr(t);
         addch(' ');
@@ -239,8 +244,8 @@ draw_bbar(int y, csas *cs)
             }
         }
 
-        if (dir->size > 0) {
-            i = snprintf(tmp,16,"%lu/%lu",sel+1,dir->size);
+        if (filesl > 0) {
+            i = snprintf(tmp,16,"%lu/%lu",sel+1,filesl);
             if (i)
                 mvaddnstr(LINES-1,COLS-i,tmp,i);
         } else {
@@ -317,7 +322,10 @@ draw_bbar(int y, csas *cs)
 void
 draw_dir(WINDOW *win, xdir *dir, csas *cs)
 {
-    if (dir->size == 0) {
+    xfile *files = (xfile*)dir->files->v;
+    size_t filesl = dir->files->size;
+
+    if (filesl == 0) {
         werase(win);
         wattron(win,Error_C);
         if (dir->flags&SEACCES)
@@ -330,12 +338,11 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
     }
 
     size_t i,j,ctab=cs->ctab,scroll=dir->scroll[ctab],sel=dir->sel[ctab];
-    xfile *file = dir->files;
     int color,maxx,maxy;
     getmaxyx(win,maxy,maxx);
     int offset=maxy>>MoveOffset,jumpvalue=maxy>>JumpScrollValue;
 
-    if ((size_t)maxy > dir->size) {
+    if ((size_t)maxy > filesl) {
         dir->scroll[ctab] = 0;
     } else if (sel < scroll+offset) {
         if (sel <= (size_t)offset) {
@@ -351,12 +358,12 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
         }
     } else if (sel < scroll) {
         dir->scroll[ctab] = sel;
-    } else if (sel == dir->size-1) {
-        dir->scroll[ctab] = dir->size-maxy;
+    } else if (sel == filesl-1) {
+        dir->scroll[ctab] = filesl-maxy;
     } else if (scroll > sel) {
-        dir->scroll[ctab] = dir->size-maxy;
-    } else if (scroll >= dir->size-maxy) {
-        dir->scroll[ctab] = dir->size-maxy;
+        dir->scroll[ctab] = filesl-maxy;
+    } else if (scroll >= filesl-maxy) {
+        dir->scroll[ctab] = filesl-maxy;
     } else if (sel >= scroll+maxy-offset) {
         dir->scroll[ctab] = sel-maxy+1+offset;
         if (JumpScroll)
@@ -368,19 +375,19 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
     char tmp[32],*end=NULL;
     if (NumberLinesOffset) {
         off1 = 0;
-        register size_t c = (dir->size-1)+NumberLinesStartFrom;
+        register size_t c = (filesl-1)+NumberLinesStartFrom;
         while (c > 9) {
             c /= 10;
             off1++;
         }
     }
-    for (i = 0, j = scroll; i < (size_t)maxy && j < dir->size; i++, j++) {
-        if (file[j].sel[ctab]&(1<<cs->tabs[ctab].sel))
+    for (i = 0, j = scroll; i < (size_t)maxy && j < filesl; i++, j++) {
+        if (files[j].sel[ctab]&(1<<cs->tabs[ctab].sel))
             wattr_set(win,A_REVERSE,sel_colors[cs->tabs[ctab].sel],NULL);
         mvwaddch(win,i,0,' ');
         wattr_set(win,0,0, NULL);
 
-        color =  color_by_mode(file[j].name,file[j].mode,file[j].flags);
+        color =  color_by_mode(files[j].name,files[j].mode,files[j].flags);
         if (j == sel)
             color |= Sel_C;
         wattron(win,color);
@@ -406,19 +413,19 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
             switch (Linemode) {
                 case L_SIZE:
                     if (SizeInBytes) {
-                        ltoa(file[j].size,tmp);
+                        ltoa(files[j].size,tmp);
                         end = tmp;
                     } else {
-                        end = size_shrink(file[j].size);
+                        end = size_shrink(files[j].size);
                     }
                     endl = strlen(end);
                     break;
                 case L_MTIME:
                     end = tmp;
-                    endl = ttoa(&file[j].mtime,tmp);
+                    endl = ttoa(&files[j].mtime,tmp);
                     break;
                 case L_PERMS:
-                    end = lsperms(file[j].mode);
+                    end = lsperms(files[j].mode);
                     endl = 10;
                     break;
                 default:
@@ -427,11 +434,11 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
             }
         }
 
-        if (file[j].nlen >= maxx-endl-5-offt) {
-            mvwaddnstr(win,i,2+offt,file[j].name,maxx-endl-5);
+        if (files[j].nlen >= maxx-endl-5-offt) {
+            mvwaddnstr(win,i,2+offt,files[j].name,maxx-endl-5);
             waddch(win,'~');
         } else {
-            mvwaddnstr(win,i,2+offt,file[j].name,file[j].nlen);
+            mvwaddnstr(win,i,2+offt,files[j].name,files[j].nlen);
         }
         if (win == cs->wins[1])
             mvwaddnstr(win,i,maxx-endl-1,end,endl);

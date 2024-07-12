@@ -61,10 +61,10 @@ update_event(csas *cs)
         i++;
     int event=0;
     size_t i=0,j,n=0;
-    const size_t size = cs->bindings->size%BINDINGS_QUANTITY;
+    const size_t size = cs->bindings->size%BINDINGS_MAX_QUANTITY;
     xbind *b = BINDINGS;
     ushort passedl=0,tmp_passedl=0,
-         passed[BINDINGS_QUANTITY*sizeof(uint)];
+         passed[BINDINGS_MAX_QUANTITY*sizeof(uint)];
 
     while (true) { //handle first character
         event = getinput(cs);
@@ -173,11 +173,14 @@ static void
 move_d(xdir *dir, size_t value, const size_t tab, const uchar flags)
 {
     size_t sel=dir->sel[tab],t=sel,b1=0,e1=0,b2=0,e2=0;
+    xfile *files = (xfile*)dir->files->v;
+    size_t filesl = dir->files->size;
+
     switch (flags&3) {
         case MOVE_SET:
             t = value;
-            if (t >= dir->size)
-                t = dir->size-1;
+            if (t >= filesl)
+                t = filesl-1;
             if (t > sel) {
                 b1 = sel;
                 e1 = t;
@@ -190,23 +193,23 @@ move_d(xdir *dir, size_t value, const size_t tab, const uchar flags)
             t += value;
             b1 = sel;
             e1 = t;
-            if (t >= dir->size) {
+            if (t >= filesl) {
                 if (WrapScroll) {
                     b1 = sel;
-                    e1 = dir->size-1;
-                    t %= dir->size;
-                    if (b1 != 0 || e1 != dir->size-1) {
+                    e1 = filesl-1;
+                    t %= filesl;
+                    if (b1 != 0 || e1 != filesl-1) {
                         b2 = 0;
                         e2 = t;
                     }
                 } else {
                     b1 = t;
-                    t = dir->size-1;
+                    t = filesl-1;
                     e1 = t;
                 }
-                if (value >= dir->size) {
+                if (value >= filesl) {
                     b1 = 0;
-                    e1 = dir->size-1;
+                    e1 = filesl-1;
                     b2 = 0;
                     e2 = 0;
                 }
@@ -217,10 +220,10 @@ move_d(xdir *dir, size_t value, const size_t tab, const uchar flags)
                 if (WrapScroll) {
                     b1 = 0;
                     e1 = sel;
-                    t = (dir->size+sel-value)%dir->size;
+                    t = (filesl+sel-value)%filesl;
                     if (t > e1) {
                         b2 = t;
-                        e2 = dir->size-1;
+                        e2 = filesl-1;
                     }
                 } else {
                     t = 0;
@@ -232,9 +235,9 @@ move_d(xdir *dir, size_t value, const size_t tab, const uchar flags)
                 b1 = t;
                 e1 = sel;
             }
-            if (value >= dir->size) {
+            if (value >= filesl) {
                 b1 = 0;
-                e1 = dir->size-1;
+                e1 = filesl-1;
                 b2 = 0;
                 e2 = 0;
             }
@@ -243,9 +246,9 @@ move_d(xdir *dir, size_t value, const size_t tab, const uchar flags)
 
     if (Visual) {
         for (; b1 < e1; b1++)
-            dir->files[b1].sel[tab] |= 1<<0;
+            files[b1].sel[tab] |= 1<<0;
         for (; b2 < e2; b2++)
-            dir->files[b2].sel[tab] |= 1<<0;
+            files[b2].sel[tab] |= 1<<0;
     }
 
     dir->sel[tab] = t;
@@ -264,8 +267,10 @@ cmd_move(int argc, char **argv, csas *cs)
         value = 1;
 
     xdir *dir = &CTAB(1);
+    xfile *files = (xfile*)dir->files->v;
+    size_t filesl = dir->files->size;
 
-    if (dir->size == 0)
+    if (filesl == 0)
         return 0;
 
     int opt;
@@ -286,15 +291,15 @@ cmd_move(int argc, char **argv, csas *cs)
     }
     if (optind < argc) {
         if (*argv[optind] == '$') {
-            value = dir->size-1;
+            value = filesl-1;
         } else {
             calc(argv[optind],(li*)&value,cs->vars);
         }
     }
 
     move_d(dir,value,cs->ctab,mode);
-    if (MultipaneView && dir->size)
-        preview_get(&dir->files[dir->sel[cs->ctab]],cs);
+    if (MultipaneView && filesl)
+        preview_get(&files[dir->sel[cs->ctab]],cs);
     return 0;
 }
 
@@ -375,7 +380,7 @@ cmd_console(int argc, char **argv, csas *cs)
             ((char**)history->v)[i] = ((char**)history->v)[i+1];
         ((char**)history->v)[history->size-1] = t;
     } else
-        *((char**)flexarr_inc(history)) = malloc(LLINE_MAX);
+        *((char**)flexarr_inc(history)) = xmalloc(LLINE_MAX);
     ((char**)history->v)[history->size-1][0] = 0;
 
     s = console_getline((char**)history->v,history->size,first,add,offset,cs,expand_commands);
@@ -807,7 +812,7 @@ cmd_scout(int argc, char **argv, csas *cs)
         func_target_fd = open(((func_flags&fufl_target) ? func_target : CTAB(1).path),O_DIRECTORY);
         if (func_target_fd == -1)
             goto END1;
-        func_buffer = (char*)malloc(BufferSize);
+        func_buffer = (char*)xmalloc(BufferSize);
     }
 
     if (func == func_bulk) {
@@ -819,7 +824,7 @@ cmd_scout(int argc, char **argv, csas *cs)
 
     if (func_flags&fufl_selected) {
         flexarr_free(dir_list);
-        xfile *f = &CTAB(1).files[CTAB(1).sel[cs->ctab]];
+        xfile *f = &((xfile*)CTAB(1).files->v)[CTAB(1).sel[cs->ctab]];
         switch (func) {
             case func_select:
                 for (uchar n = func_tabx; n != func_taby+1; n++) {
@@ -836,7 +841,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                 break;
             case func_ds: {
                 xdir *d = &CTAB(1);
-                xfile *file = &d->files[d->sel[cs->ctab]];
+                xfile *file = &((xfile*)d->files->v)[d->sel[cs->ctab]];
                 if (func_ds_flags&D_F) {
                     struct stat statbuf;
                     if (stat(file->name,&statbuf) == -1)
@@ -859,9 +864,9 @@ cmd_scout(int argc, char **argv, csas *cs)
                 break;
             case func_fmod: {
                 xdir *d = &CTAB(1);
-                xfile *f = &d->files[d->sel[cs->ctab]];
+                xfile *f = &((xfile*)d->files->v)[d->sel[cs->ctab]];
                 int fd3,fd2=-1;
-                if (d->size == 0) {
+                if (d->files->size == 0) {
                     ret = 0;
                     goto END_fmod;
                 }
@@ -967,7 +972,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                 break;
             d = &((xdir*)dirs->v)[((size_t*)dir_list->v)[i]];
         }
-        size = d->size;
+        size = d->files->size;
         switch (func) {
             case func_list:
                 flexarr_free(d->searchlist);
@@ -976,11 +981,11 @@ cmd_scout(int argc, char **argv, csas *cs)
                 break;
             case func_filter:
                 if (func_flags&fufl_clear) {
-                    d->size = d->asize;
+                    d->files->size = d->files->asize;
                     goto SKIP;
                 }
-                d->size = 0;
-                size = d->asize;
+                d->files->size = 0;
+                size = d->files->asize;
                 break;
             case func_fmod: case func_ds:
                 if ((dfd = open(d->path,O_DIRECTORY)) == -1)
@@ -991,7 +996,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                 break;
         }
         for (size_t j = 0; j < size; j++) {
-            f = &d->files[j];
+            f = &((xfile*)d->files->v)[j];
             pass = 1;
             if (flags&fl_mode && (f->mode&0777) != (mode&0777))
                 pass = 0;
@@ -1033,15 +1038,15 @@ cmd_scout(int argc, char **argv, csas *cs)
                     *((char**)flexarr_inc(d->searchlist)) = f->name;
                     break;
                 case func_filter: {
-                    if (j == d->size) {
-                        d->size++;
+                    if (j == d->files->size) {
+                        d->files->size++;
                         continue;
                     }
                     char t[sizeof(xfile)];
-                    memcpy(t,&d->files[d->size],sizeof(xfile));
-                    memcpy(&d->files[d->size],f,sizeof(xfile));
+                    memcpy(t,&((xfile*)d->files->v)[d->files->size],sizeof(xfile));
+                    memcpy(&((xfile*)d->files->v)[d->files->size],f,sizeof(xfile));
                     memcpy(f,t,sizeof(xfile));
-                    d->size++;
+                    d->files->size++;
                     }
                     break;
                 case func_select:
@@ -1059,14 +1064,14 @@ cmd_scout(int argc, char **argv, csas *cs)
                 case func_ds:
                     if (func_ds_flags&D_F) {
                         struct stat statbuf;
-                        if (fstatat(dfd,d->files[i].name,&statbuf,0) == -1)
+                        if (fstatat(dfd,((xfile*)d->files->v)[i].name,&statbuf,0) == -1)
                             continue;
-                        d->files[j].size = statbuf.st_size;
+                        ((xfile*)d->files->v)[j].size = statbuf.st_size;
                     } else {
-                        if ((fd = openat(dfd,d->files[j].name,O_DIRECTORY)) == -1)
+                        if ((fd = openat(dfd,((xfile*)d->files->v)[j].name,O_DIRECTORY)) == -1)
                             continue;
-                        d->files[j].size = 0;
-                        get_dirsize(fd,&d->files[j].size,&d->files[j].size,func_ds_flags);
+                        ((xfile*)d->files->v)[j].size = 0;
+                        get_dirsize(fd,&((xfile*)d->files->v)[j].size,&((xfile*)d->files->v)[j].size,func_ds_flags);
                     }
                     break;
                 case func_fmod:
@@ -1135,7 +1140,7 @@ cmd_scout(int argc, char **argv, csas *cs)
                 ret = 0;
                 goto END1;
             }
-            func_bulk_filecopy = (char*)malloc(statbuf.st_size+1);
+            func_bulk_filecopy = (char*)xmalloc(statbuf.st_size+1);
             if (read(func_bulk_fd,func_bulk_filecopy,statbuf.st_size) == -1)
                 goto END1;
             if (freopen(func_bulk_tfile,"w+",func_bulk_file) == NULL)
@@ -1157,9 +1162,9 @@ cmd_scout(int argc, char **argv, csas *cs)
 
             if (func == func_fmod && (dfd = open(d->path,O_DIRECTORY)) == -1)
                 continue;
-            size = d->size;
+            size = d->files->size;
             for (size_t j = 0; j < size; j++) {
-                f = &d->files[j];
+                f = &((xfile*)d->files->v)[j];
                 pass = 1;
                 if (flags&fl_mode && (f->mode&0777) != (mode&0777))
                     pass = 0;
@@ -1599,8 +1604,9 @@ int
 cmd_sort(int argc, char **argv, csas *cs)
 {
     xdir *dir = &CTAB(1);
-    if (dir->size > 0) {
-        xfile_sort(dir->files,dir->size,SortMethod);
+    size_t filesl = dir->files->size;
+    if (filesl > 0) {
+        xfile_sort((xfile*)dir->files->v,filesl,SortMethod);
         dir->sort = SortMethod;
     }
     return 0;
@@ -1614,9 +1620,10 @@ cmd_lmove(int argc, char **argv, csas *cs)
         return -1;
     }
     xdir *dir = &CTAB(1);
-    if (dir->size == 0)
+    xfile *files = (xfile*)dir->files->v;
+    size_t filesl = dir->files->size;
+    if (filesl == 0)
         return 0;
-    xfile *files = dir->files;
     size_t mul=(size_t)atol(cs->typed),ctab=cs->ctab;
     if (mul == 0)
         mul = 1;
@@ -1665,7 +1672,7 @@ cmd_lmove(int argc, char **argv, csas *cs)
     size_t i;
     uchar found = 0;
     char *name = searchl[dir->searchlist_pos];
-    for (i = 0; i < dir->size; i++) {
+    for (i = 0; i < filesl; i++) {
         if (name == files[i].name) {
             found = 1;
             break;
@@ -1674,7 +1681,7 @@ cmd_lmove(int argc, char **argv, csas *cs)
     if (found) {
         dir->sel[ctab] = i;
         if (MultipaneView)
-            preview_get(&dir->files[i],cs);
+            preview_get(&files[i],cs);
     }
     return 0;
 }

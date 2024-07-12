@@ -18,7 +18,6 @@ csas is a console file manager written in C. It is heavily inspired by [ranger](
  - Tiny binary (typically around 130KB)
  - No FPU usage
  - UTF-8 Support
- - Zero memory fragmentation while storing filenames
  - Hackable
 
 ## Installation

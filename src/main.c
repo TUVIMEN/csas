@@ -154,8 +154,8 @@ main(int argc, char **argv)
 
         if (UpdateFile) {
             register xdir *d = &CTAB(1);
-            if (d->files)
-                xfile_update(&d->files[d->sel[cs->ctab]]);
+            if (d->files->size)
+                xfile_update(&((xfile*)d->files->v)[d->sel[cs->ctab]]);
         }
 
         if (t1 != t2) {

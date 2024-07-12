@@ -27,6 +27,11 @@ typedef struct {
   size_t inc_r; //increase rate
 } flexarr;
 
+
+void *xmalloc(size_t size);
+void *xcalloc(size_t nmemb, size_t size);
+void *xrealloc(void *ptr,size_t size);
+
 flexarr *flexarr_init(const size_t elsize, const size_t inc_r);
 void *flexarr_inc(flexarr *f);
 void *flexarr_dec(flexarr *f);

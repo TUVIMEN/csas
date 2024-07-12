@@ -474,7 +474,8 @@ handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xd
 
     size_t posx=*x,posy=*y+1;
     int num=sel;
-    xfile *files = dir->files;
+    xfile *files = (xfile*)dir->files->v;
+    size_t filesl = dir->files->size;
     if (isdigit(src[posy])) {
         int n=atoi(src+posy++);
         while (isdigit(src[posy])) posy++;
@@ -490,15 +491,15 @@ handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xd
            posx += dir->plen-1;
            break;
         case 'f':
-           if (dir->size == 0 || posx+files[dir->sel[tab]].nlen > max)
+           if (filesl == 0 || posx+files[dir->sel[tab]].nlen > max)
                return 0;
            memcpy(dest+posx,files[dir->sel[tab]].name,files[dir->sel[tab]].nlen);
            posx += files[dir->sel[tab]].nlen-1;
            break;
         case 's':
-           if (dir->size == 0 || posx+dir->files[dir->sel[tab]].nlen > max)
+           if (filesl == 0 || posx+files[dir->sel[tab]].nlen > max)
                return 0;
-           for (size_t i = 0; i < dir->size; i++) {
+           for (size_t i = 0; i < filesl; i++) {
                if (num < 0 ? 1 : (files[i].sel[tab]&(1<<num))) {
                    if (files[i].nlen+posx >= LLINE_MAX)
                        break;
@@ -915,8 +916,9 @@ static int
 openimages(char *name, csas *cs, const uchar flags)
 {
     xdir *d = &CTAB(1);
-    xfile *files = d->files;
-    flexarr *matched = flexarr_init(sizeof(char*),((d->size>>9)+32));
+    xfile *files = (xfile*)d->files->v;
+    size_t filesl = d->files->size;
+    flexarr *matched = flexarr_init(sizeof(char*),((filesl>>9)+32));
     *(char**)flexarr_inc(matched) = OP_IMAGE;
     size_t namel=strlen(name),spos=0;
     char *ext;
@@ -926,7 +928,7 @@ openimages(char *name, csas *cs, const uchar flags)
         NULL
     };
 
-    for (size_t i = 0; i < d->size; i++) {
+    for (size_t i = 0; i < filesl; i++) {
         if ((files[i].mode&S_IFMT) != S_IFREG)
             continue;
         if (namel == files[i].nlen && memcmp(name,files[i].name,namel) == 0) {
@@ -1380,7 +1382,7 @@ splitargs(char *src, size_t size, csas *cs)
         while (isspace(src[i]) && i < size)
             i++;
         if ((int)cs->args->size == argc)
-            *((char**)flexarr_inc(cs->args)) = malloc(ARG_MAX);
+            *((char**)flexarr_inc(cs->args)) = xmalloc(ARG_MAX);
         r = get_arg(((char**)cs->args->v)[argc],src+i,' ',size-i,&count,ARG_MAX-1,cs);
         if (r == NULL)
             return argc;
