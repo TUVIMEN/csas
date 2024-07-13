@@ -83,6 +83,7 @@ flexarr *trap_exit = NULL;
 flexarr *trap_preview = NULL;
 flexarr *trap_newdir = NULL;
 flexarr *trap_chdir = NULL;
+flexarr *trap_filerun = NULL;
 
 int sel_colors[] = {
     YELLOW,GREEN,RED,BLUE,

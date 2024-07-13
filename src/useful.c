@@ -509,6 +509,17 @@ handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xd
                }
            }
            break;
+        case 'p':
+           {
+           char number[32];
+           ltoa(getpid(),number);
+           size_t numberl = strlen(number);
+           if (posx+numberl > max)
+               return 0;
+           memcpy(dest+posx,number,numberl);
+           posx += numberl;
+           }
+           break;
         case '%':
             dest[posx] = src[posy];
             (*y)++;
@@ -1378,15 +1389,18 @@ splitargs(char *src, size_t size, csas *cs)
     char *r;
     int argc = 0;
     size_t count;
+
+    size_t prev_args_size = cs->args->size;
+
     for (size_t i = 0; i < size; i++) {
         while (isspace(src[i]) && i < size)
             i++;
-        if ((int)cs->args->size == argc)
+        if ((int)(cs->args->size-prev_args_size) == argc)
             *((char**)flexarr_inc(cs->args)) = xmalloc(ARG_MAX);
-        r = get_arg(((char**)cs->args->v)[argc],src+i,' ',size-i,&count,ARG_MAX-1,cs);
+        r = get_arg((((char**)cs->args->v)+prev_args_size)[argc],src+i,' ',size-i,&count,ARG_MAX-1,cs);
         if (r == NULL)
             return argc;
-        ((char**)cs->args->v)[argc][count] = 0;
+        (((char**)cs->args->v)+prev_args_size)[argc][count] = 0;
         i = r-src;
         argc++;
     }

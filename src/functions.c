@@ -43,6 +43,7 @@ extern flexarr *trap_exit;
 extern flexarr *trap_preview;
 extern flexarr *trap_newdir;
 extern flexarr *trap_chdir;
+extern flexarr *trap_filerun;
 extern char *Editor;
 extern char *Shell;
 
@@ -141,9 +142,11 @@ command_run(char *src, size_t size, csas *cs)
     for (size_t i = 0; i < cs->functions->size; i++) {
         if (s == strlen(functions[i].name) && memcmp(src+t,functions[i].name,s) == 0) {
             if (functions[i].type == 'f') {
+                int prev_args_size = cs->args->size;
                 int argc = splitargs(src+pos,size-pos,cs);
-                char **argv = (char**)cs->args->v;
+                char **argv = ((char**)cs->args->v)+prev_args_size;
                 int r = ((int (*)(int,char**,csas*))functions[i].func)(argc,argv,cs);
+                cs->args->size = prev_args_size;
                 cs->typed[0] = 0;
                 return r;
             } else if (functions[i].type == 'a') {
@@ -1320,8 +1323,14 @@ cmd_file_run(int argc, char **argv, csas *cs)
     struct stat statbuf;
     if (stat(argv[0],&statbuf) != 0)
         return -1;
-    int r = ((statbuf.st_mode&S_IFMT) == S_IFDIR) ? csas_cd(argv[0],cs)
-        : file_run(argv[0],cs);
+
+    int r = 0;
+    if ((statbuf.st_mode&S_IFMT) == S_IFDIR) {
+        r = csas_cd(argv[0],cs);
+    } else {
+        trap_run(trap_filerun,cs);
+        r = file_run(argv[0],cs);
+    }
     if (r == -1)
         printerr("file_run: %s: %s\n",argv[0],strerror(errno));
     return r;
@@ -1536,7 +1545,8 @@ cmd_trap(int argc, char **argv, csas *cs)
         {"EXIT",4,&trap_exit},
         {"PREVIEW",7,&trap_preview},
         {"CHDIR",5,&trap_chdir},
-        {"NEWDIR",6,&trap_newdir}
+        {"NEWDIR",6,&trap_newdir},
+        {"FILERUN",7,&trap_filerun}
     };
 
     char found=0;
@@ -1594,6 +1604,12 @@ cmd_open_with(int argc, char **argv, csas *cs)
     path[0] = 0;
     size_t s = console_getline(&n,1,"open_with ",NULL,-1,cs,expand_shell_commands);
     n[s] = 0;
+
+    if (!s)
+        return 0;
+
+    trap_run(trap_filerun,cs);
+
     int r = spawnp(n,argv[0],NULL,F_NORMAL|F_WAIT);
     if (r == -1)
         printerr("open_with: %s: %s\n",argv[0],strerror(errno));

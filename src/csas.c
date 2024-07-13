@@ -400,6 +400,7 @@ csas_init()
     trap_preview = flexarr_init(sizeof(char**),TRAP_INCR);
     trap_chdir = flexarr_init(sizeof(char**),TRAP_INCR);
     trap_newdir = flexarr_init(sizeof(char**),TRAP_INCR);
+    trap_filerun = flexarr_init(sizeof(char**),TRAP_INCR);
 
     gethostname(hostname,NAME_MAX);
     username = getenv("USER");
@@ -488,14 +489,14 @@ csas_cd(const char *path, csas* cs)
     if (FollowParentDir && size && path[0] == '.' && path[1] == '.' && path[2] == 0)
         search_name = memrchr(dir->path,'/',dir->plen);
 
-    if ((size_t)n == size)
-        trap_run(trap_newdir,cs);
-    trap_run(trap_chdir,cs);
-
     cs->tabs[cs->ctab].wins[1] = (size_t)n;
     dir = &CTAB(1);
     xfile *files = (xfile*)dir->files->v;
     size_t filesl = dir->files->size;
+
+    if ((size_t)n == size)
+        trap_run(trap_newdir,cs);
+    trap_run(trap_chdir,cs);
 
     if (search_name)
         searchfor(++search_name,cs->ctab,dir);
@@ -582,6 +583,7 @@ csas_free(csas *cs)
     xfree_(trap_preview,free);
     xfree_(trap_chdir,free);
     xfree_(trap_newdir,free);
+    xfree_(trap_filerun,free);
 
     xfree(cs->vars,xvar_free,xvar*);
     xfree(cs->functions,xfunc_free,xfunc*);
