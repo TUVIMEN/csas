@@ -348,6 +348,11 @@ add_vars(flexarr *v)
     xvar_add(&PreviewPosx,"PreviewPosx",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(&PreviewPosy,"PreviewPosy",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(&Verbose,"Verbose",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&PID,"PID",XVAR_INT|XVAR_CONST,(void*)getpid(),v);
+
+    struct timespec timer;
+    clock_gettime(CLOCK_REALTIME,&timer);
+    xvar_add(&PID,"StartTime",XVAR_INT|XVAR_CONST,(void*)timer.tv_sec,v);
 }
 
 void

@@ -35,7 +35,6 @@ and exit.
  %f   the highlighted file
  %d   the path of the current directory
  %s   the selected files in the current directory
- %p   pid of the current process
 
 .SH BRACKETS
 The '$' character followed by bracket is replaced by value based on expressions inside brackets.
@@ -282,6 +281,12 @@ Specify program used for preview on binary files
 .TP
 Verbose [int]
 Verbosity level, by default 1
+.TP
+PID [int]
+PID of current process
+.TP
+StartTime [int]
+Time in seconds at which the process has been started
 .TP
 Sel_C [int]
 Change color of highlighted files

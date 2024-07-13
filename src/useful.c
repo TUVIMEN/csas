@@ -509,17 +509,6 @@ handle_percent(char *dest, char *src, size_t *x, size_t *y, const size_t max, xd
                }
            }
            break;
-        case 'p':
-           {
-           char number[32];
-           ltoa(getpid(),number);
-           size_t numberl = strlen(number);
-           if (posx+numberl > max)
-               return 0;
-           memcpy(dest+posx,number,numberl);
-           posx += numberl;
-           }
-           break;
         case '%':
             dest[posx] = src[posy];
             (*y)++;
