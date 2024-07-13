@@ -1492,8 +1492,10 @@ cmd_set(int argc, char **argv, csas *cs)
     uchar type = XVAR_INT;
     char *name=NULL,*val=NULL;
     int n=0;
-    if (argv[n][0] == '-' && argv[n][1] == 's')
+    if (argv[n][0] == '-' && argv[n][1] == 's') {
         type = XVAR_STRING;
+        n++;
+    }
     name = argv[n++];
     if (n < argc)
         val = argv[n];

@@ -171,12 +171,13 @@ xvar_add(void *addr, const char *name, const uchar type, void *val, flexarr *v)
         }
     }
 
-    if (found == 0) {
+    if (!found) {
         vars = (xvar*)flexarr_inc(v);
         vars->name = strdup(name);
         vars->v = NULL;
     } else {
         vars = &vars[i];
+
         if ((vars->type == XVAR_STRING || vars->type == XVAR_INT) && vars->type != type) {
             free(vars->v);
             vars->v = NULL;
