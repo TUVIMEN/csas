@@ -55,7 +55,7 @@ cmp_rvcname(const xfile *f1, const xfile *f2)
     {return !strverscmp(f2->name,f1->name);}
 static int
 cmp_rmtime(const xfile *f1, const xfile *f2)
-    {return f1->mtime < f2->mtime;}
+    {return f1->mtime > f2->mtime;}
 
 int (*sort_arr[])(const xfile*,const xfile*) = {
     [SORT_TYPE]=cmp_type,
