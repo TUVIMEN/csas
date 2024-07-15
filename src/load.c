@@ -186,6 +186,7 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
 {
     ret_errno(dirs==NULL,EINVAL,-1);
 
+    uchar changed = 0;
     size_t i;
     li ret=0;
     char rpath[PATH_MAX];
@@ -257,6 +258,7 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     d->ctime = statbuf.st_ctim;
 
     int ld_ret = load_dir(d);
+    changed = 1;
 
     dsize = d->files->size;
     for (size_t i = 0; i < TABS; i++) {
@@ -273,7 +275,7 @@ getdir(const char *path, flexarr *dirs, const uchar flags)
     xfile *files = (xfile*)d->files->v;
     size_t filesl = d->files->size;
 
-    if (d->sort != SortMethod) {
+    if (changed || d->sort != SortMethod) {
         xfile_sort(files,filesl,SortMethod);
         d->sort = SortMethod;
     }
