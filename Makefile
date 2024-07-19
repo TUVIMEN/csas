@@ -40,7 +40,7 @@ options:
 
 csas: ${OBJ}
 	${CC} ${CFLAGS} ${LDFLAGS} $^ -o ${TARGET}
-	#strip ${TARGET}
+	strip ${TARGET}
 
 %.o: %.c
 	${CC} ${CFLAGS} -c $< -o $@

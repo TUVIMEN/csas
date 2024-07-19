@@ -1646,7 +1646,6 @@ cmd_lmove(int argc, char **argv, csas *cs)
     if (mul == 0)
         mul = 1;
     uchar flags = 0;
-    char **searchl = (char**)dir->searchlist->v;
     int opt;
 
     optind = 0;
@@ -1667,8 +1666,10 @@ cmd_lmove(int argc, char **argv, csas *cs)
     if (flags == 0)
         return 0;
 
-    if (!dir->searchlist->size)
+    if (!dir->searchlist || !dir->searchlist->size)
         return 0;
+    char **searchl = (char**)dir->searchlist->v;
+
     if (files[dir->sel[ctab]].name == searchl[dir->searchlist_pos]) {
         if (flags&0x2) {
             if (mul+dir->searchlist_pos == dir->searchlist->size)
