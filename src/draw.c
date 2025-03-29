@@ -333,7 +333,7 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
         else
             mvwaddstr(win,0,1,"EMPTY");
         wattroff(win,Error_C);
-        wrefresh(win);
+        xwrefresh(win);
         return;
     }
 
@@ -446,7 +446,7 @@ draw_dir(WINDOW *win, xdir *dir, csas *cs)
     }
     for (; i < (size_t)maxy; i++)
         mvwhline(win,i,0,' ',maxx);
-    wrefresh(win);
+    xwrefresh(win);
 }
 
 void

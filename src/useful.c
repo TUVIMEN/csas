@@ -42,6 +42,15 @@ exiterr()
 }
 
 int
+xwrefresh(WINDOW *win)
+{
+    int r = wrefresh(win);
+    if (r == ERR)
+        exit(1);
+    return r;
+}
+
+int
 getinput(csas *cs)
 {
     int ret;
@@ -115,7 +124,7 @@ enc32utf8(const int c)
     if (msf < 8) {
         return c;
     } else if (msf < 12) {
-        return 0xc081|(c&0x3f)|((c&0x7c0)<<2);
+        return 0xc080|(c&0x3f)|((c&0x7c0)<<2);
     } else if (msf < 17){
         return 0xe08080|(c&0x3f)|((c&0xfc0)<<2)|((c&0xf000)<<4);
     } else if (msf < 22){

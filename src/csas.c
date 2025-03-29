@@ -432,13 +432,13 @@ csas_draw(csas *cs)
     if (MultipaneView) {
         if (d->path[0] == '/' && d->path[1] == 0) {
             werase(cs->wins[0]);
-            wrefresh(cs->wins[0]);
+            xwrefresh(cs->wins[0]);
         } else {
             draw_dir(cs->wins[0],&CTAB(0),cs);
         }
         if (CTAB(1).files->size == 0) {
             werase(cs->wins[2]);
-            wrefresh(cs->wins[2]);
+            xwrefresh(cs->wins[2]);
         } else {
             preview_draw(cs->wins[2],cs);
         }

@@ -117,5 +117,5 @@ preview_draw(WINDOW *win, csas *cs)
     }
     for (; posy < maxy; posy++)
         mvwhline(win,posy,0,' ',maxx);
-    wrefresh(win);
+    xwrefresh(win);
 }

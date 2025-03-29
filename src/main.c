@@ -72,21 +72,22 @@ usage(const char *argv0)
     exit(1);
 }
 
-static char *
-get_conf_path()
+static void
+load_conf_path(csas *cs)
 {
     char *conf=getenv("CSAS_CONFIG"),*t;
-    if (conf)
-        return conf;
+    if (conf && config_load(conf,cs) != -1)
+        return;
 
     t = getenv("XDG_CONFIG_HOME");
-    if (t) {
-        conf = mkpath(t,"csasrc");
-    } else {
-        t = getenv("HOME");
-        conf = (t) ? mkpath(t,".csasrc") : "/etc/csasrc";
-    }
-    return conf;
+    if (t && config_load(mkpath(t,"csasrc"),cs) != -1)
+        return;
+
+    t = getenv("HOME");
+    if (t && config_load(mkpath(t,".csasrc"),cs) != -1)
+        return;
+
+    config_load("/etc/csasrc",cs);
 }
 
 int
@@ -115,11 +116,14 @@ main(int argc, char **argv)
         path = argv[argc-1];
 
     opterr = 0;
-    if (!noconf && conf == NULL)
-        conf = get_conf_path();
 
     csas *cs = csas_init();
-    config_load(conf,cs);
+    if (!noconf) {
+        if (conf == NULL) {
+            load_conf_path(cs);
+        } else
+            config_load(conf,cs);
+    }
     initcurses();
 
     wins_resize(cs->wins);

@@ -20,6 +20,7 @@
 #define USEFUL_H
 
 void exiterr();
+int xwrefresh(WINDOW *win);
 int getinput(csas *cs);
 int getinput_wch(wint_t *wch, csas *cs);
 char *delchar(char *src, const size_t pos, const size_t size);
