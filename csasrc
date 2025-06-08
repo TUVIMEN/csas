@@ -112,5 +112,3 @@ set -s BinaryPreview "file"
 set OpenAllImages 1
 
 //trap 'scout -vG "^\\." -- filter' NEWDIR //hide "hidden" files
-
-source ~/.config/csasrc
