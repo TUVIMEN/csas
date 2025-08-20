@@ -316,6 +316,7 @@ add_vars(flexarr *v)
     xvar_add(&Archive_C,"Archive_C",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(&Image_C,"Image_C",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(&Video_C,"Video_C",XVAR_INT|XVAR_POINTER,NULL,v);
+    xvar_add(&Document_C,"Document_C",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(&UpdateFile,"UpdateFile",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(&SizeInBytes,"SizeInBytes",XVAR_INT|XVAR_POINTER,NULL,v);
     xvar_add(&FileSystemInfo,"FileSystemInfo",XVAR_INT|XVAR_POINTER,NULL,v);

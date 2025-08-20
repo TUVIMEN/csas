@@ -52,6 +52,7 @@ extern li NumberLinesStartFrom;
 extern li Archive_C;
 extern li Image_C;
 extern li Video_C;
+extern li Document_C;
 extern li SizeInBytes;
 extern li FileSystemInfo;
 extern li Borders;
@@ -108,6 +109,7 @@ color_by_mode(const char *name, const mode_t m, const uchar f)
                     case 'A': return Archive_C;
                     case 'I': return Image_C;
                     case 'V': return Video_C;
+                    case 'D': return Document_C;
                 }
             }
             if (m&(S_IXUSR|S_IXGRP|S_IXOTH))

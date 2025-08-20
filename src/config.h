@@ -58,6 +58,7 @@ li Host_C = COLOR_PAIR(GREEN)|A_BOLD;
 li Archive_C = COLOR_PAIR(RED);
 li Image_C = COLOR_PAIR(YELLOW);
 li Video_C = COLOR_PAIR(MAGENTA);
+li Document_C = COLOR_PAIR(BLUE);
 li Border_C = COLOR_PAIR(RED)|A_BOLD;
 li Borders = 0;
 li SizeInBytes = 0;
@@ -118,12 +119,21 @@ const fext extensions[] = {
     {"gz",'A'},{"img",'A'},{"iso",'A'},{"lzma",'A'},{"tbz2",'A'},
     {"tgz",'A'},{"z",'A'},{"zx",'A'},{"zip",'A'},{"7z",'A'},
     {"xz",'A'},{"lz4",'A'},{"zst",'A'},{"a",'A'},
+    //Documents
+    {"pdf",'D'},{"pdf",'D'},{"ps",'D'},{"djvu",'D'},{"djv",'D'},{"epub",'D'},
+    {"docx",'D'},{"odp",'D'},{"pptx",'D'},{"xlsx",'D'},{"xpi",'D'},{"odf",'D'},
+    {"ods",'D'},{"ps",'D'},{"eps",'D'},{"epsf",'D'},{"pk3",'D'},{"pk4",'D'},
+    {"xpi",'D'},{"vsdx",'D'},{"doc",'D'},
     {NULL,'\0'}
 };
 
 const fsig signatures[] = {
     //Documents
-    { F_SILENT|F_BIN,           0,      SEEK_SET,       "%PDF",4,OP_DOC},
+    { F_SILENT|F_BIN,           0,      SEEK_SET,       "%PDF-",5,OP_DOC},
+    { F_SILENT|F_BIN,           0,      SEEK_SET,       "%!PS",4,OP_DOC},
+    { F_SILENT|F_BIN,           0,      SEEK_SET,       "\x0D\x44\x4F\x43",4,OP_DOC},
+    { F_SILENT|F_BIN,           0,      SEEK_SET,       "%!PS-Adobe-3.0 ESPF-3.0",23,OP_DOC},
+    { F_SILENT|F_BIN,           0,      SEEK_SET,       "%!PS-Adobe-3.1 ESPF-3.0",23,OP_DOC},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "AT&TFORM",4,OP_DOC},
     //Images
     { F_SILENT,                 0,      SEEK_SET,       "<svg",4,OP_SVG},
@@ -166,7 +176,7 @@ const fsig signatures[] = {
     { F_NORMAL|F_WAIT|F_BIN,    0,      SEEK_SET,       "\xFF\xF3",2,OP_VIDEO},
     { F_NORMAL|F_WAIT|F_BIN,    0,      SEEK_SET,       "ID3",3,OP_VIDEO},
     { F_NORMAL|F_WAIT|F_BIN,    0,      SEEK_SET,       "WAVEfmt ",8,OP_VIDEO},
-    { F_NORMAL|F_WAIT|F_BIN,    0,      SEEK_SET,       "fLaC\0\0\0\"",8,OP_VIDEO},
+    { F_NORMAL|F_WAIT|F_BIN,    0,      SEEK_SET,       "fLaC",4,OP_VIDEO},
     { F_NORMAL|F_WAIT|F_BIN,    0,      SEEK_SET,       "\x30\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C",16,OP_VIDEO},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "\x1A\x45\xDF\xA3",4,OP_VIDEO},
     { F_SILENT|F_BIN,           0,      SEEK_SET,       "\x00\x00\x01\xBA",4,OP_VIDEO},
