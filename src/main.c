@@ -1,6 +1,6 @@
 /*
     csas - console file manager
-    Copyright (C) 2020-2025 Dominik Stanisław Suchora <hexderm@gmail.com>
+    Copyright (C) 2020-2026 Dominik Stanisław Suchora <hexderm@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -139,6 +139,9 @@ main(int argc, char **argv)
     if (FileSystemInfo)
         statfs(".",&cs->fs);
 
+    #define KEY_ERRORS_MAX 5000
+    uint key_errors = 0;
+
     while (!Exit) {
         clock_gettime(1,&timer);
         t1 = timer.tv_sec;
@@ -147,6 +150,7 @@ main(int argc, char **argv)
 
         REPEAT: ;
         if ((e = update_event(cs)) != -1) {
+            key_errors = 0;
             if (alias_run(BINDINGS[e].value,strlen(BINDINGS[e].value),cs) == -1) {
                 printmsg(Error_C,"%s: %s",BINDINGS[e].value,strerror(errno));
                 refresh();
@@ -154,6 +158,10 @@ main(int argc, char **argv)
             }
             if (FileSystemInfo)
                 statfs(".",&cs->fs);
+        } else {
+          key_errors += 1;
+          if (key_errors > KEY_ERRORS_MAX)
+            break;
         }
 
         if (UpdateFile) {
