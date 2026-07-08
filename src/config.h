@@ -113,7 +113,7 @@ const fext extensions[] = {
     {"jpf",'I'},{"jpf",'I'},{"jpm",'I'},{"jpg2",'I'},{"j2c",'I'},
     {"jpc",'I'},{"mj2",'I'},{"qoif",'I'},{"bpg",'I'},{"icns",'I'},
     {"tif",'I'},{"cr2",'I'},{"cr3",'I'},{"cin",'I'},{"dpx",'I'},
-    {"exr",'I'},{"flif",'I'},
+    {"exr",'I'},{"flif",'I'},{"heif",'I'},{"avif",'I'},
     //Archives
     {"tar",'A'},{"lz",'A'},{"jar",'A'},{"rar",'A'},{"bz2",'A'},{"exe",'A'},
     {"gz",'A'},{"img",'A'},{"iso",'A'},{"lzma",'A'},{"tbz2",'A'},

@@ -934,6 +934,7 @@ openimages(char *name, csas *cs, const uchar flags)
     static char *img_ext[] = {
         "gif","jpeg","jpg","png","raw",
         "tiff","bmp","tga","gvs","webp",
+        "heic", "heif", "avif",
         NULL
     };
 
